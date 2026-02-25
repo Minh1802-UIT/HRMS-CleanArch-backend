@@ -26,7 +26,7 @@ namespace Employee.Application.Common.Services.DashboardProviders
       {
         Title = "Total Employees",
         Value = totalEmployeesCount.ToString(),
-        Icon = "users",
+        Icon = "group",
         ColorScheme = "blue"
       });
 

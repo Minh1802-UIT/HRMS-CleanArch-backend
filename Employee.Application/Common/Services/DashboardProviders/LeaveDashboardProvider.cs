@@ -27,7 +27,7 @@ namespace Employee.Application.Common.Services.DashboardProviders
       {
         Title = "Pending Leaves",
         Value = pendingLeavesCount.ToString(),
-        Icon = "clock",
+        Icon = "schedule",
         ColorScheme = "orange"
       });
 

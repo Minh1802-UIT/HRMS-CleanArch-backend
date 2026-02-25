@@ -28,7 +28,7 @@ namespace Employee.Application.Common.Services.DashboardProviders
       {
         Title = "Active Jobs",
         Value = activeJobsCount.ToString(),
-        Icon = "briefcase",
+        Icon = "work",
         ColorScheme = "green"
       });
 
@@ -37,7 +37,7 @@ namespace Employee.Application.Common.Services.DashboardProviders
       {
         Title = "Interviews Today",
         Value = "0", // Logic would go here if we had date-based interview fetching
-        Icon = "calendar",
+        Icon = "calendar_today",
         ColorScheme = "purple"
       });
 
