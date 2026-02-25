@@ -162,9 +162,16 @@ namespace Employee.API.Endpoints.Auth
       }, "Token refreshed successfully.");
     }
 
-    // 11. LOGOUT (Public) — clears the httpOnly refresh token cookie
-    public static IResult Logout(HttpContext context)
+    // 11. LOGOUT — revokes server-side tokens then clears the httpOnly cookie
+    public static async Task<IResult> Logout(
+        HttpContext context,
+        IIdentityService identityService,
+        ICurrentUser currentUser)
     {
+      // Revoke all stored refresh-token hashes so a stolen cookie becomes useless.
+      if (!string.IsNullOrEmpty(currentUser.UserId))
+        await identityService.RevokeAllRefreshTokensAsync(currentUser.UserId);
+
       context.Response.Cookies.Delete("refreshToken", new CookieOptions
       {
         HttpOnly = true,

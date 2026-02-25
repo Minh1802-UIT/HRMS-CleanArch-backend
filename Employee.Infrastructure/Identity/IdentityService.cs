@@ -252,65 +252,121 @@ namespace Employee.Infrastructure.Identity
       var roles = await _userManager.GetRolesAsync(user);
       var token = _tokenService.GenerateJwtToken(user.Id.ToString(), user.Email ?? "", user.FullName, roles, user.EmployeeId);
 
-      var refreshToken = _tokenService.GenerateRefreshToken();
-      user.RefreshToken = refreshToken;
-      user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+      var rawRefreshToken = _tokenService.GenerateRefreshToken();
+      var familyId        = Guid.NewGuid().ToString();
+
+      // Revoke all previous sessions on new login (single-session-per-login policy).
+      user.RefreshTokens.ForEach(t => t.IsRevoked = true);
+      PruneRefreshTokens(user);
+
+      user.RefreshTokens.Add(new Employee.Infrastructure.Identity.Models.RefreshTokenEntry
+      {
+        TokenHash = _tokenService.HashToken(rawRefreshToken),
+        FamilyId  = familyId,
+        IssuedAt  = DateTime.UtcNow,
+        ExpiresAt = DateTime.UtcNow.AddDays(7),
+        IsRevoked = false
+      });
       await _userManager.UpdateAsync(user);
 
       return new LoginResponseDto
       {
         AccessToken = token,
-        RefreshToken = refreshToken,
+        RefreshToken = rawRefreshToken,
         ExpiresIn = int.Parse(_config["JwtSettings:DurationInMinutes"] ?? "60") * 60,
         User = MapToUserDto(user, roles)
       };
     }
 
-    public async Task<LoginResponseDto> RefreshTokenAsync(string accessToken, string refreshToken)
+    public async Task<LoginResponseDto> RefreshTokenAsync(string accessToken, string rawRefreshToken)
     {
+      // ── 1. Validate the access token (expired is fine — we re-issue it) ─────
       var principal = _tokenService.GetPrincipalFromExpiredToken(accessToken);
       if (principal == null)
-      {
         throw new UnauthorizedAccessException("Access token không hợp lệ.");
-      }
 
       var username = principal.Identity?.Name;
       if (string.IsNullOrEmpty(username))
-      {
         throw new UnauthorizedAccessException("Không tìm thấy thông tin user từ token.");
-      }
 
-      var user = await _userManager.FindByNameAsync(username);
-      if (user == null)
-      {
-        throw new NotFoundException("User không tồn tại.");
-      }
+      var user = await _userManager.FindByNameAsync(username)
+                 ?? throw new NotFoundException("User không tồn tại.");
 
-      if (user.RefreshToken != refreshToken)
+      // ── 2. Hash the incoming token and look it up ─────────────────────────
+      var incomingHash = _tokenService.HashToken(rawRefreshToken);
+      var entry = user.RefreshTokens.FirstOrDefault(t => t.TokenHash == incomingHash);
+
+      if (entry == null)
       {
+        // Completely unknown token — fabricated or already pruned.
         throw new UnauthorizedAccessException("Refresh token không hợp lệ.");
       }
 
-      if (user.RefreshTokenExpiry < DateTime.UtcNow)
+      if (entry.IsRevoked)
       {
-        throw new UnauthorizedAccessException("Refresh token đã hết hạn. Vui lòng đăng nhập lại.");
+        // ── REUSE DETECTION ─────────────────────────────────────────────────
+        // An already-used token was re-presented → possible theft.
+        // Revoke the ENTIRE family so every rotation from this session is killed.
+        foreach (var t in user.RefreshTokens.Where(t => t.FamilyId == entry.FamilyId))
+          t.IsRevoked = true;
+        await _userManager.UpdateAsync(user);
+        throw new UnauthorizedAccessException(
+            "Refresh token đã bị thu hồi. Phiên đăng nhập bị chấm dứt vì lý do bảo mật. Vui lòng đăng nhập lại.");
       }
 
-      var roles = await _userManager.GetRolesAsync(user);
-      var newAccessToken = _tokenService.GenerateJwtToken(user.Id.ToString(), user.Email ?? "", user.FullName, roles, user.EmployeeId);
-      var newRefreshToken = _tokenService.GenerateRefreshToken();
+      if (entry.ExpiresAt < DateTime.UtcNow)
+        throw new UnauthorizedAccessException("Refresh token đã hết hạn. Vui lòng đăng nhập lại.");
 
-      user.RefreshToken = newRefreshToken;
-      user.RefreshTokenExpiry = DateTime.UtcNow.AddDays(7);
+      // ── 3. Rotate: mark current entry used, issue a new sibling ──────────
+      entry.IsRevoked = true;
+
+      var newRawToken = _tokenService.GenerateRefreshToken();
+      user.RefreshTokens.Add(new Employee.Infrastructure.Identity.Models.RefreshTokenEntry
+      {
+        TokenHash = _tokenService.HashToken(newRawToken),
+        FamilyId  = entry.FamilyId,   // same family keeps the reuse-detection chain intact
+        IssuedAt  = DateTime.UtcNow,
+        ExpiresAt = DateTime.UtcNow.AddDays(7),
+        IsRevoked = false
+      });
+
+      PruneRefreshTokens(user);
+
+      var roles          = await _userManager.GetRolesAsync(user);
+      var newAccessToken = _tokenService.GenerateJwtToken(
+          user.Id.ToString(), user.Email ?? "", user.FullName, roles, user.EmployeeId);
+
       await _userManager.UpdateAsync(user);
 
       return new LoginResponseDto
       {
-        AccessToken = newAccessToken,
-        RefreshToken = newRefreshToken,
-        ExpiresIn = int.Parse(_config["JwtSettings:DurationInMinutes"] ?? "60") * 60,
-        User = MapToUserDto(user, roles)
+        AccessToken  = newAccessToken,
+        RefreshToken = newRawToken,
+        ExpiresIn    = int.Parse(_config["JwtSettings:DurationInMinutes"] ?? "60") * 60,
+        User         = MapToUserDto(user, roles)
       };
+    }
+
+    public async Task RevokeAllRefreshTokensAsync(string userId)
+    {
+      var user = await _userManager.FindByIdAsync(userId);
+      if (user == null) return;
+
+      user.RefreshTokens.ForEach(t => t.IsRevoked = true);
+      PruneRefreshTokens(user);
+      await _userManager.UpdateAsync(user);
+    }
+
+    // Keep the embedded token list bounded.
+    // Drop entries revoked > 24 h ago and expired entries > 30 d old.
+    private static void PruneRefreshTokens(
+        Employee.Infrastructure.Identity.Models.ApplicationUser user)
+    {
+      var cutoffRevoked = DateTime.UtcNow.AddHours(-24);
+      var cutoffExpired = DateTime.UtcNow.AddDays(-30);
+      user.RefreshTokens.RemoveAll(t =>
+          (t.IsRevoked && t.IssuedAt < cutoffRevoked) ||
+          (t.ExpiresAt < cutoffExpired));
     }
 
     public async Task<Result> ChangePasswordAsync(string userId, string currentPassword, string newPassword)

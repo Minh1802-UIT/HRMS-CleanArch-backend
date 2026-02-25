@@ -61,6 +61,20 @@ namespace Employee.Infrastructure.Services
       return Convert.ToBase64String(randomNumber);
     }
 
+    /// <summary>
+    /// SHA-256 hash of the raw token, encoded as Base64-URL (no padding).
+    /// This is what gets stored in the DB; the raw token lives only in the cookie.
+    /// </summary>
+    public string HashToken(string token)
+    {
+      var bytes = System.Security.Cryptography.SHA256.HashData(
+          System.Text.Encoding.UTF8.GetBytes(token));
+      return Convert.ToBase64String(bytes)
+                    .Replace('+', '-')
+                    .Replace('/', '_')
+                    .TrimEnd('=');
+    }
+
     public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
     {
       var key = Encoding.UTF8.GetBytes(_config["JwtSettings:Key"] ?? throw new InvalidOperationException("JWT Key is missing"));

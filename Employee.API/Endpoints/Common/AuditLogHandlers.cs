@@ -6,8 +6,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Employee.API.Endpoints.Common
 {
-  public static class AuditLogHandlers
-  {
+    public static class AuditLogHandlers
+    {
         public static async Task<IResult> GetLogs(
             [FromQuery] int? pageNumber,
             [FromQuery] int? pageSize,
@@ -20,11 +20,11 @@ namespace Employee.API.Endpoints.Common
         {
             var query = new GetAuditLogsQuery
             {
-                Pagination = new Employee.Application.Common.Models.PaginationParams 
-                { 
-                    PageNumber = pageNumber, 
+                Pagination = new Employee.Application.Common.Models.PaginationParams
+                {
+                    PageNumber = pageNumber,
                     PageSize = pageSize,
-                    SearchTerm = searchTerm 
+                    SearchTerm = searchTerm
                 },
                 StartDate = startDate,
                 EndDate = endDate,
@@ -35,5 +35,5 @@ namespace Employee.API.Endpoints.Common
             var result = await mediator.Send(query);
             return ResultUtils.Success(result, "Audit logs retrieved successfully.");
         }
-  }
+    }
 }

@@ -28,6 +28,12 @@ namespace Employee.Application.Common.Interfaces
     Task<Result> ToggleUserStatusAsync(string userId, bool isActive);
     Task<List<string>> GetRolesAsync();
     Task<Result> CreateRoleAsync(string roleName);
+
+    /// <summary>
+    /// Immediately revokes ALL refresh tokens for <paramref name="userId"/>.
+    /// Call on logout and whenever token reuse (theft) is detected.
+    /// </summary>
+    Task RevokeAllRefreshTokensAsync(string userId);
   }
 
   public class Result
