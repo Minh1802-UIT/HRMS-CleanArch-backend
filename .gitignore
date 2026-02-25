@@ -63,6 +63,13 @@ appsettings.Local.json
 *.nupkg
 .nuget/
 
+## IDE / dev tool files
+*.code-workspace
+*.http
+*.old
+*_output.txt
+*_final.txt
+
 ## User Secrets are stored outside the repo (~/.microsoft/usersecrets/)
 # Never commit secrets.json
 secrets.json
