@@ -5,6 +5,10 @@
 
 name: CI - Backend
 
+permissions:
+  checks: write        # required for dorny/test-reporter to post PR check results
+  contents: read
+
 on:
   push:
     branches: [main, develop]
@@ -89,6 +93,11 @@ jobs:
           retention-days: 14
 
       # ── 8. Publish test report in PR ───────────────────────────
+      # ── 9. Emit short SHA for downstream (used by cd.yml image-tag output) ──
+      - name: Emit short SHA
+        id: sha
+        run: echo "short=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
+
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: always()

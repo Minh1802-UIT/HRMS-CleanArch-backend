@@ -135,10 +135,10 @@ jobs:
               fi
               if [ "$i" = "12" ]; then
                 echo "Health check FAILED — rolling back to $PREV_IMAGE"
-                docker stop employee_api || true
-                docker rm employee_api || true
-                docker run -d --name employee_api --network hrms_employee_network \
-                  -p 5000:8080 "$PREV_IMAGE"
+                docker compose -f docker-compose.yml -f docker-compose.prod.yml stop app_backend || true
+                docker compose -f docker-compose.yml -f docker-compose.prod.yml rm -f app_backend || true
+                docker tag "$PREV_IMAGE" ${{ secrets.DOCKER_USERNAME }}/employee-hr-api:rollback 2>/dev/null || true
+                docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d app_backend
                 exit 1
               fi
               sleep 5
