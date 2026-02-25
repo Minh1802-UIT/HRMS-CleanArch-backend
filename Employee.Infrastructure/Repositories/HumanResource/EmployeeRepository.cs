@@ -72,20 +72,29 @@ namespace Employee.Infrastructure.Repositories.HumanResource
       var entities = await _collection
         .Find(filter)
         .Sort(sort)
-        .Project<EmployeeEntity>(projection)
+        .Project<BsonDocument>(projection)
         .Skip((pageNumber - 1) * pageSize)
         .Limit(pageSize)
         .ToListAsync(cancellationToken);
 
-      var summaries = entities.Select(e => new EmployeeListSummary
+      var summaries = entities.Select(e =>
       {
-        Id           = e.Id,
-        EmployeeCode = e.EmployeeCode,
-        FullName     = e.FullName,
-        AvatarUrl    = e.AvatarUrl,
-        DepartmentId = e.JobDetails?.DepartmentId ?? string.Empty,
-        PositionId   = e.JobDetails?.PositionId   ?? string.Empty,
-        Status       = e.JobDetails?.Status.ToString() ?? string.Empty
+        var jobDetails = e.TryGetElement("JobDetails", out var jdElem) ? jdElem.Value.AsBsonDocument : null;
+        var statusStr = jobDetails != null && jobDetails.TryGetElement("Status", out var stElem)
+          ? stElem.Value.ToString() ?? string.Empty : string.Empty;
+        return new EmployeeListSummary
+        {
+          Id           = e.GetValue("_id", BsonNull.Value).ToString()!,
+          EmployeeCode = e.GetValue("EmployeeCode", new BsonString(string.Empty)).AsString,
+          FullName     = e.GetValue("FullName", new BsonString(string.Empty)).AsString,
+          AvatarUrl    = e.TryGetElement("AvatarUrl", out var avElem) && avElem.Value != BsonNull.Value
+                           ? avElem.Value.AsString : null,
+          DepartmentId = jobDetails != null && jobDetails.TryGetElement("DepartmentId", out var dElem)
+                           ? dElem.Value.ToString()! : string.Empty,
+          PositionId   = jobDetails != null && jobDetails.TryGetElement("PositionId", out var pElem)
+                           ? pElem.Value.ToString()! : string.Empty,
+          Status       = statusStr
+        };
       }).ToList();
 
       return new PagedResult<EmployeeListSummary>
