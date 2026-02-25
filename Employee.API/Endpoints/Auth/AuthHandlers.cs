@@ -136,7 +136,7 @@ namespace Employee.API.Endpoints.Auth
       // Read refresh token from httpOnly cookie
       var refreshToken = context.Request.Cookies["refreshToken"];
       if (string.IsNullOrEmpty(refreshToken))
-        return Results.Unauthorized();
+        return ResultUtils.Fail("REFRESH_TOKEN_REQUIRED", "Refresh token cookie is missing or expired. Please log in again.", 401);
 
       var result = await sender.Send(new RefreshTokenCommand
       {

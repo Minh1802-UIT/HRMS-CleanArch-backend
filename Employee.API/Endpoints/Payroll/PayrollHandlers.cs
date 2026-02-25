@@ -97,7 +97,7 @@ namespace Employee.API.Endpoints.Payroll
     public static async Task<IResult> GetPdf(string id, IPayslipService service)
     {
       var pdfBytes = await service.GeneratePayslipPdfAsync(id);
-      if (pdfBytes == null) return Results.NotFound();
+      if (pdfBytes == null) return ResultUtils.Fail("PAYSLIP_NOT_FOUND", $"Payslip PDF not found for payroll id '{id}'.", 404);
 
       return Results.File(pdfBytes, "application/pdf", $"Payslip_{id}.pdf");
     }

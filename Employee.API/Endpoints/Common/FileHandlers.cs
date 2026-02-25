@@ -1,6 +1,6 @@
+using Employee.API.Common;
 using Employee.Application.Common.Dtos;
 using Employee.Application.Common.Interfaces;
-using Employee.Application.Common.Wrappers;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Employee.API.Endpoints.Common
@@ -16,25 +16,19 @@ namespace Employee.API.Endpoints.Common
       var file = form.Files.GetFile("file");
 
       if (file == null || file.Length == 0)
-      {
-        return Results.BadRequest(new ApiResponse<string>("FILE_NOT_UPLOADED", "No file uploaded"));
-      }
+        return ResultUtils.Fail("FILE_NOT_UPLOADED", "No file uploaded.", 400);
 
-      // 1. Validate File Ext (Basic)
+      // 1. Validate File Ext
       var ext = Path.GetExtension(file.FileName).ToLower();
       var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf", ".doc", ".docx" };
       if (!allowedExtensions.Contains(ext))
-      {
-        return Results.BadRequest(new ApiResponse<string>("FILE_TYPE_NOT_ALLOWED", "File type not allowed"));
-      }
+        return ResultUtils.Fail("FILE_TYPE_NOT_ALLOWED", $"File type '{ext}' is not allowed.", 400);
 
-      // 2. Max Size (e.g., 5MB)
+      // 2. Max Size (5MB)
       if (file.Length > 5 * 1024 * 1024)
-      {
-        return Results.BadRequest(new ApiResponse<string>("FILE_SIZE_EXCEEDED", "File size exceeds 5MB limit"));
-      }
+        return ResultUtils.Fail("FILE_SIZE_EXCEEDED", "File size exceeds the 5 MB limit.", 400);
 
-      // 3. Map IFormFile → FileUploadRequest (framework-agnostic DTO)
+      // 3. Map IFormFile → FileUploadRequest
       var uploadRequest = new FileUploadRequest
       {
         Content = file.OpenReadStream(),
@@ -43,10 +37,8 @@ namespace Employee.API.Endpoints.Common
         Length = file.Length
       };
 
-      // 4. Save via Service
       var path = await fileService.UploadFileAsync(uploadRequest, folderName);
-
-      return Results.Ok(new ApiResponse<string>(path, "File uploaded successfully"));
+      return ResultUtils.Success(path, "File uploaded successfully.");
     }
   }
 }

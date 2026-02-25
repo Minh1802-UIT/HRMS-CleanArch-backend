@@ -1,3 +1,4 @@
+using Employee.API.Common;
 using Employee.Application.Features.Common.Queries.GetAuditLogs;
 using MediatR;
 using Microsoft.AspNetCore.Http;
@@ -32,7 +33,7 @@ namespace Employee.API.Endpoints.Common
             };
 
             var result = await mediator.Send(query);
-            return Results.Ok(new { Succeeded = true, Message = "Lấy dữ liệu lịch sử hệ thống thành công", Data = result });
+            return ResultUtils.Success(result, "Audit logs retrieved successfully.");
         }
   }
 }

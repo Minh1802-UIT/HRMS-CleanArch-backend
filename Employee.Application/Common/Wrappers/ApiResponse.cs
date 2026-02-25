@@ -1,18 +1,25 @@
-﻿namespace Employee.Application.Common.Wrappers
+﻿using System.Text.Json.Serialization;
+
+namespace Employee.Application.Common.Wrappers
 {
   public class ApiResponse<T>
   {
+    [JsonPropertyName("succeeded")]
     public bool Succeeded { get; set; }
 
     // Dành cho Frontend: Dùng mã này để map ra tiếng Việt/Anh (VD: "EMP_NOT_FOUND")
+    [JsonPropertyName("errorCode")]
     public string ErrorCode { get; set; } = string.Empty;
 
-    // Dành cho Developer/Log: Mô tả chi tiết lỗi tiếng Anh (VD: "Employee with id 123 not found")
+    // Dành cho Developer/Log: Mô tả chi tiết lỗi tiếng Anh
+    [JsonPropertyName("message")]
     public string Message { get; set; } = string.Empty;
 
+    [JsonPropertyName("data")]
     public T? Data { get; set; }
 
-    // Dành cho Validation: List các lỗi chi tiết (VD: ["Email invalid", "Age must be > 18"])
+    // Dành cho Validation: List các lỗi chi tiết
+    [JsonPropertyName("errors")]
     public List<string>? Errors { get; set; }
 
     // Constructor mặc định (bắt buộc để Serialization hoạt động)
@@ -24,7 +31,7 @@
       Succeeded = true;
       Data = data;
       Message = message;
-      ErrorCode = string.Empty; // Thành công thì không có mã lỗi
+      ErrorCode = string.Empty;
       Errors = null;
     }
 
@@ -38,7 +45,7 @@
       Data = default;
     }
 
-    // 🌟 STATIC FACTORY METHODS (Để tránh nhập nhằng constructor)
+    // 🌟 STATIC FACTORY METHODS
     public static ApiResponse<T> SuccessResult(T data, string message = "Success")
     {
       return new ApiResponse<T>(data, message);

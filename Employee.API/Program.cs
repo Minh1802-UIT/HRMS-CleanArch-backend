@@ -43,6 +43,13 @@ builder.Host.UseSerilog((context, parser, configuration) =>
 builder.Services.AddCarter();
 builder.Services.AddEndpointsApiExplorer();
 
+// Enforce camelCase JSON globally for ALL responses (Results.Ok, Results.Json, WriteAsJsonAsync)
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+  options.SerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+  options.SerializerOptions.DictionaryKeyPolicy  = System.Text.Json.JsonNamingPolicy.CamelCase;
+});
+
 // NEW: API Versioning
 builder.Services.AddApiVersioning(options =>
 {
