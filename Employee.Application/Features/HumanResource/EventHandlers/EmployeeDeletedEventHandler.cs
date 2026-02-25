@@ -14,6 +14,7 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
     private readonly ICurrentUser _currentUser;
     private readonly IContractRepository _contractRepo;
     private readonly IAttendanceRepository _attendanceRepo;
+    private readonly IRawAttendanceLogRepository _rawAttendanceRepo;
     private readonly ILeaveRequestRepository _leaveRepo;
     private readonly ILeaveAllocationRepository _allocationRepo;
     private readonly IPayrollRepository _payrollRepo;
@@ -24,6 +25,7 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
         ICurrentUser currentUser,
         IContractRepository contractRepo,
         IAttendanceRepository attendanceRepo,
+        IRawAttendanceLogRepository rawAttendanceRepo,
         ILeaveRequestRepository leaveRepo,
         ILeaveAllocationRepository allocationRepo,
         IPayrollRepository payrollRepo)
@@ -33,6 +35,7 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
       _currentUser = currentUser;
       _contractRepo = contractRepo;
       _attendanceRepo = attendanceRepo;
+      _rawAttendanceRepo = rawAttendanceRepo;
       _leaveRepo = leaveRepo;
       _allocationRepo = allocationRepo;
       _payrollRepo = payrollRepo;
@@ -43,12 +46,22 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
       // 1. Xóa tài khoản User (Decoupled)
       await _sender.Send(new DeleteUserByEmployeeIdCommand { EmployeeId = notification.EmployeeId }, cancellationToken);
 
-      // 2. IMP-3: Cleanup related data
-      await _contractRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken);
-      await _attendanceRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken);
-      await _leaveRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken);
-      await _allocationRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken);
-      await _payrollRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken);
+      // 2. Cleanup all related data — each step is isolated so a single failure
+      //    does not leave the rest of the data uncleaned.
+      var errors = new List<Exception>();
+
+      async Task TryDelete(Func<Task> step)
+      {
+        try { await step(); }
+        catch (Exception ex) { errors.Add(ex); }
+      }
+
+      await TryDelete(() => _contractRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken));
+      await TryDelete(() => _attendanceRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken));
+      await TryDelete(() => _rawAttendanceRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken));
+      await TryDelete(() => _leaveRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken));
+      await TryDelete(() => _allocationRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken));
+      await TryDelete(() => _payrollRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken));
 
       // 3. Ghi Log (Decoupled)
       await _auditService.LogAsync(

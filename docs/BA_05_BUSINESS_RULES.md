@@ -15,7 +15,7 @@
 | BR-AUTH-05 | Login: Check user bị khóa (IsActive=false) → từ chối | ❌ Chưa implement |
 | BR-AUTH-06 | JWT chứa: UserId, EmployeeId, Roles | ✅ Đã implement |
 | BR-AUTH-07 | Change Password: Xác thực mật khẩu cũ | ✅ Đã implement |
-| BR-AUTH-08 | Refresh Token mechanism | ❌ Chưa implement |
+| BR-AUTH-08 | Refresh Token mechanism | ✅ httpOnly cookie + rotation + reuse detection |
 | BR-AUTH-09 | Password policy enforcement (min length, complexity) | ⚠️ Qua Identity config |
 
 ---
@@ -45,9 +45,9 @@
 | BR-HR-03 | DepartmentId phải tồn tại | ✅ |
 | BR-HR-04 | PositionId phải tồn tại | ✅ |
 | BR-HR-05 | Tạo NV → auto tạo User account (event-driven) | ✅ |
-| BR-HR-06 | Password auto = random/secure (không hardcode) | ❌ Đang hardcode "Welcome@2025" |
+| BR-HR-06 | Password auto = random/secure (không hardcode) + gửi email chào mừng | ✅ PasswordGenerator.Generate() + welcome email |
 | BR-HR-07 | Xóa NV: Không cho xóa nếu đang là Manager phòng ban | ✅ |
-| BR-HR-08 | Xóa NV: Cleanup liên quan (LeaveAlloc, Attendance, Payroll) | ❌ Chưa implement |
+| BR-HR-08 | Xóa NV: Cleanup liên quan (LeaveAlloc, Attendance, Payroll, RawLogs) | ✅ EmployeeDeletedEventHandler với error isolation |
 | BR-HR-09 | BankDetails ẩn với user không phải Admin/HR/owner | ✅ |
 | BR-HR-10 | Transaction: Unit of Work (MongoDB session) | ✅ |
 
@@ -78,7 +78,7 @@
 | BR-ATT-07 | Ghost Log: CheckIn có, CheckOut không → xử lý graceful | ✅ |
 | BR-ATT-08 | Bucket Pattern: 1 document / employee / tháng | ✅ |
 | BR-ATT-09 | Concurrency: Lock trên bucket khi update | ✅ |
-| BR-ATT-10 | OT trong Team Summary phải dùng DailyLog.OvertimeHours | ❌ Đang tính sai (WorkingHours - 8) |
+| BR-ATT-10 | OT trong Team Summary phải dùng DailyLog.OvertimeHours | ✅ AttendanceService: allLogs.Sum(l => l.OvertimeHours) |
 
 ---
 
@@ -89,13 +89,13 @@
 | BR-LV-01 | Tạo đơn: Check CurrentBalance >= số ngày xin | ❌ Chưa implement |
 | BR-LV-02 | Tạo đơn: Check overlap với đơn khác cùng NV | ❌ Chưa implement |
 | BR-LV-03 | Sửa đơn: Chỉ cho khi Status = "Pending" | ❌ Chưa implement |
-| BR-LV-04 | Hủy đơn: Chỉ cho khi Status = "Pending" | ✅ |
+| BR-LV-04 | Hủy đơn: Cho khi Status = Pending hoặc Approved (chưa bắt đầu) | ✅ |
 | BR-LV-05 | Approve: Trừ UsedDays trong LeaveAllocation | ✅ |
 | BR-LV-06 | Approve: Dùng Unit of Work (transaction) | ✅ |
 | BR-LV-07 | Approve: Ghi ApprovedBy | ❌ Chưa implement |
 | BR-LV-08 | Accrual: Cộng dồn hàng tháng, check LastAccrualMonth (idempotent) | ✅ |
 | BR-LV-09 | Init: ContractCreated → Initialize Allocation cho năm hiện tại | ✅ |
-| BR-LV-10 | Cancel đơn Approved → RefundDays | ❌ Chưa implement |
+| BR-LV-10 | Cancel đơn Approved → RefundDays | ✅ CancelLeaveRequestHandler: guard start-date + RefundDaysAsync |
 | BR-LV-11 | Sandwich Rule: Nghỉ T6+T2 → mất T7+CN | ⚠️ Entity có flag, chưa implement logic |
 
 ---

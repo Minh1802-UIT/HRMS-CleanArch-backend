@@ -49,6 +49,16 @@ namespace Employee.Infrastructure.Repositories.Attendance
       return logs;
     }
 
+    public async Task DeleteByEmployeeIdAsync(string employeeId, CancellationToken cancellationToken = default)
+    {
+      // Hard-delete: raw logs are transient data with no audit requirement after employee removal.
+      var filter = Builders<RawAttendanceLog>.Filter.Eq(x => x.EmployeeId, employeeId);
+      if (_context.Session != null)
+        await _collection.DeleteManyAsync(_context.Session, filter, cancellationToken: cancellationToken);
+      else
+        await _collection.DeleteManyAsync(filter, cancellationToken: cancellationToken);
+    }
+
     public async Task MarkAsProcessedAsync(string id, CancellationToken cancellationToken = default)
     {
       var update = Builders<RawAttendanceLog>.Update

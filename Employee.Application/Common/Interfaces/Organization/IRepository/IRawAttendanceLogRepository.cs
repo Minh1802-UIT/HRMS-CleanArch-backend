@@ -19,5 +19,8 @@ namespace Employee.Application.Common.Interfaces.Organization.IRepository
 
     Task MarkAsErrorAsync(string id, string error, CancellationToken cancellationToken = default);
     Task<RawAttendanceLog?> GetLatestLogAsync(string employeeId, CancellationToken cancellationToken = default);
+
+    /// <summary>Soft-deletes all raw logs for an employee (used during employee deletion cleanup).</summary>
+    Task DeleteByEmployeeIdAsync(string employeeId, CancellationToken cancellationToken = default);
   }
 }
