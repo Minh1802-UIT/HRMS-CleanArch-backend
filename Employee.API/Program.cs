@@ -108,6 +108,7 @@ builder.Services.AddEmailService(builder.Configuration, builder.Environment.IsDe
 // 1.4. Core Services (Http, User, Exception)
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUser, CurrentUserService>();
+builder.Services.AddScoped<Employee.Application.Common.Interfaces.ICorrelationIdProvider, Employee.API.Services.CorrelationIdProvider>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 builder.Services.ConfigureMongoDbIdentity<ApplicationUser, ApplicationRole, Guid>(mongoConfig);

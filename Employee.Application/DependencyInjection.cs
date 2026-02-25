@@ -30,6 +30,9 @@ namespace Employee.Application
       services.AddMediatR(cfg =>
       {
         cfg.RegisterServicesFromAssembly(assembly);
+        // Pipeline order (outermost → innermost → handler):
+        //   LoggingBehavior  →  ValidationBehavior  →  Handler
+        cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
         cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
       });
 

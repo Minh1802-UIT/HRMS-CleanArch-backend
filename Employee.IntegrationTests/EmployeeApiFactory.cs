@@ -70,11 +70,11 @@ public class EmployeeApiFactory : WebApplicationFactory<Program>
       MockIdentity.Setup(x => x.RefreshTokenAsync(It.IsAny<string>(), "valid-refresh-token"))
                   .ReturnsAsync(new LoginResponseDto
                   {
-                    AccessToken  = "new-access-token",
+                    AccessToken = "new-access-token",
                     RefreshToken = "new-refresh-token",
-                    TokenType    = "Bearer",
-                    ExpiresIn    = 3600,
-                    User         = new UserDto { Username = "testuser", Email = "test@test.com" }
+                    TokenType = "Bearer",
+                    ExpiresIn = 3600,
+                    User = new UserDto { Username = "testuser", Email = "test@test.com" }
                   });
 
       // Default: RefreshTokenAsync with "revoked-refresh-token" simulates reuse detection
