@@ -28,14 +28,17 @@ namespace Employee.API.Endpoints.Leave
 
       // 3. Tạo đơn (Có Validate đầu vào)
       group.MapPost("/", LeaveRequestHandlers.Create)
-           .AddEndpointFilter<ValidationFilter<CreateLeaveRequestDto>>();
+           .AddEndpointFilter<ValidationFilter<CreateLeaveRequestDto>>()
+           .RequireRateLimiting("write");   // 30 mutations/min per user
 
       // 4. Sửa đơn
       group.MapPut("/{id}", LeaveRequestHandlers.Update)
-           .AddEndpointFilter<ValidationFilter<UpdateLeaveRequestDto>>();
+           .AddEndpointFilter<ValidationFilter<UpdateLeaveRequestDto>>()
+           .RequireRateLimiting("write");
 
       // 5. Hủy đơn
-      group.MapPut("/{id}/cancel", LeaveRequestHandlers.Cancel);
+      group.MapPut("/{id}/cancel", LeaveRequestHandlers.Cancel)
+           .RequireRateLimiting("write");
 
 
       // -----------------------------------------------------------

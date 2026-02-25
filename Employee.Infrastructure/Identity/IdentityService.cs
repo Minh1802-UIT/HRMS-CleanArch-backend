@@ -253,7 +253,7 @@ namespace Employee.Infrastructure.Identity
       var token = _tokenService.GenerateJwtToken(user.Id.ToString(), user.Email ?? "", user.FullName, roles, user.EmployeeId);
 
       var rawRefreshToken = _tokenService.GenerateRefreshToken();
-      var familyId        = Guid.NewGuid().ToString();
+      var familyId = Guid.NewGuid().ToString();
 
       // Revoke all previous sessions on new login (single-session-per-login policy).
       user.RefreshTokens.ForEach(t => t.IsRevoked = true);
@@ -262,8 +262,8 @@ namespace Employee.Infrastructure.Identity
       user.RefreshTokens.Add(new Employee.Infrastructure.Identity.Models.RefreshTokenEntry
       {
         TokenHash = _tokenService.HashToken(rawRefreshToken),
-        FamilyId  = familyId,
-        IssuedAt  = DateTime.UtcNow,
+        FamilyId = familyId,
+        IssuedAt = DateTime.UtcNow,
         ExpiresAt = DateTime.UtcNow.AddDays(7),
         IsRevoked = false
       });
@@ -324,15 +324,15 @@ namespace Employee.Infrastructure.Identity
       user.RefreshTokens.Add(new Employee.Infrastructure.Identity.Models.RefreshTokenEntry
       {
         TokenHash = _tokenService.HashToken(newRawToken),
-        FamilyId  = entry.FamilyId,   // same family keeps the reuse-detection chain intact
-        IssuedAt  = DateTime.UtcNow,
+        FamilyId = entry.FamilyId,   // same family keeps the reuse-detection chain intact
+        IssuedAt = DateTime.UtcNow,
         ExpiresAt = DateTime.UtcNow.AddDays(7),
         IsRevoked = false
       });
 
       PruneRefreshTokens(user);
 
-      var roles          = await _userManager.GetRolesAsync(user);
+      var roles = await _userManager.GetRolesAsync(user);
       var newAccessToken = _tokenService.GenerateJwtToken(
           user.Id.ToString(), user.Email ?? "", user.FullName, roles, user.EmployeeId);
 
@@ -340,10 +340,10 @@ namespace Employee.Infrastructure.Identity
 
       return new LoginResponseDto
       {
-        AccessToken  = newAccessToken,
+        AccessToken = newAccessToken,
         RefreshToken = newRawToken,
-        ExpiresIn    = int.Parse(_config["JwtSettings:DurationInMinutes"] ?? "60") * 60,
-        User         = MapToUserDto(user, roles)
+        ExpiresIn = int.Parse(_config["JwtSettings:DurationInMinutes"] ?? "60") * 60,
+        User = MapToUserDto(user, roles)
       };
     }
 

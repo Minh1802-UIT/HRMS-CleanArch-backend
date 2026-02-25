@@ -14,10 +14,12 @@ namespace Employee.API.Endpoints.Attendance
 
       // 1. Chấm công (User dùng hàng ngày)
       group.MapPost("/check-in", AttendanceHandlers.CheckIn)
-           .AddEndpointFilter<ValidationFilter<CheckInRequestDto>>();
+           .AddEndpointFilter<ValidationFilter<CheckInRequestDto>>()
+           .RequireRateLimiting("checkin");   // 10 events/hour per user
 
       group.MapPost("/check-out", AttendanceHandlers.CheckOut)
-           .AddEndpointFilter<ValidationFilter<CheckInRequestDto>>();
+           .AddEndpointFilter<ValidationFilter<CheckInRequestDto>>()
+           .RequireRateLimiting("checkin");   // shared bucket with check-in
 
       // 2. Xem công của mình
       group.MapGet("/me/range", AttendanceHandlers.GetMyRange);

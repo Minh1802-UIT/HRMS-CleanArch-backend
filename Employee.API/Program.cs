@@ -23,6 +23,7 @@ using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
 
+using System.Security.Claims;
 using Serilog;
 
 MongoClassMapConfig.Configure();
@@ -175,25 +176,159 @@ builder.Services.AddCors(options =>
   });
 });
 
-// N1-FIX: Rate Limiting
+// N1-FIX (v2): Real per-IP / per-user rate limiting via PartitionedRateLimiter
+// ─────────────────────────────────────────────────────────────────────────────
+// Previous implementation used AddFixedWindowLimiter which creates a SINGLE global
+// counter shared by all traffic.  PartitionedRateLimiter partitions by user-ID
+// (authenticated) or remote-IP (anonymous/public) so each principal gets their own
+// independent bucket — true per-user AND per-IP enforcement.
+// ─────────────────────────────────────────────────────────────────────────────
 builder.Services.AddRateLimiter(options =>
 {
   options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
 
-  // Auth endpoints: 10 requests per minute per IP
-  options.AddFixedWindowLimiter("auth", opt =>
+  // Return a proper ApiResponse<T> JSON body + Retry-After header on every 429
+  options.OnRejected = async (context, token) =>
   {
-    opt.PermitLimit = builder.Environment.IsEnvironment("Testing") ? 1000 : 10;
-    opt.Window = TimeSpan.FromMinutes(1);
-    opt.QueueLimit = 0;
+    context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+    context.HttpContext.Response.ContentType = "application/json";
+
+    if (context.Lease.TryGetMetadata(MetadataName.RetryAfter, out var retryAfter))
+      context.HttpContext.Response.Headers["Retry-After"] =
+          ((int)retryAfter.TotalSeconds).ToString();
+
+    await context.HttpContext.Response.WriteAsJsonAsync(
+        new
+        {
+          succeeded  = false,
+          errorCode  = "RATE_LIMIT_EXCEEDED",
+          message    = "Too many requests. Please slow down and try again.",
+          data       = (object?)null,
+          errors     = (List<string>?)null
+        }, token);
+  };
+
+  var isTesting = builder.Environment.IsEnvironment("Testing");
+
+  // Helper so partition key always falls back to a non-null string
+  static string Ip(HttpContext ctx) =>
+      ctx.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+
+  static string? UserId(HttpContext ctx) =>
+      ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
+
+  // ── 1. AUTH ─────────────────────────────────────────────────────────────
+  // Public endpoints (login, refresh-token): always partition by IP.
+  // 5 attempts / minute / IP  — blocks password-spray / credential-stuffing.
+  options.AddPolicy("auth", ctx =>
+      RateLimitPartition.GetFixedWindowLimiter(
+          partitionKey: $"auth:ip:{Ip(ctx)}",
+          factory: _ => new FixedWindowRateLimiterOptions
+          {
+            PermitLimit = isTesting ? 1000 : 5,
+            Window      = TimeSpan.FromMinutes(1),
+            QueueLimit  = 0
+          }));
+
+  // ── 2. CHECK-IN / CHECK-OUT ─────────────────────────────────────────────
+  // Attendance endpoint hit once-twice a day per employee.
+  // Authenticated → per-user  : 10 events / hour (generous: covers manual corrections)
+  // Anonymous    → per-IP     : 5  events / hour (should never happen — endpoint requires auth)
+  options.AddPolicy("checkin", ctx =>
+  {
+    var uid = UserId(ctx);
+    return !string.IsNullOrEmpty(uid)
+        ? RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"checkin:user:{uid}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+              PermitLimit = isTesting ? 1000 : 10,
+              Window      = TimeSpan.FromHours(1),
+              QueueLimit  = 0
+            })
+        : RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"checkin:ip:{Ip(ctx)}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+              PermitLimit = isTesting ? 1000 : 5,
+              Window      = TimeSpan.FromHours(1),
+              QueueLimit  = 0
+            });
   });
 
-  // General API: 100 requests per minute per IP
-  options.AddFixedWindowLimiter("general", opt =>
+  // ── 3. FILE UPLOAD ──────────────────────────────────────────────────────
+  // Authenticated → per-user  : 20 uploads / hour
+  // Anonymous    → per-IP     : 5  uploads / hour
+  options.AddPolicy("file-upload", ctx =>
   {
-    opt.PermitLimit = builder.Environment.IsEnvironment("Testing") ? 1000 : 100;
-    opt.Window = TimeSpan.FromMinutes(1);
-    opt.QueueLimit = 5;
+    var uid = UserId(ctx);
+    return !string.IsNullOrEmpty(uid)
+        ? RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"file:user:{uid}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+              PermitLimit = isTesting ? 1000 : 20,
+              Window      = TimeSpan.FromHours(1),
+              QueueLimit  = 0
+            })
+        : RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"file:ip:{Ip(ctx)}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+              PermitLimit = isTesting ? 1000 : 5,
+              Window      = TimeSpan.FromHours(1),
+              QueueLimit  = 0
+            });
+  });
+
+  // ── 4. WRITE (leave requests, HR mutations) ─────────────────────────────
+  // Authenticated → per-user  : 30 mutations / minute
+  // Anonymous    → per-IP     : 10 mutations / minute
+  options.AddPolicy("write", ctx =>
+  {
+    var uid = UserId(ctx);
+    return !string.IsNullOrEmpty(uid)
+        ? RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"write:user:{uid}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+              PermitLimit = isTesting ? 1000 : 30,
+              Window      = TimeSpan.FromMinutes(1),
+              QueueLimit  = 0
+            })
+        : RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"write:ip:{Ip(ctx)}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+              PermitLimit = isTesting ? 1000 : 10,
+              Window      = TimeSpan.FromMinutes(1),
+              QueueLimit  = 0
+            });
+  });
+
+  // ── 5. GENERAL (catch-all for every other API route) ────────────────────
+  // Authenticated → per-user  : 200 req / minute  (covers normal SPA polling)
+  // Anonymous    → per-IP     : 60  req / minute
+  options.AddPolicy("general", ctx =>
+  {
+    var uid = UserId(ctx);
+    return !string.IsNullOrEmpty(uid)
+        ? RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"general:user:{uid}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+              PermitLimit = isTesting ? 1000 : 200,
+              Window      = TimeSpan.FromMinutes(1),
+              QueueLimit  = 10
+            })
+        : RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: $"general:ip:{Ip(ctx)}",
+            factory: _ => new FixedWindowRateLimiterOptions
+            {
+              PermitLimit = isTesting ? 1000 : 60,
+              Window      = TimeSpan.FromMinutes(1),
+              QueueLimit  = 5
+            });
   });
 });
 
