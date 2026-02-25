@@ -1,0 +1,79 @@
+## .NET Build Output
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+## Publish output
+publish/
+out/
+
+## Logs
+logs/
+*.log
+
+## Build error / test results artifacts (generated during development, not committed)
+build_errors*.txt
+build_errors*.log
+build_output*.txt
+build_output*.log
+build_simple*.txt
+build_solution*.log
+build_solution*.txt
+errors_clean*.txt
+failure_detail*.txt
+integration_test_results*.txt
+interview_test_results*.txt
+msbuild.log
+test_build_errors*.txt
+test_errors_clean*.txt
+test_errors_final*.log
+test_output*.txt
+test_results*.txt
+unit_test_build*.txt
+unit_test_errors*.log
+unit_test_results*.txt
+build.log
+build_errors.txt
+build_errors_2.txt
+build_errors_3.txt
+build_errors_4.txt
+build_errors_5.txt
+build_errors_6.txt
+build_errors_7.txt
+
+## Rider / ReSharper
+.idea/
+*.DotSettings.user
+
+## Docker dev overrides (keep yaml files but exclude generated secrets)
+docker-compose.override.yml
+# Runtime secrets — copy .env.example → .env and fill in real values
+.env
+.env.*
+!.env.example
+
+## Production / Staging appsettings — NEVER commit these (contain real secrets)
+appsettings.Production.json
+appsettings.Staging.json
+appsettings.Local.json
+
+## NuGet
+*.nupkg
+.nuget/
+
+## User Secrets are stored outside the repo (~/.microsoft/usersecrets/)
+# Never commit secrets.json
+secrets.json
+
+## Test coverage
+coverage/
+*.coveragexml
+TestResults/
+lcov.info
+
+## OS
+.DS_Store
+Thumbs.db
+desktop.ini

@@ -1,0 +1,104 @@
+# ============================================================
+# CI Pipeline — Backend (.NET 8)
+# Triggered on: push/PR to main|develop, OR called by cd.yml
+# ============================================================
+
+name: CI - Backend
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - '**.cs'
+      - '**.csproj'
+      - '**.sln'
+      - '.github/workflows/ci.yml'
+  pull_request:
+    branches: [main, develop]
+  workflow_call:        # ← allows cd.yml to gate on this workflow
+    outputs:
+      image-tag:
+        description: "Short SHA for Docker image tagging"
+        value: ${{ jobs.build-and-test.outputs.image-tag }}
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  SOLUTION_FILE: 'EmployeeCleanArch.sln'
+
+jobs:
+  build-and-test:
+    name: Build & Test (.NET 8)
+    runs-on: ubuntu-latest
+    outputs:
+      image-tag: ${{ steps.sha.outputs.short }}
+
+    steps:
+      # ── 1. Checkout ────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Setup .NET ──────────────────────────────────────────
+      - name: Setup .NET ${{ env.DOTNET_VERSION }}
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      # ── 3. Cache NuGet ─────────────────────────────────────────
+      - name: Cache NuGet
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: ${{ runner.os }}-nuget-
+
+      # ── 4. Restore & Build ─────────────────────────────────────
+      - name: Restore
+        run: dotnet restore ${{ env.SOLUTION_FILE }}
+
+      - name: Build
+        run: dotnet build ${{ env.SOLUTION_FILE }} --no-restore --configuration Release
+
+      # ── 5. Unit Tests + Coverage ───────────────────────────────
+      - name: Unit Tests
+        run: |
+          dotnet test Employee.UnitTests/Employee.UnitTests.csproj \
+            --no-build --configuration Release \
+            --collect:"XPlat Code Coverage" \
+            --results-directory ./TestResults \
+            --logger "trx;LogFileName=unit-tests.trx" \
+            --verbosity normal
+
+      # ── 6. Integration Tests (mock factory, no external services) ──
+      - name: Integration Tests
+        run: |
+          dotnet test Employee.IntegrationTests/Employee.IntegrationTests.csproj \
+            --no-build --configuration Release \
+            --results-directory ./TestResults \
+            --logger "trx;LogFileName=integration-tests.trx" \
+            --verbosity normal
+        env:
+          ASPNETCORE_ENVIRONMENT: Testing
+
+      # ── 7. Upload test results ─────────────────────────────────
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-results
+          path: '**/TestResults/*.trx'
+          retention-days: 14
+
+      # ── 8. Publish test report in PR ───────────────────────────
+      - name: Test Report
+        uses: dorny/test-reporter@v1
+        if: always()
+        with:
+          name: Backend Tests
+          path: '**/TestResults/*.trx'
+          reporter: dotnet-trx
+          fail-on-error: true
+
+      # ── 9. Emit short SHA for downstream jobs ──────────────────
+      - name: Emit short SHA
+        id: sha
+        run: echo "short=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT

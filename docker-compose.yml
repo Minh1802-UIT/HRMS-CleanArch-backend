@@ -1,0 +1,86 @@
+version: "3.8"
+
+services:
+  # 1. Database Service (MongoDB)
+  app_db:
+    image: mongo:7
+    container_name: employee_mongo_db
+    restart: always
+    # NOT exposing port 27017 externally — only accessible within the Docker network.
+    # To access MongoDB locally during development: docker exec -it employee_mongo_db mongosh
+    expose:
+      - "27017"
+    environment:
+      # Credentials are loaded from a .env file (see .env.example). Never hardcode secrets here.
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - employee_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping').ok", "--quiet"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # 2. Backend Service (.NET API)
+  app_backend:
+    container_name: employee_api
+    build:
+      context: .
+      dockerfile: Employee.API/Dockerfile
+    restart: on-failure
+    ports:
+      - "5000:8080" # Map port 5000 của máy Host vào port 8080 của Container
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      # Credentials are loaded from a .env file (see .env.example). Never hardcode secrets here.
+      - EmployeeDatabaseSettings__ConnectionString=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@app_db:27017
+      - EmployeeDatabaseSettings__DatabaseName=EmployeeCleanDB
+      - RedisSettings__ConnectionString=app_cache:6379
+      # JWT key must be at least 32 characters. Set in .env – do NOT commit the real key.
+      - JwtSettings__Key=${JWT_SECRET_KEY}
+      - JwtSettings__Issuer=EmployeeAPI
+      - JwtSettings__Audience=EmployeeClient
+    depends_on:
+      app_db:
+        condition: service_healthy
+    networks:
+      - employee_network
+
+  # 3. Redis Caching Service
+  app_cache:
+    image: redis:alpine
+    container_name: employee_redis_cache
+    restart: always
+    # NOT exposing Redis externally — only accessible within the Docker network.
+    expose:
+      - "6379"
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}"]
+    networks:
+      - employee_network
+
+  # 4. Frontend Service (Angular via nginx)
+  app_frontend:
+    container_name: employee_nginx
+    build:
+      context: ../HRMS-UI
+      dockerfile: Dockerfile
+    restart: on-failure
+    ports:
+      - "80:80"       # HTTP — put nginx/SSL terminator in front for production
+    depends_on:
+      app_backend:
+        condition: service_started
+    networks:
+      - employee_network
+
+# Define Volumes & Networks
+volumes:
+  mongo_data:
+
+networks:
+  employee_network:
+    driver: bridge

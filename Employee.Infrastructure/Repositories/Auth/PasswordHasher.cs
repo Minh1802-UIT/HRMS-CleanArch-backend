@@ -1,0 +1,10 @@
+﻿using Employee.Application.Common.Interfaces;
+
+namespace Employee.Infrastructure.Repositories.Auth // Lưu ý namespace
+{
+    public class PasswordHasher : IPasswordHasher
+    {
+        public string Hash(string password) => BCrypt.Net.BCrypt.HashPassword(password);
+        public bool Verify(string password, string hash) => BCrypt.Net.BCrypt.Verify(password, hash);
+    }
+}

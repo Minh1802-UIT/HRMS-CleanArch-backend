@@ -1,0 +1,193 @@
+﻿using Xunit;
+using Moq;
+using Employee.Application.Services;
+using Employee.Application.Interfaces;
+using Employee.Application.Dtos;
+using Employee.Domain.Entities;
+using Employee.Application.Exceptions;
+using Employee.Application.Constants;
+
+namespace Employee.UnitTests
+{
+    public class EmployeeServiceTests
+    {
+        // Mock Repository
+        private readonly Mock<IEmployeeRepository> _mockRepo; // Hoặc IRepository<Employee> tùy code bạn
+        private readonly EmployeeService _service;
+
+        public EmployeeServiceTests()
+        {
+            _mockRepo = new Mock<IEmployeeRepository>();
+            // Khởi tạo Service thật với Repo giả
+            _service = new EmployeeService(_mockRepo.Object);
+        }
+
+        // TEST 1: Tạo nhân viên mới
+        [Fact]
+        public async Task Create_ShouldCallAddAsync_WhenDataIsValid()
+        {
+            // --- ARRANGE ---
+            var dto = new CreateEmployeeDto
+            {
+                Name = "John Doe",
+                Salary = 1000,
+                Code = "NV01"
+            };
+
+            // --- ACT ---
+            await _service.CreateAsync(dto);
+
+            // --- ASSERT ---
+            // Kiểm tra xem hàm AddAsync của Repo có được gọi 1 lần không?
+            // Và kiểm tra xem dữ liệu truyền vào có đúng tên "John Doe" không?
+            _mockRepo.Verify(r => r.CreateAsync(It.Is<Domain.Entities.Employee>(e => e.Name == "John Doe" && e.Salary == 1000)), Times.Once);
+        }
+
+        // TEST 2: Lấy tất cả nhân viên
+        [Fact]
+        public async Task GetAll_ShouldReturnList_WhenCalled()
+        {
+            // --- ARRANGE ---
+            // Giả lập trong DB đang có 2 nhân viên
+            var fakeList = new List<Domain.Entities.Employee>
+        {
+            new Domain.Entities.Employee { Id = "1", Name = "A" },
+            new Domain.Entities.Employee { Id = "2", Name = "B" }
+        };
+
+            _mockRepo.Setup(x => x.GetAllAsync(It.IsAny<EmployeeFilterDto>())).ReturnsAsync((fakeList, 2));
+
+            // --- ACT ---
+            var filter = new EmployeeFilterDto { PageIndex = 1 , PageSize = 10};
+            var result = await _service.GetAllAsync(filter);
+
+            // --- ASSERT ---
+            Assert.NotNull(result);
+            Assert.Equal(2, result.Data.Count()); // Phải trả về đúng 2 người
+            Assert.Equal("A", result.Data.First().Name);
+        }
+
+        // TEST 3: Xóa nhân viên thành công
+        [Fact]
+        public async Task Delete_ShouldCallDeleteAsync_WhenIdExists()
+        {
+            // --- ARRANGE ---
+            var empId = "valid_id";
+            var existingEmp = new Domain.Entities.Employee { Id = empId };
+
+            // Giả lập là tìm thấy nhân viên này trong DB
+            _mockRepo.Setup(x => x.GetByIdAsync(empId)).ReturnsAsync(existingEmp);
+
+            // --- ACT ---
+            await _service.DeleteAsync(empId);
+
+            // --- ASSERT ---
+            // Kiểm tra xem hàm DeleteAsync có được gọi không
+            _mockRepo.Verify(x => x.DeleteAsync(empId), Times.Once);
+        }
+
+        // TEST 4: Xóa nhân viên thất bại (Không tìm thấy ID)
+        [Fact]
+        public async Task Delete_ShouldThrowException_WhenIdNotFound()
+        {
+            // --- ARRANGE ---
+            var empId = "invalid_id";
+
+            // Giả lập tìm không thấy (trả về null)
+            _mockRepo.Setup(x => x.GetByIdAsync(empId)).ReturnsAsync((Domain.Entities.Employee?)null);
+
+            // --- ACT & ASSERT ---
+            // Mong đợi ném lỗi KeyNotFound hoặc Exception tùy logic của bạn
+            await Assert.ThrowsAsync<BusinessRuleViolationException>(() => _service.DeleteAsync(empId));
+
+            // Đảm bảo KHÔNG bao giờ gọi lệnh xóa thật
+            _mockRepo.Verify(x => x.DeleteAsync(It.IsAny<string>()), Times.Never);
+        }
+
+        // TEST 5: Lấy chi tiết nhân viên thành công
+        [Fact]
+        public async Task GetById_ShouldReturnData_WhenIdExists()
+        {
+            // --- ARRANGE ---
+            var empId = "valid_id_123";
+            var mockEmp = new Domain.Entities.Employee { Id = empId, Name = "Test User" };
+
+            // Dạy Mock: Tìm ID này thì trả về object trên
+            _mockRepo.Setup(x => x.GetByIdAsync(empId)).ReturnsAsync(mockEmp);
+
+            // --- ACT ---
+            var result = await _service.GetByIdAsync(empId);
+
+            // --- ASSERT ---
+            Assert.NotNull(result);
+            Assert.Equal("Test User", result.Name);
+        }
+
+        // TEST 6: Lấy chi tiết thất bại (Không tìm thấy)
+        [Fact]
+        public async Task GetById_ShouldThrowException_WhenIdNotFound()
+        {
+            // --- ARRANGE ---
+            var empId = "ghost_id";
+            _mockRepo.Setup(x => x.GetByIdAsync(empId)).ReturnsAsync((Domain.Entities.Employee?)null);
+
+            // --- ACT & ASSERT ---
+            // Giả sử logic của bạn là không thấy thì báo lỗi "Không tìm thấy nhân viên"
+            // (Lưu ý: Nếu code Service của bạn chỉ trả về null thì sửa Assert.ThrowsAsync thành Assert.Null(result))
+            var exception = await Assert.ThrowsAsync<Employee.Application.Exceptions.BusinessRuleViolationException>(
+                () => _service.GetByIdAsync(empId)
+            );
+
+            var expectedMsg = string.Format(DevMessages.Employee.NotFoundWithId, empId);
+
+            Assert.Contains(expectedMsg, exception.Message);
+        }
+
+        // TEST 7: Cập nhật thành công
+        [Fact]
+        public async Task Update_ShouldCallRepo_WhenUserExists()
+        {
+            // --- ARRANGE ---
+            var empId = "emp_01";
+            var updateDto = new UpdateEmployeeDto
+            {
+                Name = "New Name",
+                Salary = 5000
+            };
+
+            // Bước quan trọng: Phải giả lập là nhân viên CÓ TỒN TẠI trong DB trước
+            var existingEmp = new Domain.Entities.Employee { Id = empId, Name = "Old Name" };
+            _mockRepo.Setup(x => x.GetByIdAsync(empId)).ReturnsAsync(existingEmp);
+
+            // --- ACT ---
+            await _service.UpdateAsync(empId, updateDto);
+
+            // --- ASSERT ---
+            // Kiểm tra xem hàm UpdateAsync của Repo có được gọi với dữ liệu mới không?
+            _mockRepo.Verify(r => r.UpdateAsync(
+                empId,
+                It.Is<Domain.Entities.Employee>(e => e.Name == "New Name" && e.Salary == 5000)
+            ), Times.Once);
+        }
+
+        // TEST 8: Cập nhật thất bại (User không tồn tại)
+        [Fact]
+        public async Task Update_ShouldThrowException_WhenIdNotFound()
+        {
+            // --- ARRANGE ---
+            var empId = "ghost_id";
+            var updateDto = new UpdateEmployeeDto { Name = "New Name" };
+
+            // Giả lập tìm không ra (trả về null)
+            _mockRepo.Setup(x => x.GetByIdAsync(empId)).ReturnsAsync((Domain.Entities.Employee?)null);
+
+            // --- ACT & ASSERT ---
+            await Assert.ThrowsAsync<Employee.Application.Exceptions.BusinessRuleViolationException>(
+                () => _service.UpdateAsync(empId, updateDto)
+            );
+
+            // Đảm bảo KHÔNG BAO GIỜ gọi hàm update vào DB
+            _mockRepo.Verify(r => r.UpdateAsync(It.IsAny<string>(), It.IsAny<Domain.Entities.Employee>()), Times.Never);
+        }
+    }
+}
