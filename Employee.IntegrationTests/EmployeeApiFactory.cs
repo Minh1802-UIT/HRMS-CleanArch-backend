@@ -18,6 +18,12 @@ namespace Employee.IntegrationTests;
 /// </summary>
 public class EmployeeApiFactory : WebApplicationFactory<Program>
 {
+  /// <summary>
+  /// Exposes the mocked IIdentityService so individual test classes
+  /// can add extra .Setup() calls for their specific scenarios.
+  /// </summary>
+  public Mock<IIdentityService> MockIdentity { get; } = new Mock<IIdentityService>();
+
   protected override void ConfigureWebHost(IWebHostBuilder builder)
   {
     builder.UseEnvironment("Testing");
@@ -52,14 +58,30 @@ public class EmployeeApiFactory : WebApplicationFactory<Program>
       // Remove background services (they need real MongoDB)
       services.RemoveAll<IHostedService>();
 
-      // Mock Identity Service to avoid MongoDB dependency in Auth Tests
-      var mockIdentity = new Moq.Mock<IIdentityService>();
-
       // Setup default behavior for "invalid credentials" test
-      mockIdentity.Setup(x => x.LoginAsync("nonexistent@test.com", "WrongPassword123"))
+      MockIdentity.Setup(x => x.LoginAsync("nonexistent@test.com", "WrongPassword123"))
                   .ThrowsAsync(new UnauthorizedAccessException("Invalid credentials"));
 
-      services.Replace(ServiceDescriptor.Scoped(_ => mockIdentity.Object));
+      // Default: RevokeAllRefreshTokensAsync succeeds silently (used by Logout handler)
+      MockIdentity.Setup(x => x.RevokeAllRefreshTokensAsync(It.IsAny<string>()))
+                  .Returns(Task.CompletedTask);
+
+      // Default: RefreshTokenAsync with "valid-refresh-token" returns a rotated token
+      MockIdentity.Setup(x => x.RefreshTokenAsync(It.IsAny<string>(), "valid-refresh-token"))
+                  .ReturnsAsync(new LoginResponseDto
+                  {
+                    AccessToken  = "new-access-token",
+                    RefreshToken = "new-refresh-token",
+                    TokenType    = "Bearer",
+                    ExpiresIn    = 3600,
+                    User         = new UserDto { Username = "testuser", Email = "test@test.com" }
+                  });
+
+      // Default: RefreshTokenAsync with "revoked-refresh-token" simulates reuse detection
+      MockIdentity.Setup(x => x.RefreshTokenAsync(It.IsAny<string>(), "revoked-refresh-token"))
+                  .ThrowsAsync(new UnauthorizedAccessException("Token reuse detected — all sessions have been revoked."));
+
+      services.Replace(ServiceDescriptor.Scoped(_ => MockIdentity.Object));
     });
   }
 }

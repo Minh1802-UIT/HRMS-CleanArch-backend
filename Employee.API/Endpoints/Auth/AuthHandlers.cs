@@ -59,9 +59,9 @@ namespace Employee.API.Endpoints.Auth
       return ResultUtils.Success(new LoginSuccessDto
       {
         AccessToken = result.AccessToken,
-        TokenType   = result.TokenType,
-        ExpiresIn   = result.ExpiresIn,
-        User        = result.User
+        TokenType = result.TokenType,
+        ExpiresIn = result.ExpiresIn,
+        User = result.User
       }, "Login successfully.");
     }
 
@@ -157,8 +157,8 @@ namespace Employee.API.Endpoints.Auth
       return ResultUtils.Success(new RefreshSuccessDto
       {
         AccessToken = result.AccessToken,
-        TokenType   = result.TokenType,
-        ExpiresIn   = result.ExpiresIn
+        TokenType = result.TokenType,
+        ExpiresIn = result.ExpiresIn
       }, "Token refreshed successfully.");
     }
 
