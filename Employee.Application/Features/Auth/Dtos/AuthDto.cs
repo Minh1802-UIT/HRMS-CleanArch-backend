@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace Employee.Application.Features.Auth.Dtos
 {
@@ -89,6 +90,41 @@ namespace Employee.Application.Features.Auth.Dtos
     public int ExpiresIn { get; set; }
 
     public UserDto User { get; set; } = new();
+  }
+
+  /// <summary>
+  /// The EXACT shape returned to the client from POST /api/auth/login.
+  /// RefreshToken is intentionally excluded — it lives in an httpOnly cookie only.
+  /// Using [JsonPropertyName] guarantees camelCase regardless of serializer settings.
+  /// </summary>
+  public class LoginSuccessDto
+  {
+    [JsonPropertyName("accessToken")]
+    public string AccessToken { get; set; } = string.Empty;
+
+    [JsonPropertyName("tokenType")]
+    public string TokenType { get; set; } = "Bearer";
+
+    [JsonPropertyName("expiresIn")]
+    public int ExpiresIn { get; set; }
+
+    [JsonPropertyName("user")]
+    public UserDto User { get; set; } = new();
+  }
+
+  /// <summary>
+  /// The EXACT shape returned to the client from POST /api/auth/refresh-token.
+  /// </summary>
+  public class RefreshSuccessDto
+  {
+    [JsonPropertyName("accessToken")]
+    public string AccessToken { get; set; } = string.Empty;
+
+    [JsonPropertyName("tokenType")]
+    public string TokenType { get; set; } = "Bearer";
+
+    [JsonPropertyName("expiresIn")]
+    public int ExpiresIn { get; set; }
   }
 
   // NEW-3: Forgot Password

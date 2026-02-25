@@ -55,13 +55,13 @@ namespace Employee.API.Endpoints.Auth
         Path = "/"
       });
 
-      // Return access token + user info (no refresh token in body)
-      return ResultUtils.Success(new
+      // Return a fixed typed contract — no anonymous objects, no guessing on the client.
+      return ResultUtils.Success(new LoginSuccessDto
       {
-        accessToken = result.AccessToken,
-        tokenType = result.TokenType,
-        expiresIn = result.ExpiresIn,
-        user = result.User
+        AccessToken = result.AccessToken,
+        TokenType   = result.TokenType,
+        ExpiresIn   = result.ExpiresIn,
+        User        = result.User
       }, "Login successfully.");
     }
 
@@ -154,11 +154,11 @@ namespace Employee.API.Endpoints.Auth
         Path = "/"
       });
 
-      return ResultUtils.Success(new
+      return ResultUtils.Success(new RefreshSuccessDto
       {
-        accessToken = result.AccessToken,
-        tokenType = result.TokenType,
-        expiresIn = result.ExpiresIn
+        AccessToken = result.AccessToken,
+        TokenType   = result.TokenType,
+        ExpiresIn   = result.ExpiresIn
       }, "Token refreshed successfully.");
     }
 

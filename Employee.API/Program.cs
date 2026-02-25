@@ -200,11 +200,11 @@ builder.Services.AddRateLimiter(options =>
     await context.HttpContext.Response.WriteAsJsonAsync(
         new
         {
-          succeeded  = false,
-          errorCode  = "RATE_LIMIT_EXCEEDED",
-          message    = "Too many requests. Please slow down and try again.",
-          data       = (object?)null,
-          errors     = (List<string>?)null
+          succeeded = false,
+          errorCode = "RATE_LIMIT_EXCEEDED",
+          message = "Too many requests. Please slow down and try again.",
+          data = (object?)null,
+          errors = (List<string>?)null
         }, token);
   };
 
@@ -226,8 +226,8 @@ builder.Services.AddRateLimiter(options =>
           factory: _ => new FixedWindowRateLimiterOptions
           {
             PermitLimit = isTesting ? 1000 : 5,
-            Window      = TimeSpan.FromMinutes(1),
-            QueueLimit  = 0
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
           }));
 
   // ── 2. CHECK-IN / CHECK-OUT ─────────────────────────────────────────────
@@ -243,16 +243,16 @@ builder.Services.AddRateLimiter(options =>
             factory: _ => new FixedWindowRateLimiterOptions
             {
               PermitLimit = isTesting ? 1000 : 10,
-              Window      = TimeSpan.FromHours(1),
-              QueueLimit  = 0
+              Window = TimeSpan.FromHours(1),
+              QueueLimit = 0
             })
         : RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: $"checkin:ip:{Ip(ctx)}",
             factory: _ => new FixedWindowRateLimiterOptions
             {
               PermitLimit = isTesting ? 1000 : 5,
-              Window      = TimeSpan.FromHours(1),
-              QueueLimit  = 0
+              Window = TimeSpan.FromHours(1),
+              QueueLimit = 0
             });
   });
 
@@ -268,16 +268,16 @@ builder.Services.AddRateLimiter(options =>
             factory: _ => new FixedWindowRateLimiterOptions
             {
               PermitLimit = isTesting ? 1000 : 20,
-              Window      = TimeSpan.FromHours(1),
-              QueueLimit  = 0
+              Window = TimeSpan.FromHours(1),
+              QueueLimit = 0
             })
         : RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: $"file:ip:{Ip(ctx)}",
             factory: _ => new FixedWindowRateLimiterOptions
             {
               PermitLimit = isTesting ? 1000 : 5,
-              Window      = TimeSpan.FromHours(1),
-              QueueLimit  = 0
+              Window = TimeSpan.FromHours(1),
+              QueueLimit = 0
             });
   });
 
@@ -293,16 +293,16 @@ builder.Services.AddRateLimiter(options =>
             factory: _ => new FixedWindowRateLimiterOptions
             {
               PermitLimit = isTesting ? 1000 : 30,
-              Window      = TimeSpan.FromMinutes(1),
-              QueueLimit  = 0
+              Window = TimeSpan.FromMinutes(1),
+              QueueLimit = 0
             })
         : RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: $"write:ip:{Ip(ctx)}",
             factory: _ => new FixedWindowRateLimiterOptions
             {
               PermitLimit = isTesting ? 1000 : 10,
-              Window      = TimeSpan.FromMinutes(1),
-              QueueLimit  = 0
+              Window = TimeSpan.FromMinutes(1),
+              QueueLimit = 0
             });
   });
 
@@ -318,16 +318,16 @@ builder.Services.AddRateLimiter(options =>
             factory: _ => new FixedWindowRateLimiterOptions
             {
               PermitLimit = isTesting ? 1000 : 200,
-              Window      = TimeSpan.FromMinutes(1),
-              QueueLimit  = 10
+              Window = TimeSpan.FromMinutes(1),
+              QueueLimit = 10
             })
         : RateLimitPartition.GetFixedWindowLimiter(
             partitionKey: $"general:ip:{Ip(ctx)}",
             factory: _ => new FixedWindowRateLimiterOptions
             {
               PermitLimit = isTesting ? 1000 : 60,
-              Window      = TimeSpan.FromMinutes(1),
-              QueueLimit  = 5
+              Window = TimeSpan.FromMinutes(1),
+              QueueLimit = 5
             });
   });
 });
