@@ -134,11 +134,13 @@ namespace Employee.Application.Features.Attendance.Services
         // --- BƯỚC E: LƯU ---
         bucket.AddOrUpdateDailyLog(dailyLog); // Re-add to ensure recalculated totals
         await _attendanceRepo.UpdateAsync(bucket.Id, bucket);
+
+        // Mark all logs in this group as processed with a single BulkWriteAsync
+        // (replaces the N individual UpdateOneAsync round-trips that were here before).
         foreach (var log in newLogs)
-        {
-          log.MarkAsProcessed();
-          await _rawRepo.MarkAsProcessedAsync(log.Id);
-        }
+          log.MarkAsProcessed(); // domain state update (in-memory only)
+
+        await _rawRepo.MarkManyAsProcessedAsync(newLogs.Select(l => l.Id));
 
         await _unitOfWork.CommitTransactionAsync();
       }

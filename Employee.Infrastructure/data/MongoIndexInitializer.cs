@@ -24,7 +24,22 @@ namespace Employee.Infrastructure.Data
                     new CreateIndexOptions { Background = true }),
                 new CreateIndexModel<EmployeeEntity>(
                     Builders<EmployeeEntity>.IndexKeys.Ascending(x => x.EmployeeCode),
-                    new CreateIndexOptions { Unique = true, Background = true })
+                    new CreateIndexOptions { Unique = true, Background = true }),
+                // NEW: supports default FullName sort in GetPagedListAsync and
+                //      reduces the scan set for GetLookupAsync regex searches.
+                new CreateIndexModel<EmployeeEntity>(
+                    Builders<EmployeeEntity>.IndexKeys
+                        .Ascending(x => x.IsDeleted)
+                        .Ascending(x => x.FullName),
+                    new CreateIndexOptions { Background = true, Name = "idx_employees_isDeleted_fullName" }),
+                // Text index for full-text search on name / code via $text queries.
+                // Note: regex ($regex) queries do NOT use this index; convert to
+                //       $text or use anchored prefix regex to benefit from indexes.
+                new CreateIndexModel<EmployeeEntity>(
+                    Builders<EmployeeEntity>.IndexKeys
+                        .Text(x => x.FullName)
+                        .Text(x => x.EmployeeCode),
+                    new CreateIndexOptions { Background = true, Name = "idx_employees_text" })
             });
 
             // 2. AttendanceBuckets
@@ -57,10 +72,24 @@ namespace Employee.Infrastructure.Data
 
             // 6. Contracts
             var contracts = context.GetCollection<ContractEntity>("contracts");
-            await contracts.Indexes.CreateOneAsync(
+            await contracts.Indexes.CreateManyAsync(new[]
+            {
                 new CreateIndexModel<ContractEntity>(
                     Builders<ContractEntity>.IndexKeys.Ascending(x => x.EmployeeId).Ascending(x => x.IsDeleted).Ascending(x => x.Status),
-                    new CreateIndexOptions { Background = true }));
+                    new CreateIndexOptions { Background = true }),
+                // NEW: supports default StartDate DESC sort in ContractRepository.GetPagedAsync
+                new CreateIndexModel<ContractEntity>(
+                    Builders<ContractEntity>.IndexKeys
+                        .Ascending(x => x.IsDeleted)
+                        .Descending(x => x.StartDate),
+                    new CreateIndexOptions { Background = true, Name = "idx_contracts_isDeleted_startDate_desc" }),
+                // NEW: ContractExpirationBackgroundService queries by Status + EndDate
+                new CreateIndexModel<ContractEntity>(
+                    Builders<ContractEntity>.IndexKeys
+                        .Ascending(x => x.Status)
+                        .Ascending(x => x.EndDate),
+                    new CreateIndexOptions { Background = true, Name = "idx_contracts_status_endDate" })
+            });
 
             // 7. SystemSettings
             var settings = context.GetCollection<SystemSetting>("system_settings");
@@ -71,10 +100,39 @@ namespace Employee.Infrastructure.Data
 
             // 8. AuditLogs
             var auditLogs = context.GetCollection<AuditLog>("audit_logs");
-            await auditLogs.Indexes.CreateOneAsync(
+            await auditLogs.Indexes.CreateManyAsync(new[]
+            {
+                // Existing: base sort for the offset-based paged query
                 new CreateIndexModel<AuditLog>(
                     Builders<AuditLog>.IndexKeys.Descending(x => x.CreatedAt),
-                    new CreateIndexOptions { Background = true }));
+                    new CreateIndexOptions { Background = true }),
+                // NEW: cursor-based sort (CreatedAt DESC, _id DESC) for GetLogsCursorPagedAsync
+                new CreateIndexModel<AuditLog>(
+                    Builders<AuditLog>.IndexKeys
+                        .Descending(x => x.CreatedAt)
+                        .Descending("_id"),
+                    new CreateIndexOptions { Background = true, Name = "idx_auditlogs_createdAt_id_desc" }),
+                // NEW: filter by UserId + sort — avoids full-collection scan when userId is supplied
+                new CreateIndexModel<AuditLog>(
+                    Builders<AuditLog>.IndexKeys
+                        .Ascending(x => x.UserId)
+                        .Descending(x => x.CreatedAt),
+                    new CreateIndexOptions { Background = true, Name = "idx_auditlogs_userId_createdAt" }),
+                // NEW: filter by Action + sort
+                new CreateIndexModel<AuditLog>(
+                    Builders<AuditLog>.IndexKeys
+                        .Ascending(x => x.Action)
+                        .Descending(x => x.CreatedAt),
+                    new CreateIndexOptions { Background = true, Name = "idx_auditlogs_action_createdAt" }),
+                // NEW: text index enables $text search on UserName / TableName / Action.
+                // Tip: replace the current $regex filters with $text for O(log N) search.
+                new CreateIndexModel<AuditLog>(
+                    Builders<AuditLog>.IndexKeys
+                        .Text(x => x.UserName)
+                        .Text(x => x.TableName)
+                        .Text(x => x.Action),
+                    new CreateIndexOptions { Background = true, Name = "idx_auditlogs_text" })
+            });
 
             // 9. Candidates
             var candidates = context.GetCollection<Candidate>("candidates");

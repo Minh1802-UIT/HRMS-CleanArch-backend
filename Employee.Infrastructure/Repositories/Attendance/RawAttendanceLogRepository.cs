@@ -62,6 +62,35 @@ namespace Employee.Infrastructure.Repositories.Attendance
         await _collection.UpdateOneAsync(x => x.Id == id, update, cancellationToken: cancellationToken);
     }
 
+    /// <summary>
+    /// Marks multiple raw logs as processed in a single BulkWriteAsync call,
+    /// reducing N round-trips (one UpdateOne per log) to exactly 1.
+    /// Automatically enrolls in the ambient MongoDB session when one is active.
+    /// </summary>
+    public async Task MarkManyAsProcessedAsync(IEnumerable<string> ids, CancellationToken cancellationToken = default)
+    {
+      var idList = ids.ToList();
+      if (idList.Count == 0) return;
+
+      var now = DateTime.UtcNow;
+      var bulkOps = idList.Select(id =>
+      {
+        var filter = Builders<RawAttendanceLog>.Filter.Eq(x => x.Id, id);
+        var update = Builders<RawAttendanceLog>.Update
+            .Set(x => x.IsProcessed,    true)
+            .Set(x => x.ProcessingError, "DONE")
+            .Set(x => x.UpdatedAt,       now);
+        return (WriteModel<RawAttendanceLog>)new UpdateOneModel<RawAttendanceLog>(filter, update);
+      }).ToList();
+
+      var options = new BulkWriteOptions { IsOrdered = false };
+
+      if (_context.Session != null)
+        await _collection.BulkWriteAsync(_context.Session, bulkOps, options, cancellationToken);
+      else
+        await _collection.BulkWriteAsync(bulkOps, options, cancellationToken);
+    }
+
     public async Task MarkAsErrorAsync(string id, string error, CancellationToken cancellationToken = default)
     {
       var update = Builders<RawAttendanceLog>.Update

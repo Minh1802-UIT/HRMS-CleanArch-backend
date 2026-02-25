@@ -108,6 +108,8 @@ namespace Employee.Infrastructure
       services.AddHostedService<LeaveAccrualBackgroundService>();
       services.AddHostedService<PayrollBackgroundService>();
       services.AddHostedService<ContractExpirationBackgroundService>();
+      // Nightly hard-delete of soft-deleted records older than 90 days
+      services.AddHostedService<SoftDeleteCleanupBackgroundService>();
 
       // ==========================================
       // 9. INFRASTRUCTURE SERVICES

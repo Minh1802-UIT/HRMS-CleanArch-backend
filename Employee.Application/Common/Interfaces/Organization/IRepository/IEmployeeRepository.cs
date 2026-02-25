@@ -1,6 +1,7 @@
 using System.Threading;
 using Employee.Application.Common.Models;
 using Employee.Application.Common.Interfaces.Common;
+using Employee.Application.Features.HumanResource.Dtos;
 using EmployeeEntity = Employee.Domain.Entities.HumanResource.EmployeeEntity;
 
 namespace Employee.Application.Common.Interfaces.Organization.IRepository
@@ -8,6 +9,13 @@ namespace Employee.Application.Common.Interfaces.Organization.IRepository
   public interface IEmployeeRepository : IBaseRepository<EmployeeEntity>
   {
     Task<List<EmployeeEntity>> GetAllIncludingDeletedAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Projection-only paged query for the Employee list page.
+    /// Fetches ~500 bytes/employee instead of ~5 KB by excluding PersonalInfo + BankDetails.
+    /// Also applies SearchTerm (regex on FullName/EmployeeCode) and honours SortBy.
+    /// </summary>
+    Task<PagedResult<EmployeeListSummary>> GetPagedListAsync(PaginationParams pagination, CancellationToken cancellationToken = default);
     Task<bool> ExistsByCodeAsync(string code, CancellationToken cancellationToken = default);
 
     // New: Lookup for dropdowns (search-as-you-type)

@@ -7,10 +7,15 @@ namespace Employee.API.Endpoints.Common
   {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-      app.MapGroup("/api/auditlogs")
+      var group = app.MapGroup("/api/auditlogs")
          .WithTags("Common - Audit Logs")
-         .RequireAuthorization(p => p.RequireRole("Admin"))
-         .MapGet("/", AuditLogHandlers.GetLogs);
+         .RequireAuthorization(p => p.RequireRole("Admin"));
+
+      // Offset-based (backward compat)
+      group.MapGet("/", AuditLogHandlers.GetLogs);
+
+      // Cursor-based (preferred — avoids Skip on 250 K+ docs)
+      group.MapGet("/cursor", AuditLogHandlers.GetLogsCursor);
     }
   }
 }

@@ -31,8 +31,8 @@ namespace Employee.Application.Common.Behaviors
         ICurrentUser currentUser,
         ICorrelationIdProvider correlationIdProvider)
     {
-      _logger               = logger;
-      _currentUser          = currentUser;
+      _logger = logger;
+      _currentUser = currentUser;
       _correlationIdProvider = correlationIdProvider;
     }
 
@@ -41,9 +41,9 @@ namespace Employee.Application.Common.Behaviors
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-      var requestName   = typeof(TRequest).Name;
+      var requestName = typeof(TRequest).Name;
       var correlationId = _correlationIdProvider.GetCorrelationId();
-      var userId        = _currentUser.UserId;
+      var userId = _currentUser.UserId;
 
       // Push structured properties onto the logger scope so every log line
       // emitted from within the handler automatically carries them.
@@ -52,8 +52,8 @@ namespace Employee.Application.Common.Behaviors
       using (_logger.BeginScope(new Dictionary<string, object>
       {
         ["CorrelationId"] = correlationId,
-        ["UserId"]        = userId ?? "anonymous",
-        ["RequestName"]   = requestName
+        ["UserId"] = userId ?? "anonymous",
+        ["RequestName"] = requestName
       }))
       {
         _logger.LogInformation(

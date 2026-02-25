@@ -24,31 +24,33 @@ namespace Employee.Application.Features.HumanResource.Queries.GetEmployeesPaged
 
     public async Task<PagedResult<EmployeeListDto>> Handle(GetEmployeesPagedQuery request, CancellationToken cancellationToken)
     {
-      var pagedEntities = await _repo.GetPagedAsync(request.Pagination, cancellationToken);
+      // Use projection query — transfers only the fields the list page needs
+      // (~500 bytes/employee instead of ~5 KB for a full EmployeeEntity).
+      var pagedSummaries = await _repo.GetPagedListAsync(request.Pagination, cancellationToken);
 
-      var deptIds = pagedEntities.Items.Select(e => e.JobDetails.DepartmentId).Distinct().ToList();
-      var posIds = pagedEntities.Items.Select(e => e.JobDetails.PositionId).Distinct().ToList();
+      var deptIds = pagedSummaries.Items.Select(s => s.DepartmentId).Distinct().ToList();
+      var posIds  = pagedSummaries.Items.Select(s => s.PositionId).Distinct().ToList();
 
-      var depts = await _deptRepo.GetNamesByIdsAsync(deptIds, cancellationToken);
+      var depts     = await _deptRepo.GetNamesByIdsAsync(deptIds, cancellationToken);
       var positions = await _posRepo.GetNamesByIdsAsync(posIds, cancellationToken);
 
-      var dtos = pagedEntities.Items.Select(e => new EmployeeListDto
+      var dtos = pagedSummaries.Items.Select(s => new EmployeeListDto
       {
-        Id = e.Id,
-        EmployeeCode = e.EmployeeCode,
-        FullName = e.FullName,
-        DepartmentName = depts.GetValueOrDefault(e.JobDetails.DepartmentId) ?? "N/A",
-        PositionName = positions.GetValueOrDefault(e.JobDetails.PositionId) ?? "N/A",
-        Status = e.JobDetails.Status.ToString(),
-        AvatarUrl = e.AvatarUrl
+        Id             = s.Id,
+        EmployeeCode   = s.EmployeeCode,
+        FullName       = s.FullName,
+        DepartmentName = depts.GetValueOrDefault(s.DepartmentId)     ?? "N/A",
+        PositionName   = positions.GetValueOrDefault(s.PositionId)   ?? "N/A",
+        Status         = s.Status,
+        AvatarUrl      = s.AvatarUrl
       }).ToList();
 
       return new PagedResult<EmployeeListDto>
       {
-        Items = dtos,
-        TotalCount = pagedEntities.TotalCount,
-        PageNumber = pagedEntities.PageNumber,
-        PageSize = pagedEntities.PageSize
+        Items      = dtos,
+        TotalCount = pagedSummaries.TotalCount,
+        PageNumber = pagedSummaries.PageNumber,
+        PageSize   = pagedSummaries.PageSize
       };
     }
   }

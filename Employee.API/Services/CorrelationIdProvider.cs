@@ -16,10 +16,10 @@ namespace Employee.API.Services
   /// </summary>
   public class CorrelationIdProvider : ICorrelationIdProvider
   {
-    private const string CacheKey        = "CorrelationId";
-    private const string RequestHeader   = "X-Correlation-ID";
-    private const string FallbackHeader  = "X-Request-ID";
-    private const string ResponseHeader  = "X-Correlation-ID";
+    private const string CacheKey = "CorrelationId";
+    private const string RequestHeader = "X-Correlation-ID";
+    private const string FallbackHeader = "X-Request-ID";
+    private const string ResponseHeader = "X-Correlation-ID";
 
     private readonly IHttpContextAccessor _httpContextAccessor;
 

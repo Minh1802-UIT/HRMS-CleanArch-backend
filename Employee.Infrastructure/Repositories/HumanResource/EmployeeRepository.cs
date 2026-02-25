@@ -6,6 +6,8 @@ using MongoDB.Driver;
 using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Enums;
 using Employee.Infrastructure.Repositories.Common;
+using Employee.Application.Features.HumanResource.Dtos;
+using MongoDB.Bson;
 
 namespace Employee.Infrastructure.Repositories.HumanResource
 {
@@ -13,6 +15,86 @@ namespace Employee.Infrastructure.Repositories.HumanResource
   {
     public EmployeeRepository(IMongoContext context) : base(context, "employees")
     {
+    }
+
+    // ------------------------------------------------------------------ //
+    // Projection-only list query — transfers only the fields rendered on  //
+    // the employee list page (~500 bytes vs ~5 KB per document).          //
+    // ------------------------------------------------------------------ //
+    public async Task<PagedResult<EmployeeListSummary>> GetPagedListAsync(
+        PaginationParams pagination,
+        CancellationToken cancellationToken = default)
+    {
+      var filter = SoftDeleteFilter.GetActiveOnlyFilter<EmployeeEntity>();
+
+      // Optional keyword search across FullName / EmployeeCode
+      if (!string.IsNullOrEmpty(pagination.SearchTerm))
+      {
+        var term = pagination.SearchTerm;
+        filter &= Builders<EmployeeEntity>.Filter.Or(
+          Builders<EmployeeEntity>.Filter.Regex(x => x.FullName, new BsonRegularExpression(term, "i")),
+          Builders<EmployeeEntity>.Filter.Regex(x => x.EmployeeCode, new BsonRegularExpression(term, "i"))
+        );
+      }
+
+      var totalCount = await _collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
+
+      // Project only the fields the list page needs; omit PersonalInfo + BankDetails
+      var projection = Builders<EmployeeEntity>.Projection
+        .Include(x => x.Id)
+        .Include(x => x.EmployeeCode)
+        .Include(x => x.FullName)
+        .Include(x => x.AvatarUrl)
+        .Include("JobDetails.DepartmentId")
+        .Include("JobDetails.PositionId")
+        .Include("JobDetails.Status");
+
+      // Sort — default FullName ASC; honour explicit SortBy when present
+      SortDefinition<EmployeeEntity> sort;
+      if (!string.IsNullOrEmpty(pagination.SortBy))
+      {
+        if (!System.Text.RegularExpressions.Regex.IsMatch(
+                pagination.SortBy, @"^[a-zA-Z][a-zA-Z0-9_.]*$"))
+          throw new ArgumentException($"SortBy value '{pagination.SortBy}' is not valid.", nameof(pagination));
+
+        sort = pagination.IsDescending.GetValueOrDefault()
+          ? Builders<EmployeeEntity>.Sort.Descending(pagination.SortBy)
+          : Builders<EmployeeEntity>.Sort.Ascending(pagination.SortBy);
+      }
+      else
+      {
+        sort = Builders<EmployeeEntity>.Sort.Ascending(x => x.FullName);
+      }
+
+      var pageNumber = pagination.PageNumber.GetValueOrDefault(1);
+      var pageSize   = pagination.PageSize.GetValueOrDefault(20);
+
+      var entities = await _collection
+        .Find(filter)
+        .Sort(sort)
+        .Project<EmployeeEntity>(projection)
+        .Skip((pageNumber - 1) * pageSize)
+        .Limit(pageSize)
+        .ToListAsync(cancellationToken);
+
+      var summaries = entities.Select(e => new EmployeeListSummary
+      {
+        Id           = e.Id,
+        EmployeeCode = e.EmployeeCode,
+        FullName     = e.FullName,
+        AvatarUrl    = e.AvatarUrl,
+        DepartmentId = e.JobDetails?.DepartmentId ?? string.Empty,
+        PositionId   = e.JobDetails?.PositionId   ?? string.Empty,
+        Status       = e.JobDetails?.Status.ToString() ?? string.Empty
+      }).ToList();
+
+      return new PagedResult<EmployeeListSummary>
+      {
+        Items      = summaries,
+        TotalCount = (int)totalCount,
+        PageNumber = pageNumber,
+        PageSize   = pageSize
+      };
     }
 
     public async Task<List<EmployeeEntity>> GetAllIncludingDeletedAsync(CancellationToken cancellationToken = default) =>
