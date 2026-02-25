@@ -34,25 +34,25 @@
 
 ### 🟠 MEDIUM — Cải Thiện Nghiệp Vụ
 
-| # | Module | Vấn đề | Giải pháp |
-|---|--------|--------|-----------|
-| IMP-1 | Organization | Delete Department/Position không check references | Check employee/child trước khi xóa |
-| IMP-2 | Organization | DepartmentTree hiển thị ManagerId thay vì tên | Join với Employee để lấy FullName |
-| IMP-3 | HR | Delete Employee không cleanup data liên quan | Implement EmployeeDeletedEvent handler |
-| IMP-4 | Leave | Cancel đơn Approved → không hoàn phép | Gọi RefundDaysAsync |
-| IMP-5 | Attendance | Team Summary lấy ALL employees, không filter theo managerId | Filter theo manager's subordinates |
-| IMP-6 | Payroll | Trường `Bonus` trong Entity nhưng không bao giờ được gán | Implement bonus logic hoặc bỏ field |
+| # | Module | Vấn đề | Giải pháp | Trạng thái |
+|---|--------|--------|-----------|-----------|
+| IMP-1 | Organization | Delete Department/Position không check references | Check employee/child trước khi xóa | ✅ **FIXED** |
+| IMP-2 | Organization | DepartmentTree hiển thị ManagerId thay vì tên | Join với Employee để lấy FullName | ✅ **FIXED** |
+| IMP-3 | HR | Delete Employee không cleanup data liên quan | Implement EmployeeDeletedEvent handler | ✅ **FIXED** |
+| IMP-4 | Leave | Cancel đơn Approved → không hoàn phép | Gọi RefundDaysAsync | ✅ **FIXED** |
+| IMP-5 | Attendance | Team Summary lấy ALL employees, không filter theo managerId | Filter theo manager's subordinates | ✅ **FIXED** |
+| IMP-6 | Payroll | Trường `Bonus` trong Entity nhưng không bao giờ được gán | Implement bonus logic hoặc bỏ field | ⚠️ Pending |
 
 ---
 
 ### 🔵 LOW — Tính Năng Mở Rộng
 
-| # | Module | Mô tả | Priority |
-|---|--------|-------|---------|
+| # | Module | Mô tả | Priority | Trạng thái |
+|---|--------|-------|---------|-----------|
 | NEW-1 | Recruitment | Hoàn thiện module: Services, DTOs, APIs, Workflow | P2 |
-| NEW-2 | Auth | Refresh Token mechanism | P2 |
-| NEW-3 | Auth | Forgot/Reset Password | P2 |
-| NEW-4 | Leave | Implement Sandwich Rule logic | P3 |
+| NEW-2 | Auth | Refresh Token mechanism | P2 | ✅ **DONE** |
+| NEW-3 | Auth | Forgot/Reset Password | P2 | ⏳ Pending |
+| NEW-4 | Leave | Implement Sandwich Rule logic | P3 | ✅ **DONE** — IsSandwichRuleApplied → CountCalendarDays |
 | NEW-5 | Leave | Carry Forward year-end automation | P3 |
 | NEW-6 | Payroll | Xuất phiếu lương PDF | P3 |
 | NEW-7 | Payroll | Báo cáo tổng hợp thuế TNCN năm | P3 |
@@ -102,7 +102,7 @@
 ### Phase 4: Advanced Features (4+ tuần)
 **Mục tiêu**: Tính năng nâng cao.
 
-- [ ] NEW-4: Sandwich Rule
+- [x] NEW-4: Sandwich Rule (IsSandwichRuleApplied + CountCalendarDays)
 - [ ] NEW-5: Carry Forward automation
 - [ ] NEW-7: Báo cáo thuế TNCN năm
 - [ ] NEW-9: Notification system

@@ -86,8 +86,8 @@
 
 | # | Rule | Trạng thái |
 |---|------|-----------|
-| BR-LV-01 | Tạo đơn: Check CurrentBalance >= số ngày xin | ❌ Chưa implement |
-| BR-LV-02 | Tạo đơn: Check overlap với đơn khác cùng NV | ❌ Chưa implement |
+| BR-LV-01 | Tạo đơn: Check CurrentBalance >= số ngày xin | ✅ CreateLeaveRequestHandler: currentBalance < daysRequested → ValidationException |
+| BR-LV-02 | Tạo đơn: Check overlap với đơn khác cùng NV | ✅ CreateLeaveRequestHandler: ExistsOverlapAsync → ConflictException |
 | BR-LV-03 | Sửa đơn: Chỉ cho khi Status = "Pending" | ❌ Chưa implement |
 | BR-LV-04 | Hủy đơn: Cho khi Status = Pending hoặc Approved (chưa bắt đầu) | ✅ |
 | BR-LV-05 | Approve: Trừ UsedDays trong LeaveAllocation | ✅ |
@@ -96,7 +96,7 @@
 | BR-LV-08 | Accrual: Cộng dồn hàng tháng, check LastAccrualMonth (idempotent) | ✅ |
 | BR-LV-09 | Init: ContractCreated → Initialize Allocation cho năm hiện tại | ✅ |
 | BR-LV-10 | Cancel đơn Approved → RefundDays | ✅ CancelLeaveRequestHandler: guard start-date + RefundDaysAsync |
-| BR-LV-11 | Sandwich Rule: Nghỉ T6+T2 → mất T7+CN | ⚠️ Entity có flag, chưa implement logic |
+| BR-LV-11 | Sandwich Rule: Nghỉ T6+T2 → mất T7+CN | ✅ IsSandwichRuleApplied → DateHelper.CountCalendarDays (vs CountWorkingDays) trong CreateLeaveRequestHandler |
 
 ---
 
@@ -104,13 +104,13 @@
 
 | # | Rule | Trạng thái |
 |---|------|-----------|
-| BR-PAY-01 | BHXH 8%, BHYT 1.5%, BHTN 1% tính trên **baseSalary** (có mức trần) | ❌ Đang tính trên grossIncome (SAI) |
+| BR-PAY-01 | BHXH 8%, BHYT 1.5%, BHTN 1% tính trên **baseSalary** (có mức trần) | ✅ insuranceSalary = Math.Min(baseSalary, InsuranceSalaryCap) |
 | BR-PAY-02 | Thuế TNCN: Biểu lũy tiến 7 bậc (Luật VN) | ✅ |
 | BR-PAY-03 | Giảm trừ cá nhân: 11,000,000 VNĐ/tháng | ✅ (từ SystemSetting) |
 | BR-PAY-04 | Giảm trừ người phụ thuộc: 4,400,000 VNĐ/người/tháng | ✅ (từ SystemSetting) |
 | BR-PAY-05 | Nợ carry-forward: Nếu lương âm → ghi nợ tháng sau | ✅ |
 | BR-PAY-06 | EmployeeSnapshot: Chụp thông tin NV tại thời điểm tính | ✅ |
-| BR-PAY-07 | TotalDeductions = BH + Tax + Debt | ❌ Không được tính (luôn = 0) |
+| BR-PAY-07 | TotalDeductions = BH + Tax + Debt | ✅ PayrollProcessingService gọi UpdateDeductions(bhxh, bhyt, bhtn, tax, debtPaid) → TotalDeductions được tính đúng |
 | BR-PAY-08 | Bonus được hỗ trợ trong Entity | ⚠️ Có field nhưng chưa gán giá trị |
 | BR-PAY-09 | OT Pay = OvertimeHours × hệ số × lương giờ | ✅ |
 | BR-PAY-10 | System Settings dynamic (rates, caps, deductions) | ✅ |
