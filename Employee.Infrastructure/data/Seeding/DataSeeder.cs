@@ -23,16 +23,6 @@ namespace Employee.Infrastructure.data.Seeding
       var env = serviceProvider.GetRequiredService<IHostEnvironment>();
       var config = serviceProvider.GetRequiredService<IConfiguration>();
 
-      if (env.IsProduction())
-      {
-        Console.WriteLine("⚠️ RUNNING PRODUCTION SEEDER (Full Data Generation)");
-        // Continue to full seeding below
-      }
-      else
-      {
-        Console.WriteLine($"🌱 STARTING DATABASE SEEDER (Development/Staging)...");
-      }
-
       // 1. SERVICES
       var roleManager = serviceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
       var userManager = serviceProvider.GetRequiredService<UserManager<ApplicationUser>>();
@@ -56,32 +46,85 @@ namespace Employee.Infrastructure.data.Seeding
 
       var defaultPassword = config["Seeding:DefaultPassword"] ?? "User@12345";
 
-      // 1.5 OVERWRITE: WIPE COLLECTIONS FOR FRESH START (ONLY IN NON-PRODUCTION)
-      Console.WriteLine("🧹 WIPING EXISTING DATA FOR OVERWRITE...");
-      await auditRepo.ClearAllAsync();
-      await attendanceRepo.ClearAllAsync();
-      await payrollRepo.ClearAllAsync();
-      await leaveRepo.ClearAllAsync();
-      await contractRepo.ClearAllAsync();
-      await empRepo.ClearAllAsync();
-      await posRepo.ClearAllAsync();
-      await deptRepo.ClearAllAsync();
-      await leaveTypeRepo.ClearAllAsync();
-      await leaveAllocRepo.ClearAllAsync();
-      await shiftRepo.ClearAllAsync();
-      await rawAttendanceRepo.ClearAllAsync();
-      await jobRepo.ClearAllAsync();
-      await candidateRepo.ClearAllAsync();
-      await interviewRepo.ClearAllAsync();
-      await settingRepo.ClearAllAsync();
-
-      // Wipe Users (Except Roles)
-      var allUsers = userManager.Users.ToList();
-      foreach (var user in allUsers)
+      // ── PRODUCTION: Only ensure roles & admin exist, never wipe data ──
+      if (env.IsProduction())
       {
-        await userManager.DeleteAsync(user);
+        Console.WriteLine("🔒 PRODUCTION SEEDER: Checking essential data...");
+
+        // Always ensure roles exist
+        var prodRoles = new[] { "Admin", "HR", "Manager", "Employee" };
+        foreach (var role in prodRoles)
+        {
+          if (!await roleManager.RoleExistsAsync(role))
+            await roleManager.CreateAsync(new ApplicationRole(role));
+        }
+        Console.WriteLine("✅ Roles verified.");
+
+        // Check if data already exists — if so, skip seeding entirely
+        var existingEmployees = await empRepo.GetAllAsync();
+        if (existingEmployees.Any())
+        {
+          Console.WriteLine($"✅ Database already has {existingEmployees.Count} employees. Skipping seeder.");
+
+          // Ensure admin account exists even if data is present
+          var prodAdminEmail = "admin@hrm.com";
+          var prodAdminUser = await userManager.FindByEmailAsync(prodAdminEmail);
+          if (prodAdminUser == null)
+          {
+            prodAdminUser = new ApplicationUser
+            {
+              UserName = "admin",
+              Email = prodAdminEmail,
+              FullName = "Super Administrator",
+              EmailConfirmed = true
+            };
+            var result = await userManager.CreateAsync(prodAdminUser, defaultPassword);
+            if (result.Succeeded)
+            {
+              await userManager.AddToRoleAsync(prodAdminUser, "Admin");
+              await userManager.AddToRoleAsync(prodAdminUser, "HR");
+              Console.WriteLine("✅ Created missing Admin User.");
+            }
+          }
+
+          Console.WriteLine("🔒 PRODUCTION SEEDER FINISHED (no data modified).");
+          return;
+        }
+
+        Console.WriteLine("⚠️ Database is empty in Production — running initial seed...");
+        // Fall through to the full seeding logic below
       }
-      Console.WriteLine("✅ Database wiped successfully.");
+      else
+      {
+        Console.WriteLine($"🌱 STARTING DATABASE SEEDER (Development/Staging)...");
+
+        // DEVELOPMENT ONLY: Wipe data for a fresh start
+        Console.WriteLine("🧹 WIPING EXISTING DATA FOR OVERWRITE...");
+        await auditRepo.ClearAllAsync();
+        await attendanceRepo.ClearAllAsync();
+        await payrollRepo.ClearAllAsync();
+        await leaveRepo.ClearAllAsync();
+        await contractRepo.ClearAllAsync();
+        await empRepo.ClearAllAsync();
+        await posRepo.ClearAllAsync();
+        await deptRepo.ClearAllAsync();
+        await leaveTypeRepo.ClearAllAsync();
+        await leaveAllocRepo.ClearAllAsync();
+        await shiftRepo.ClearAllAsync();
+        await rawAttendanceRepo.ClearAllAsync();
+        await jobRepo.ClearAllAsync();
+        await candidateRepo.ClearAllAsync();
+        await interviewRepo.ClearAllAsync();
+        await settingRepo.ClearAllAsync();
+
+        // Wipe Users (Except Roles)
+        var allUsers = userManager.Users.ToList();
+        foreach (var user in allUsers)
+        {
+          await userManager.DeleteAsync(user);
+        }
+        Console.WriteLine("✅ Database wiped successfully.");
+      }
 
       // 2. ROLES
       string[] roles = { "Admin", "HR", "Manager", "Employee" };
