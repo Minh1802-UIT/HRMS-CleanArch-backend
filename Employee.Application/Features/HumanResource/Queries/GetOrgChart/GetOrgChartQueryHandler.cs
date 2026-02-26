@@ -48,7 +48,8 @@ namespace Employee.Application.Features.HumanResource.Queries.GetOrgChart
         Id = emp.Id,
         Name = emp.FullName,
         Title = positions.GetValueOrDefault(emp.JobDetails.PositionId) ?? "N/A",
-        AvatarUrl = emp.AvatarUrl
+        AvatarUrl = emp.AvatarUrl,
+        DepartmentId = emp.JobDetails.DepartmentId
       };
 
       var children = allEmps.Where(e => e.JobDetails.ManagerId == emp.Id).ToList();

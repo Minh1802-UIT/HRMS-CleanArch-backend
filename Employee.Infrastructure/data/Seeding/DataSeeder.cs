@@ -25,11 +25,13 @@ namespace Employee.Infrastructure.data.Seeding
 
       if (env.IsProduction())
       {
-        Console.WriteLine("⚠️ WARNING: Data Seeding skipped in PRODUCTION environment to prevent data loss.");
-        return;
+        Console.WriteLine("⚠️ RUNNING PRODUCTION SEEDER (Full Data Generation)");
+        // Continue to full seeding below
       }
-
-      Console.WriteLine($"🌱 STARTING DATABASE SEEDER ({env.EnvironmentName})...");
+      else
+      {
+        Console.WriteLine($"🌱 STARTING DATABASE SEEDER (Development/Staging)...");
+      }
 
       // 1. SERVICES
       var roleManager = serviceProvider.GetRequiredService<RoleManager<ApplicationRole>>();
@@ -114,38 +116,36 @@ namespace Employee.Infrastructure.data.Seeding
       hq.UpdateInfo("Headquarters", "Main Office");
       await deptRepo.CreateAsync(hq);
 
-      var it = new Department("Technology", "TECH");
-      it.SetParent(hq.Id);
-      var hr = new Department("Human Resources", "HR");
-      hr.SetParent(hq.Id);
-      var sales = new Department("Sales & Marketing", "SALES");
-      sales.SetParent(hq.Id);
-      var finance = new Department("Finance", "FIN");
-      finance.SetParent(hq.Id);
+      var it = new Department("Technology", "TECH"); it.SetParent(hq.Id);
+      var hr = new Department("Human Resources", "HR"); hr.SetParent(hq.Id);
+      var sales = new Department("Sales & Marketing", "SALES"); sales.SetParent(hq.Id);
+      var finance = new Department("Finance", "FIN"); finance.SetParent(hq.Id);
+      var prod = new Department("Product", "PROD"); prod.SetParent(hq.Id);
+      var sup = new Department("Support", "SUP"); sup.SetParent(hq.Id);
+      var log = new Department("Logistics", "LOG"); log.SetParent(hq.Id);
 
       await deptRepo.CreateAsync(it);
       await deptRepo.CreateAsync(hr);
       await deptRepo.CreateAsync(sales);
       await deptRepo.CreateAsync(finance);
+      await deptRepo.CreateAsync(prod);
+      await deptRepo.CreateAsync(sup);
+      await deptRepo.CreateAsync(log);
 
       // Level 2 (Sub-departments)
-      var soft = new Department("Software Development", "SOFT"); soft.SetParent(it.Id);
-      await deptRepo.CreateAsync(soft);
+      var soft = new Department("Software Development", "SOFT"); soft.SetParent(it.Id); await deptRepo.CreateAsync(soft);
+      var infra = new Department("Infrastructure", "INFRA"); infra.SetParent(it.Id); await deptRepo.CreateAsync(infra);
+      var qa = new Department("Quality Assurance", "QA"); qa.SetParent(it.Id); await deptRepo.CreateAsync(qa);
 
-      var infra = new Department("Infrastructure", "INFRA"); infra.SetParent(it.Id);
-      await deptRepo.CreateAsync(infra);
+      var rec = new Department("Recruitment", "REC"); rec.SetParent(hr.Id); await deptRepo.CreateAsync(rec);
+      var ops = new Department("Operations", "OPS"); ops.SetParent(hr.Id); await deptRepo.CreateAsync(ops);
 
-      var rec = new Department("Recruitment", "REC"); rec.SetParent(hr.Id);
-      await deptRepo.CreateAsync(rec);
+      var b2b = new Department("B2B Sales", "B2B"); b2b.SetParent(sales.Id); await deptRepo.CreateAsync(b2b);
+      var mkt = new Department("Digital Marketing", "MKT"); mkt.SetParent(sales.Id); await deptRepo.CreateAsync(mkt);
 
-      var ops = new Department("Operations", "OPS"); ops.SetParent(hr.Id);
-      await deptRepo.CreateAsync(ops);
-
-      var b2b = new Department("B2B Sales", "B2B"); b2b.SetParent(sales.Id);
-      await deptRepo.CreateAsync(b2b);
-
-      var mkt = new Department("Digital Marketing", "MKT"); mkt.SetParent(sales.Id);
-      await deptRepo.CreateAsync(mkt);
+      var design = new Department("UI/UX Design", "DESIGN"); design.SetParent(prod.Id); await deptRepo.CreateAsync(design);
+      var cs = new Department("Customer Service", "CS"); cs.SetParent(sup.Id); await deptRepo.CreateAsync(cs);
+      var wh = new Department("Warehouse", "WH"); wh.SetParent(log.Id); await deptRepo.CreateAsync(wh);
 
       Console.WriteLine("✅ Created Hierarchical Departments.");
       var depts = await deptRepo.GetAllAsync();
@@ -158,6 +158,13 @@ namespace Employee.Infrastructure.data.Seeding
       var salesId = depts.First(d => d.Code == "SALES").Id;
       var finId = depts.First(d => d.Code == "FIN").Id;
       var softId = depts.First(d => d.Code == "SOFT").Id;
+      var qaId = depts.First(d => d.Code == "QA").Id;
+      var prodId = depts.First(d => d.Code == "PROD").Id;
+      var designId = depts.First(d => d.Code == "DESIGN").Id;
+      var supId = depts.First(d => d.Code == "SUP").Id;
+      var csId = depts.First(d => d.Code == "CS").Id;
+      var logId = depts.First(d => d.Code == "LOG").Id;
+      var whId = depts.First(d => d.Code == "WH").Id;
 
       // C-Level
       var ceo = new Position("Chief Executive Officer", "CEO", hqId);
@@ -194,9 +201,24 @@ namespace Employee.Infrastructure.data.Seeding
       salesMgr.SetParent(ceo.Id);
       salesMgr.UpdateSalaryRange(new SalaryRange { Min = 30000000, Max = 60000000 });
 
+      var prodMgr = new Position("Product Manager", "PROD-MGR", prodId);
+      prodMgr.SetParent(ceo.Id);
+      prodMgr.UpdateSalaryRange(new SalaryRange { Min = 35000000, Max = 65000000 });
+
+      var supMgr = new Position("Support Manager", "SUP-MGR", supId);
+      supMgr.SetParent(ceo.Id);
+      supMgr.UpdateSalaryRange(new SalaryRange { Min = 25000000, Max = 45000000 });
+
+      var logMgr = new Position("Logistics Manager", "LOG-MGR", logId);
+      logMgr.SetParent(ceo.Id);
+      logMgr.UpdateSalaryRange(new SalaryRange { Min = 25000000, Max = 45000000 });
+
       await posRepo.CreateAsync(engMgr);
       await posRepo.CreateAsync(hrMgr);
       await posRepo.CreateAsync(salesMgr);
+      await posRepo.CreateAsync(prodMgr);
+      await posRepo.CreateAsync(supMgr);
+      await posRepo.CreateAsync(logMgr);
 
       // Team Leads
       var techLead = new Position("Tech Lead", "TECH-LEAD", softId);
@@ -204,7 +226,12 @@ namespace Employee.Infrastructure.data.Seeding
       techLead.UpdateSalaryRange(new SalaryRange { Min = 30000000, Max = 50000000 });
       await posRepo.CreateAsync(techLead);
 
-      // Staff
+      var qaLead = new Position("QA Lead", "QA-LEAD", qaId);
+      qaLead.SetParent(engMgr.Id);
+      qaLead.UpdateSalaryRange(new SalaryRange { Min = 25000000, Max = 45000000 });
+      await posRepo.CreateAsync(qaLead);
+
+      // Staff - Tech
       var senDev = new Position("Senior Developer", "SEN-DEV", softId);
       senDev.SetParent(techLead.Id);
       senDev.UpdateSalaryRange(new SalaryRange { Min = 25000000, Max = 45000000 });
@@ -215,6 +242,12 @@ namespace Employee.Infrastructure.data.Seeding
       junDev.UpdateSalaryRange(new SalaryRange { Min = 10000000, Max = 20000000 });
       await posRepo.CreateAsync(junDev);
 
+      var qaEng = new Position("QA Engineer", "QA-ENG", qaId);
+      qaEng.SetParent(qaLead.Id);
+      qaEng.UpdateSalaryRange(new SalaryRange { Min = 15000000, Max = 25000000 });
+      await posRepo.CreateAsync(qaEng);
+
+      // Staff - Other
       var hrSpec = new Position("HR Specialist", "HR-SPEC", hrId);
       hrSpec.SetParent(hrMgr.Id);
       hrSpec.UpdateSalaryRange(new SalaryRange { Min = 12000000, Max = 20000000 });
@@ -229,6 +262,21 @@ namespace Employee.Infrastructure.data.Seeding
       acc.SetParent(cfo.Id);
       acc.UpdateSalaryRange(new SalaryRange { Min = 15000000, Max = 25000000 });
       await posRepo.CreateAsync(acc);
+
+      var uxDes = new Position("UI/UX Designer", "UX-DES", designId);
+      uxDes.SetParent(prodMgr.Id);
+      uxDes.UpdateSalaryRange(new SalaryRange { Min = 18000000, Max = 35000000 });
+      await posRepo.CreateAsync(uxDes);
+
+      var csStaff = new Position("Customer Service Agent", "CS-STAFF", csId);
+      csStaff.SetParent(supMgr.Id);
+      csStaff.UpdateSalaryRange(new SalaryRange { Min = 8000000, Max = 15000000 });
+      await posRepo.CreateAsync(csStaff);
+
+      var whWorker = new Position("Warehouse Worker", "WH-WORKER", whId);
+      whWorker.SetParent(logMgr.Id);
+      whWorker.UpdateSalaryRange(new SalaryRange { Min = 7000000, Max = 12000000 });
+      await posRepo.CreateAsync(whWorker);
 
       Console.WriteLine("✅ Created Hierarchical Positions.");
       var positions = await posRepo.GetAllAsync();
@@ -276,7 +324,7 @@ namespace Employee.Infrastructure.data.Seeding
       await CreateUserForEmployee(userManager, engMgrEmp.Email, defaultPassword, "Manager", engMgrEmp.Id);
 
       // 5.4 Create Tech Leads (Report to Eng Mgr)
-      for (int i = 1; i <= 3; i++)
+      for (int i = 1; i <= 5; i++)
       {
         var lead = CreateEmployee($"LEAD{i:00}", $"{GetRandomName(firstNames, midNames, lastNames)}", $"lead{i}@hrm.com", depts.First(d => d.Code == "SOFT").Id, techLeadPos.Id, engMgrEmp.Id, DateTime.UtcNow.AddMonths(-random.Next(12, 36)));
         await empRepo.CreateAsync(lead);
@@ -284,12 +332,12 @@ namespace Employee.Infrastructure.data.Seeding
         await CreateUserForEmployee(userManager, lead.Email, defaultPassword, "Employee", lead.Id);
 
         // 5.5 Create Developers (Report to this Lead)
-        int devCount = random.Next(3, 7);
+        int devCount = random.Next(5, 12);
         for (int j = 1; j <= devCount; j++)
         {
           var isSenior = random.NextDouble() > 0.6;
           var pos = isSenior ? senDevPos : junDevPos;
-          var devCode = isSenior ? $"SEN{i}{j}" : $"JUN{i}{j}";
+          var devCode = isSenior ? $"SEN{i}{j:00}" : $"JUN{i}{j:00}";
           var joinDate = DateTime.UtcNow.AddMonths(-random.Next(1, 24));
 
           var dev = CreateEmployee(devCode, GetRandomName(firstNames, midNames, lastNames), $"{devCode.ToLower()}@hrm.com", depts.First(d => d.Code == "SOFT").Id, pos.Id, lead.Id, joinDate);
@@ -303,7 +351,7 @@ namespace Employee.Infrastructure.data.Seeding
       var otherDepts = depts.Where(d => d.Code != "HQ" && d.Code != "TECH" && d.Code != "SOFT").ToList();
       var otherPositions = positions.Where(p => p.Code != "CEO" && p.Code != "CTO" && !p.Code.Contains("DEV")).ToList();
 
-      for (int i = 0; i < 20; i++)
+      for (int i = 0; i < 75; i++)
       {
         var dept = otherDepts[random.Next(otherDepts.Count)];
         var pos = otherPositions[random.Next(otherPositions.Count)];

@@ -153,6 +153,7 @@ namespace Employee.Application.Features.HumanResource.Dtos
     public string Name { get; set; } = string.Empty;
     public string Title { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
+    public string? DepartmentId { get; set; }
     public List<EmployeeOrgNodeDto> Children { get; set; } = new();
   }
 }
