@@ -336,7 +336,6 @@ builder.Services.AddRateLimiter(options =>
 // N2-FIX: Health Checks — MongoDB + self
 builder.Services.AddHealthChecks()
     .AddMongoDb(
-        mongodbConnectionString: mongoDbSettings?.ConnectionString ?? "mongodb://localhost:27017",
         name: "mongodb",
         failureStatus: HealthStatus.Unhealthy,
         tags: ["db", "mongodb"]);
