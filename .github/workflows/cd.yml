@@ -85,74 +85,25 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-  # ── Deploy to production server via SSH ─────────────────────
+  # ── Trigger Render Deploy Hook ────────────────────────────────
   deploy:
-    name: Deploy to Production
+    name: Trigger Render Deployment
     runs-on: ubuntu-latest
     needs: docker-build
-    environment: production      # GitHub Environment protection rules apply here
+    environment: production
 
     steps:
-      - name: Checkout (for docker-compose files)
-        uses: actions/checkout@v4
-
-      # Copy docker-compose files to the server
-      - name: Upload compose files
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          source: 'docker-compose.yml,docker-compose.prod.yml'
-          target: ${{ secrets.DEPLOY_PATH }}
-
-      # Pull new image and restart containers, then verify health
-      - name: Deploy & Health Check
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            set -e
-            cd ${{ secrets.DEPLOY_PATH }}
-
-            # 1. Capture current image SHA for rollback
-            PREV_IMAGE=$(docker inspect employee_api --format='{{.Image}}' 2>/dev/null || echo "none")
-            echo "Previous image: $PREV_IMAGE"
-
-            # 2. Pull new images
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml pull app_backend
-
-            # 3. Start new container
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --remove-orphans app_backend
-
-            # 4. Health check (poll /health up to 60s)
-            echo "Waiting for /health to return 200..."
-            for i in $(seq 1 12); do
-              STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/health || echo "000")
-              echo "  Attempt $i: HTTP $STATUS"
-              if [ "$STATUS" = "200" ]; then
-                echo "Health check passed!"
-                break
-              fi
-              if [ "$i" = "12" ]; then
-                echo "Health check FAILED — rolling back to $PREV_IMAGE"
-                docker compose -f docker-compose.yml -f docker-compose.prod.yml stop app_backend || true
-                docker compose -f docker-compose.yml -f docker-compose.prod.yml rm -f app_backend || true
-                docker tag "$PREV_IMAGE" ${{ secrets.DOCKER_USERNAME }}/employee-hr-api:rollback 2>/dev/null || true
-                docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d app_backend
-                exit 1
-              fi
-              sleep 5
-            done
-
-            # 5. Clean up old images
-            docker image prune -f
+      - name: Trigger Deploy
+        run: |
+          if [ -z "${{ secrets.RENDER_DEPLOY_HOOK }}" ]; then
+            echo "Error: RENDER_DEPLOY_HOOK secret is not set."
+            exit 1
+          fi
+          echo "Triggering Render deployment..."
+          curl -s -X POST -d "imgURL=${{ secrets.DOCKER_USERNAME }}/${{ env.DOCKER_IMAGE }}:${{ needs.docker-build.outputs.image-tag }}" "${{ secrets.RENDER_DEPLOY_HOOK }}"
 
       - name: Deployment Summary
         run: |
-          echo "### Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "### Render Deployment Triggered" >> $GITHUB_STEP_SUMMARY
           echo "**Image tag:** \`${{ needs.docker-build.outputs.image-tag }}\`" >> $GITHUB_STEP_SUMMARY
-          echo "**Server:** \`${{ secrets.DEPLOY_HOST }}\`" >> $GITHUB_STEP_SUMMARY
           echo "**Time:** $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
