@@ -88,7 +88,7 @@ namespace Employee.UnitTests.Features.Recruitment.Commands
 
       // Assert
       Assert.Equal(JobVacancyStatus.Closed, vacancy.Status);
-      _mockRepo.Verify(x => x.UpdateAsync(It.IsAny<JobVacancy>(), It.IsAny<CancellationToken>()), Times.Once);
+      _mockRepo.Verify(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<JobVacancy>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -130,7 +130,7 @@ namespace Employee.UnitTests.Features.Recruitment.Commands
       // Assert
       Assert.Equal("New Title", vacancy.Title);
       Assert.Equal(3, vacancy.Vacancies);
-      _mockRepo.Verify(x => x.UpdateAsync(It.IsAny<JobVacancy>(), It.IsAny<CancellationToken>()), Times.Once);
+      _mockRepo.Verify(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<JobVacancy>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

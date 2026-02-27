@@ -73,7 +73,7 @@ namespace Employee.UnitTests.Features.Recruitment.Commands
       // Assert
       Assert.Equal("emp-new-1", result);
       _mockEmployeeRepo.Verify(x => x.CreateAsync(It.IsAny<EmployeeEntity>(), It.IsAny<CancellationToken>()), Times.Once);
-      _mockCandidateRepo.Verify(x => x.UpdateAsync(It.IsAny<Candidate>(), It.IsAny<CancellationToken>()), Times.Once);
+      _mockCandidateRepo.Verify(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<Candidate>(), It.IsAny<CancellationToken>()), Times.Once);
       _mockUnitOfWork.Verify(x => x.CommitTransactionAsync(), Times.Once);
       Assert.Equal(CandidateStatus.Onboarded, candidate.Status);
     }

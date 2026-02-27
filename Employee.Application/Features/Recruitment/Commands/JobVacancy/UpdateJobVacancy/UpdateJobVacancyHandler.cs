@@ -21,7 +21,7 @@ namespace Employee.Application.Features.Recruitment.Commands.JobVacancy.UpdateJo
       entity.UpdateInfo(request.Dto.Title, request.Dto.Vacancies, request.Dto.ExpiredDate, request.Dto.Description);
       entity.SetRequirements(request.Dto.Requirements);
 
-      await _repo.UpdateAsync(entity, cancellationToken);
+      await _repo.UpdateAsync(entity.Id, entity, cancellationToken);
     }
   }
 }

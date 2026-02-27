@@ -60,11 +60,15 @@ namespace Employee.Infrastructure.data.Seeding
         }
         Console.WriteLine("✅ Roles verified.");
 
-        // Check if data already exists — if so, skip seeding entirely
-        var existingEmployees = await empRepo.GetAllAsync();
-        if (existingEmployees.Any())
+        // Always ensure system settings exist (idempotent upsert)
+        await EnsureSystemSettingsAsync(settingRepo);
+        Console.WriteLine("✅ System settings verified.");
+
+        // Efficient existence check — only count, don't load all documents
+        var employeeCount = await empRepo.CountActiveAsync();
+        if (employeeCount > 0)
         {
-          Console.WriteLine($"✅ Database already has {existingEmployees.Count} employees. Skipping seeder.");
+          Console.WriteLine($"✅ Database already has {employeeCount} employees. Skipping seeder.");
 
           // Ensure admin account exists even if data is present
           var prodAdminEmail = "admin@hrm.com";
@@ -580,12 +584,57 @@ namespace Employee.Infrastructure.data.Seeding
 
     private static async Task GenerateSystemSettings(ISystemSettingRepository repo)
     {
+      // Development: uses CreateAsync (data is wiped before this runs)
       var settings = new List<SystemSetting>
       {
           new("BHXH_RATE", "Payroll", "0.08", "Social Insurance"),
-          new("PERSONAL_DEDUCTION", "Tax", "11000000", "Personal Deduction")
+          new("BHYT_RATE", "Payroll", "0.015", "Health Insurance"),
+          new("BHTN_RATE", "Payroll", "0.01", "Unemployment Insurance"),
+          new("INSURANCE_SALARY_CAP", "Payroll", "36000000", "Insurance Salary Cap"),
+          new("PERSONAL_DEDUCTION", "Tax", "11000000", "Personal Deduction"),
+          new("DEPENDENT_DEDUCTION", "Tax", "4400000", "Dependent Deduction"),
+          new("STANDARD_WORKING_DAYS", "Payroll", "26", "Standard Working Days"),
+          new("OT_RATE_NORMAL", "Payroll", "1.5", "Overtime Rate Normal")
       };
       foreach (var s in settings) await repo.CreateAsync(s);
+    }
+
+    /// <summary>
+    /// Idempotent system settings initialization for Production.
+    /// Uses UpsertAsync to create missing settings without overwriting existing values.
+    /// Also tracks SEEDER_VERSION for deployment auditing.
+    /// </summary>
+    private static async Task EnsureSystemSettingsAsync(ISystemSettingRepository repo)
+    {
+      // Only insert if key doesn't exist — won't overwrite admin-modified values
+      var requiredSettings = new List<SystemSetting>
+      {
+          new("BHXH_RATE", "Payroll", "0.08", "Social Insurance Rate (Employee)"),
+          new("BHYT_RATE", "Payroll", "0.015", "Health Insurance Rate (Employee)"),
+          new("BHTN_RATE", "Payroll", "0.01", "Unemployment Insurance Rate (Employee)"),
+          new("INSURANCE_SALARY_CAP", "Payroll", "36000000", "Insurance Salary Cap (VND)"),
+          new("PERSONAL_DEDUCTION", "Tax", "11000000", "Personal Tax Deduction (VND)"),
+          new("DEPENDENT_DEDUCTION", "Tax", "4400000", "Dependent Tax Deduction (VND)"),
+          new("STANDARD_WORKING_DAYS", "Payroll", "26", "Standard Working Days Per Month"),
+          new("OT_RATE_NORMAL", "Payroll", "1.5", "Normal Overtime Rate Multiplier")
+      };
+
+      foreach (var setting in requiredSettings)
+      {
+        // Only create if not already present — preserves existing values
+        var existing = await repo.GetByKeyAsync(setting.Key);
+        if (existing == null)
+        {
+          await repo.CreateAsync(setting);
+          Console.WriteLine($"  ➕ Created missing setting: {setting.Key}");
+        }
+      }
+
+      // Track seeder version for deployment auditing
+      await repo.UpsertAsync(new SystemSetting(
+          "SEEDER_VERSION", "System",
+          "17.0",
+          $"Last seeded at {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC"));
     }
 
     private static async Task GenerateRecruitment(IJobVacancyRepository jobRepo, ICandidateRepository candidateRepo, IInterviewRepository interviewRepo, List<EmployeeEntity> emps)

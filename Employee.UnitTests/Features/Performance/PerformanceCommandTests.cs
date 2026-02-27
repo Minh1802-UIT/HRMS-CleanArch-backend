@@ -156,7 +156,7 @@ namespace Employee.UnitTests.Features.Performance
       // Assert
       Assert.True(result);
       Assert.Equal(75.0, goal.Progress);
-      _mockGoalRepo.Verify(x => x.UpdateAsync(It.IsAny<PerformanceGoal>(), It.IsAny<CancellationToken>()), Times.Once);
+      _mockGoalRepo.Verify(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<PerformanceGoal>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -172,7 +172,7 @@ namespace Employee.UnitTests.Features.Performance
 
       // Assert
       Assert.False(result);
-      _mockGoalRepo.Verify(x => x.UpdateAsync(It.IsAny<PerformanceGoal>(), It.IsAny<CancellationToken>()), Times.Never);
+      _mockGoalRepo.Verify(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<PerformanceGoal>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]
@@ -216,7 +216,7 @@ namespace Employee.UnitTests.Features.Performance
       Assert.True(result);
       Assert.Equal(85.0, review.OverallScore);
       Assert.Equal("Excellent performance", review.Notes);
-      _mockReviewRepo.Verify(x => x.UpdateAsync(It.IsAny<PerformanceReview>(), It.IsAny<CancellationToken>()), Times.Once);
+      _mockReviewRepo.Verify(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<PerformanceReview>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -233,7 +233,7 @@ namespace Employee.UnitTests.Features.Performance
 
       // Assert
       Assert.False(result);
-      _mockReviewRepo.Verify(x => x.UpdateAsync(It.IsAny<PerformanceReview>(), It.IsAny<CancellationToken>()), Times.Never);
+      _mockReviewRepo.Verify(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<PerformanceReview>(), It.IsAny<CancellationToken>()), Times.Never);
     }
 
     [Fact]

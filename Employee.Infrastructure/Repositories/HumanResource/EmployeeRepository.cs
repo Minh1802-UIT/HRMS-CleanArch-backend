@@ -158,8 +158,8 @@ namespace Employee.Infrastructure.Repositories.HumanResource
     {
       var filter = SoftDeleteFilter.GetActiveOnlyFilter<EmployeeEntity>();
       var projection = Builders<EmployeeEntity>.Projection.Include(e => e.Id);
-      var results = await _collection.Find(filter).Project<EmployeeEntity>(projection).ToListAsync(cancellationToken);
-      return results.Select(e => e.Id).ToList();
+      var results = await _collection.Find(filter).Project<BsonDocument>(projection).ToListAsync(cancellationToken);
+      return results.Select(e => e.GetValue("_id").ToString()!).ToList();
     }
 
     public async Task<List<EmployeeEntity>> GetByManagerIdAsync(string managerId, CancellationToken cancellationToken = default)
@@ -209,5 +209,30 @@ namespace Employee.Infrastructure.Repositories.HumanResource
           Builders<EmployeeEntity>.Filter.Ne(x => x.JobDetails, null),
           Builders<EmployeeEntity>.Filter.Eq("JobDetails.PositionId", positionId)
         )).AnyAsync(cancellationToken);
+
+    public async Task<Dictionary<string, int>> GetDepartmentDistributionAsync(CancellationToken cancellationToken = default)
+    {
+      var pipeline = new[]
+      {
+        // Match only active, non-deleted employees with JobDetails
+        new BsonDocument("$match", new BsonDocument
+        {
+          { "IsDeleted", new BsonDocument("$ne", true) },
+          { "JobDetails", new BsonDocument("$ne", BsonNull.Value) },
+          { "JobDetails.Status", new BsonDocument("$in", new BsonArray { "Active", "Probation" }) }
+        }),
+        // Group by DepartmentId, count
+        new BsonDocument("$group", new BsonDocument
+        {
+          { "_id", "$JobDetails.DepartmentId" },
+          { "count", new BsonDocument("$sum", 1) }
+        })
+      };
+
+      var results = await _collection.Aggregate<BsonDocument>(pipeline, cancellationToken: cancellationToken).ToListAsync(cancellationToken);
+      return results
+          .Where(r => r["_id"] != BsonNull.Value && r["_id"].ToString() != "")
+          .ToDictionary(r => r["_id"].ToString()!, r => r["count"].AsInt32);
+    }
   }
 }

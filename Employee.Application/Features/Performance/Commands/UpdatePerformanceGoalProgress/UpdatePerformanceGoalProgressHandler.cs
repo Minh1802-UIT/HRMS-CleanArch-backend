@@ -20,7 +20,7 @@ namespace Employee.Application.Features.Performance.Commands.UpdatePerformanceGo
       if (goal == null) return false;
 
       goal.UpdateProgress(request.Progress);
-      await _repo.UpdateAsync(goal, cancellationToken);
+      await _repo.UpdateAsync(goal.Id, goal, cancellationToken);
       return true;
     }
   }

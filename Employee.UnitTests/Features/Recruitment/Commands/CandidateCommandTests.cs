@@ -38,7 +38,7 @@ namespace Employee.UnitTests.Features.Recruitment.Commands
 
       // Assert
       Assert.Equal(CandidateStatus.Hired, candidate.Status);
-      _mockRepo.Verify(x => x.UpdateAsync(It.IsAny<Candidate>(), It.IsAny<CancellationToken>()), Times.Once);
+      _mockRepo.Verify(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<Candidate>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

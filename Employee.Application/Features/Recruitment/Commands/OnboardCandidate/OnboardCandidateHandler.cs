@@ -73,7 +73,7 @@ namespace Employee.Application.Features.Recruitment.Commands.OnboardCandidate
 
         // 4. Update Candidate Status via domain method
         candidate.UpdateStatus(CandidateStatus.Onboarded);
-        await _candidateRepo.UpdateAsync(candidate, cancellationToken);
+        await _candidateRepo.UpdateAsync(candidate.Id, candidate, cancellationToken);
 
         // 5. Publish Event
         await _publisher.Publish(new EmployeeCreatedEvent(employee.ToDto()), cancellationToken);

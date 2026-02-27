@@ -36,5 +36,11 @@ namespace Employee.Application.Common.Interfaces.Organization.IRepository
     Task<List<EmployeeEntity>> GetAllActiveAsync(CancellationToken cancellationToken = default);
     Task<bool> ExistsByDepartmentIdAsync(string departmentId, CancellationToken cancellationToken = default);
     Task<bool> ExistsByPositionIdAsync(string positionId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Server-side aggregation: groups active employees by DepartmentId and returns counts.
+    /// Avoids loading all employee documents into memory.
+    /// </summary>
+    Task<Dictionary<string, int>> GetDepartmentDistributionAsync(CancellationToken cancellationToken = default);
   }
 }

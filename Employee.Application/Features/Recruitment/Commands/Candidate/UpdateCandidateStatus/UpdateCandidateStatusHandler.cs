@@ -31,7 +31,7 @@ namespace Employee.Application.Features.Recruitment.Commands.Candidate.UpdateCan
         throw new ValidationException($"Invalid status: {request.Status}");
       }
 
-      await _repo.UpdateAsync(entity, cancellationToken);
+      await _repo.UpdateAsync(entity.Id, entity, cancellationToken);
     }
   }
 }

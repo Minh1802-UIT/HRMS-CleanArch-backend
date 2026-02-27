@@ -15,6 +15,7 @@ using System.Linq;
 using System;
 using Employee.Domain.Enums;
 using Employee.Domain.Services.Payroll;
+using Microsoft.Extensions.Logging;
 
 namespace Employee.UnitTests.Features.Payroll
 {
@@ -38,7 +39,8 @@ namespace Employee.UnitTests.Features.Payroll
           _mockPayrollRepo.Object,
           _mockUnitOfWork.Object,
           _mockDataProvider.Object,
-          _mockTaxCalculator.Object
+          _mockTaxCalculator.Object,
+          Mock.Of<ILogger<PayrollProcessingService>>()
       );
     }
 

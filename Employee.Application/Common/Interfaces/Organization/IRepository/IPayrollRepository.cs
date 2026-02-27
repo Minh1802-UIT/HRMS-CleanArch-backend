@@ -15,5 +15,11 @@ namespace Employee.Application.Common.Interfaces.Organization.IRepository
 
     Task<PagedResult<PayrollEntity>> GetByMonthPagedAsync(string month, PaginationParams pagination, CancellationToken cancellationToken = default);
     Task DeleteByEmployeeIdAsync(string employeeId, CancellationToken cancellationToken = default); // IMP-3
+
+    /// <summary>
+    /// Bulk-approves all Draft payrolls for a given month in a single DB round-trip.
+    /// Returns the number of documents modified.
+    /// </summary>
+    Task<long> ApproveDraftsByMonthAsync(string monthKey, CancellationToken cancellationToken = default);
   }
 }

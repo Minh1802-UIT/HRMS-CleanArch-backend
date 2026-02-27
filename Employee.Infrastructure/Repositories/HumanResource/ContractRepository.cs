@@ -107,7 +107,12 @@ namespace Employee.Infrastructure.Repositories.HumanResource
       return await _collection.Find(filter).ToListAsync(cancellationToken);
     }
 
-    public async Task DeleteByEmployeeIdAsync(string employeeId, CancellationToken cancellationToken = default) =>
-        await _collection.DeleteManyAsync(x => x.EmployeeId == employeeId, cancellationToken);
+    public async Task DeleteByEmployeeIdAsync(string employeeId, CancellationToken cancellationToken = default)
+    {
+      var update = Builders<ContractEntity>.Update
+          .Set(x => x.IsDeleted, true)
+          .Set(x => x.UpdatedAt, DateTime.UtcNow);
+      await _collection.UpdateManyAsync(x => x.EmployeeId == employeeId && x.IsDeleted != true, update, cancellationToken: cancellationToken);
+    }
   }
 }

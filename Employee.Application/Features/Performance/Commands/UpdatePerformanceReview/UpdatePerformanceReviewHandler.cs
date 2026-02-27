@@ -20,7 +20,7 @@ namespace Employee.Application.Features.Performance.Commands.UpdatePerformanceRe
       if (review == null) return false;
 
       review.UpdateReview(request.Dto.OverallScore, request.Dto.Notes, request.Dto.Status);
-      await _repo.UpdateAsync(review, cancellationToken);
+      await _repo.UpdateAsync(review.Id, review, cancellationToken);
       return true;
     }
   }

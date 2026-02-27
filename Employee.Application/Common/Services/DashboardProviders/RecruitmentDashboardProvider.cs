@@ -49,22 +49,12 @@ namespace Employee.Application.Common.Services.DashboardProviders
         PendingFeedback = 0
       };
 
-      // Recruitment Funnel Calculation
-      var allCandidates = await _candidateRepo.GetAllAsync();
-      var funnel = allCandidates
-        .GroupBy(c => c.Status)
-        .Select(g => new
-        {
-          Status = g.Key,
-          Count = g.Count()
-        })
-        .OrderByDescending(x => x.Count)
-        .ToList();
-
-      foreach (var item in funnel)
+      // Recruitment Funnel — SERVER-SIDE AGGREGATION
+      var statusCounts = await _candidateRepo.GetStatusCountsAsync();
+      foreach (var (status, count) in statusCounts.OrderByDescending(x => x.Value))
       {
-        dto.Analytics.RecruitmentFunnel.Labels.Add(item.Status.ToString());
-        dto.Analytics.RecruitmentFunnel.Data.Add(item.Count);
+        dto.Analytics.RecruitmentFunnel.Labels.Add(status);
+        dto.Analytics.RecruitmentFunnel.Data.Add(count);
       }
     }
   }

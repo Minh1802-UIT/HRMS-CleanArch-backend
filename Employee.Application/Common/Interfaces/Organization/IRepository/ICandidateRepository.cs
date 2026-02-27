@@ -1,16 +1,16 @@
 using System.Threading;
 using Employee.Domain.Entities.HumanResource;
+using Employee.Application.Common.Interfaces.Common;
 
 namespace Employee.Application.Common.Interfaces.Organization.IRepository
 {
-    public interface ICandidateRepository
-    {
-        Task<IEnumerable<Candidate>> GetAllAsync(CancellationToken cancellationToken = default);
-        Task<Candidate?> GetByIdAsync(string id, CancellationToken cancellationToken = default);
+  public interface ICandidateRepository : IBaseRepository<Candidate>
+  {
         Task<IEnumerable<Candidate>> GetByVacancyIdAsync(string vacancyId, CancellationToken cancellationToken = default);
-        Task CreateAsync(Candidate entity, CancellationToken cancellationToken = default);
-        Task UpdateAsync(Candidate entity, CancellationToken cancellationToken = default);
-        Task DeleteAsync(string id, CancellationToken cancellationToken = default);
-        Task ClearAllAsync(CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Server-side aggregation: groups candidates by Status and returns counts.
+    /// </summary>
+    Task<Dictionary<string, int>> GetStatusCountsAsync(CancellationToken cancellationToken = default);
     }
 }

@@ -107,5 +107,21 @@ namespace Employee.Infrastructure.Repositories.Payroll
 
     public async Task DeleteByEmployeeIdAsync(string employeeId, CancellationToken cancellationToken = default) =>
         await _collection.DeleteManyAsync(x => x.EmployeeId == employeeId, cancellationToken);
+
+    public async Task<long> ApproveDraftsByMonthAsync(string monthKey, CancellationToken cancellationToken = default)
+    {
+      var filter = Builders<PayrollEntity>.Filter.And(
+          SoftDeleteFilter.GetActiveOnlyFilter<PayrollEntity>(),
+          Builders<PayrollEntity>.Filter.Eq(x => x.Month, monthKey),
+          Builders<PayrollEntity>.Filter.Eq(x => x.Status, Employee.Domain.Enums.PayrollStatus.Draft)
+      );
+
+      var update = Builders<PayrollEntity>.Update
+          .Set(x => x.Status, Employee.Domain.Enums.PayrollStatus.Approved)
+          .Set(x => x.UpdatedAt, DateTime.UtcNow);
+
+      var result = await _collection.UpdateManyAsync(filter, update, cancellationToken: cancellationToken);
+      return result.ModifiedCount;
+    }
   }
 }

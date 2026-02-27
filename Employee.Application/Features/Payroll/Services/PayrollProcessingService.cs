@@ -7,6 +7,7 @@ using Employee.Domain.Enums;
 using Employee.Application.Common.Models;
 
 using Employee.Domain.Services.Payroll;
+using Microsoft.Extensions.Logging;
 
 namespace Employee.Application.Features.Payroll.Services
 {
@@ -16,17 +17,20 @@ namespace Employee.Application.Features.Payroll.Services
     private readonly IUnitOfWork _unitOfWork;
     private readonly IPayrollDataProvider _dataProvider;
     private readonly ITaxCalculator _taxCalculator;
+    private readonly ILogger<PayrollProcessingService> _logger;
 
     public PayrollProcessingService(
         IPayrollRepository payrollRepo,
         IUnitOfWork unitOfWork,
         IPayrollDataProvider dataProvider,
-        ITaxCalculator taxCalculator)
+        ITaxCalculator taxCalculator,
+        ILogger<PayrollProcessingService> logger)
     {
       _payrollRepo = payrollRepo;
       _unitOfWork = unitOfWork;
       _dataProvider = dataProvider;
       _taxCalculator = taxCalculator;
+      _logger = logger;
     }
 
     public async Task<int> CalculatePayrollAsync(string month, string year)
@@ -105,8 +109,9 @@ namespace Employee.Application.Features.Payroll.Services
         await _unitOfWork.CommitTransactionAsync();
         return count;
       }
-      catch (Exception)
+      catch (Exception ex)
       {
+        _logger.LogError(ex, "Payroll calculation failed for {Month}-{Year}. Rolling back transaction.", month, year);
         await _unitOfWork.RollbackTransactionAsync();
         throw;
       }
@@ -115,15 +120,8 @@ namespace Employee.Application.Features.Payroll.Services
     public async Task FinalizePayrollAsync(string month, string year)
     {
       var monthKey = $"{month}-{year}";
-      var payrolls = await _payrollRepo.GetByMonthAsync(monthKey);
-      foreach (var p in payrolls)
-      {
-        if (p.Status == PayrollStatus.Draft)
-        {
-          p.Approve();
-          await _payrollRepo.UpdateAsync(p.Id, p);
-        }
-      }
+      var approvedCount = await _payrollRepo.ApproveDraftsByMonthAsync(monthKey);
+      _logger.LogInformation("Finalized {Count} payrolls for {MonthKey}.", approvedCount, monthKey);
     }
 
   }

@@ -147,6 +147,50 @@ namespace Employee.Infrastructure.Data
                 new CreateIndexModel<RawAttendanceLog>(
                     Builders<RawAttendanceLog>.IndexKeys.Ascending(x => x.IsProcessed).Ascending(x => x.Timestamp),
                     new CreateIndexOptions { Background = true }));
+
+      // 11. PerformanceReviews — supports GetByEmployeeIdAsync
+      var perfReviews = context.GetCollection<Employee.Domain.Entities.Performance.PerformanceReview>("performance_reviews");
+      await perfReviews.Indexes.CreateOneAsync(
+          new CreateIndexModel<Employee.Domain.Entities.Performance.PerformanceReview>(
+              Builders<Employee.Domain.Entities.Performance.PerformanceReview>.IndexKeys
+                  .Ascending(x => x.EmployeeId).Ascending(x => x.IsDeleted),
+              new CreateIndexOptions { Background = true, Name = "idx_perfreviews_employeeId_isDeleted" }));
+
+      // 12. PerformanceGoals — supports GetByEmployeeIdAsync
+      var perfGoals = context.GetCollection<Employee.Domain.Entities.Performance.PerformanceGoal>("performance_goals");
+      await perfGoals.Indexes.CreateOneAsync(
+          new CreateIndexModel<Employee.Domain.Entities.Performance.PerformanceGoal>(
+              Builders<Employee.Domain.Entities.Performance.PerformanceGoal>.IndexKeys
+                  .Ascending(x => x.EmployeeId).Ascending(x => x.IsDeleted),
+              new CreateIndexOptions { Background = true, Name = "idx_perfgoals_employeeId_isDeleted" }));
+
+      // 13. JobVacancies — supports GetAllAsync, CountActiveAsync
+      var jobVacancies = context.GetCollection<JobVacancy>("job_vacancies");
+      await jobVacancies.Indexes.CreateOneAsync(
+          new CreateIndexModel<JobVacancy>(
+              Builders<JobVacancy>.IndexKeys.Ascending(x => x.IsDeleted),
+              new CreateIndexOptions { Background = true, Name = "idx_jobvacancies_isDeleted" }));
+
+      // 14. Payrolls — supports GetByMonthAsync, FinalizePayrollAsync
+      await payrolls.Indexes.CreateOneAsync(
+          new CreateIndexModel<PayrollEntity>(
+              Builders<PayrollEntity>.IndexKeys.Ascending(x => x.Month).Ascending(x => x.Status),
+              new CreateIndexOptions { Background = true, Name = "idx_payrolls_month_status" }));
+
+      // 15. LeaveRequests — supports default sort by FromDate DESC in GetPagedAsync
+      await leaveRequests.Indexes.CreateOneAsync(
+          new CreateIndexModel<LeaveRequest>(
+              Builders<LeaveRequest>.IndexKeys
+                  .Ascending(x => x.IsDeleted).Descending(x => x.FromDate),
+              new CreateIndexOptions { Background = true, Name = "idx_leaverequests_isDeleted_fromDate_desc" }));
+
+      // 16. Notifications — supports GetByUserIdAsync, GetUnreadCountAsync
+      var notifications = context.GetCollection<Employee.Domain.Entities.Notifications.Notification>("notifications");
+      await notifications.Indexes.CreateOneAsync(
+          new CreateIndexModel<Employee.Domain.Entities.Notifications.Notification>(
+              Builders<Employee.Domain.Entities.Notifications.Notification>.IndexKeys
+                  .Ascending(x => x.UserId).Ascending(x => x.IsRead).Descending(x => x.CreatedAt),
+              new CreateIndexOptions { Background = true, Name = "idx_notifications_userId_isRead_createdAt" }));
         }
     }
 }

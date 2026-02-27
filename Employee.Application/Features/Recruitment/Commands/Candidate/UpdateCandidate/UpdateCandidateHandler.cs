@@ -21,7 +21,7 @@ namespace Employee.Application.Features.Recruitment.Commands.Candidate.UpdateCan
       entity.UpdateInfo(request.Dto.FullName, request.Dto.Email, request.Dto.Phone ?? string.Empty);
       entity.UpdateResume(request.Dto.ResumeUrl ?? string.Empty);
 
-      await _repo.UpdateAsync(entity, cancellationToken);
+      await _repo.UpdateAsync(entity.Id, entity, cancellationToken);
     }
   }
 }

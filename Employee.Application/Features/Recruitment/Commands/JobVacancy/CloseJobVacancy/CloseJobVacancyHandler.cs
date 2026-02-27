@@ -22,7 +22,7 @@ namespace Employee.Application.Features.Recruitment.Commands.JobVacancy.CloseJob
           ?? throw new NotFoundException($"Job vacancy with ID {request.Id} not found.");
 
       entity.UpdateStatus(JobVacancyStatus.Closed);
-      await _repo.UpdateAsync(entity, cancellationToken);
+      await _repo.UpdateAsync(entity.Id, entity, cancellationToken);
     }
   }
 }

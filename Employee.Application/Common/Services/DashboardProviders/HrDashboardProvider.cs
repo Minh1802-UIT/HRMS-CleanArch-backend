@@ -46,25 +46,19 @@ namespace Employee.Application.Common.Services.DashboardProviders
           ColorScheme = GetColor(e.Id.GetHashCode())
         }).ToList();
 
-      // Calculation of Staff Distribution by Department
-      var allActiveEmployees = await _employeeRepo.GetAllActiveAsync();
-      var allActiveDepts = await _deptRepo.GetAllActiveAsync();
+      // Calculation of Staff Distribution by Department — SERVER-SIDE AGGREGATION
+      var distribution = await _employeeRepo.GetDepartmentDistributionAsync();
 
-      var distribution = allActiveEmployees
-        .Where(e => e.JobDetails != null && !string.IsNullOrEmpty(e.JobDetails.DepartmentId))
-        .GroupBy(e => e.JobDetails.DepartmentId)
-        .Select(g => new
-        {
-          DeptId = g.Key,
-          Count = g.Count()
-        })
-        .ToList();
-
-      foreach (var item in distribution)
+      if (distribution.Any())
       {
-        var deptName = allActiveDepts.FirstOrDefault(d => d.Id == item.DeptId)?.Name ?? "Others";
-        dto.Analytics.StaffDistribution.Labels.Add(deptName);
-        dto.Analytics.StaffDistribution.Data.Add(item.Count);
+        var deptIds = distribution.Keys.ToList();
+        var deptNames = await _deptRepo.GetNamesByIdsAsync(deptIds);
+        foreach (var (deptId, count) in distribution)
+        {
+          var deptName = deptNames.TryGetValue(deptId, out var name) ? name : "Others";
+          dto.Analytics.StaffDistribution.Labels.Add(deptName);
+          dto.Analytics.StaffDistribution.Data.Add(count);
+        }
       }
     }
 
