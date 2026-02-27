@@ -392,7 +392,7 @@ using (var scope = app.Services.CreateScope())
     var context = services.GetRequiredService<Employee.Infrastructure.Persistence.IMongoContext>();
     await Employee.Infrastructure.Data.MongoIndexInitializer.CreateIndexesAsync(context);
 
-    await DbSeeder.SeedUsersAndRolesAsync(services);
+    // await DbSeeder.SeedUsersAndRolesAsync(services); // TEMPORARILY DISABLED
     seedLogger.LogInformation("Data Seeding Completed Successfully!");
   }
   catch (Exception ex)

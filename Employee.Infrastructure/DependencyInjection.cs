@@ -122,13 +122,23 @@ namespace Employee.Infrastructure
 
     public static IServiceCollection AddEmailService(this IServiceCollection services, IConfiguration configuration, bool isDevelopment)
     {
-      if (isDevelopment)
+      var sendGridKey = configuration["EmailSettings:SendGridApiKey"] ?? Environment.GetEnvironmentVariable("SendGridApiKey");
+      var smtpPassword = configuration["EmailSettings:Password"] ?? Environment.GetEnvironmentVariable("Password");
+
+      bool hasSendGrid = !string.IsNullOrEmpty(sendGridKey) && sendGridKey != "OVERRIDE_VIA_USER_SECRETS_OR_ENV";
+      bool hasSmtp = !string.IsNullOrEmpty(smtpPassword) && smtpPassword != "OVERRIDE_VIA_USER_SECRETS_OR_ENV";
+
+      if (hasSendGrid)
       {
-        services.AddScoped<IEmailService, DevEmailService>();
+        services.AddScoped<IEmailService, SendGridEmailService>();
+      }
+      else if (hasSmtp)
+      {
+        services.AddScoped<IEmailService, SmtpEmailService>();
       }
       else
       {
-        services.AddScoped<IEmailService, SendGridEmailService>();
+        services.AddScoped<IEmailService, DevEmailService>();
       }
 
       return services;
