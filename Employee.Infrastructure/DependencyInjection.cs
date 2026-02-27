@@ -128,7 +128,7 @@ namespace Employee.Infrastructure
       }
       else
       {
-        services.AddScoped<IEmailService, SmtpEmailService>();
+        services.AddScoped<IEmailService, SendGridEmailService>();
       }
 
       return services;
