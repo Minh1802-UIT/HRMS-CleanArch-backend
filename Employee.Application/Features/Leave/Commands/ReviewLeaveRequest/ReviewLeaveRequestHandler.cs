@@ -50,7 +50,11 @@ namespace Employee.Application.Features.Leave.Commands.ReviewLeaveRequest
         if (leaveTypeDoc == null)
           throw new NotFoundException($"Không tìm thấy loại phép '{entity.LeaveType}' trong hệ thống.");
         leaveTypeDocId = leaveTypeDoc.Id;
-        workingDays = Employee.Application.Common.Utils.DateHelper.CountWorkingDays(entity.FromDate, entity.ToDate);
+        // Áp dụng Sandwich Rule nhất quán với CreateLeaveRequestHandler:
+        // Nếu loại phép có Sandwich Rule thì tính theo ngày lịch, ngược lại tính ngày làm việc
+        workingDays = leaveTypeDoc.IsSandwichRuleApplied
+            ? Employee.Application.Common.Utils.DateHelper.CountCalendarDays(entity.FromDate, entity.ToDate)
+            : Employee.Application.Common.Utils.DateHelper.CountWorkingDays(entity.FromDate, entity.ToDate);
       }
 
       // Domain Logic
@@ -79,7 +83,7 @@ namespace Employee.Application.Features.Leave.Commands.ReviewLeaveRequest
       // Log
       await _auditService.LogAsync(
           userId: request.ApprovedBy,
-          userName: "Manager", // TODO: resolve real name via ICurrentUser
+          userName: request.ApprovedByName,
           action: "REVIEW_LEAVE_REQUEST",
           tableName: "LeaveRequests",
           recordId: request.Id,

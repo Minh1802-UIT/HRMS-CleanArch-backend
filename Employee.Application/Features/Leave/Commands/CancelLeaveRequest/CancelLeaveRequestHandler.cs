@@ -40,7 +40,10 @@ namespace Employee.Application.Features.Leave.Commands.CancelLeaveRequest
       if (entity.Status == Employee.Domain.Enums.LeaveStatus.Approved)
       {
         // Guard: only allow cancel if leave hasn't started yet
-        if (entity.FromDate.Date <= DateTime.UtcNow.Date)
+        // Dùng UTC+7 (Asia/Ho_Chi_Minh) nhất quán với AttendanceProcessingService
+        var vnOffset = TimeSpan.FromHours(7);
+        var todayVn = DateTimeOffset.UtcNow.ToOffset(vnOffset).Date;
+        if (entity.FromDate.Date <= todayVn)
           throw new ValidationException("Không thể hủy đơn nghỉ phép đã bắt đầu hoặc đã qua.");
 
         // Resolve LeaveType document ID — fail fast to avoid cancelling without refund

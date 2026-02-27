@@ -173,10 +173,18 @@ namespace Employee.Infrastructure.Identity
       return MapToUserDto(user, roles);
     }
 
+    private static readonly HashSet<string> AllowedRoles = new(StringComparer.OrdinalIgnoreCase)
+    {
+      "Admin", "HR", "Manager", "Employee"
+    };
+
     public async Task<Result> AssignRoleAsync(string userId, string roleName)
     {
       var user = await _userManager.FindByIdAsync(userId);
       if (user == null) return Result.Failure(new[] { "User not found." });
+
+      if (!AllowedRoles.Contains(roleName))
+        return Result.Failure(new[] { $"Role '{roleName}' không hợp lệ. Chỉ cho phép: {string.Join(", ", AllowedRoles)}." });
 
       if (!await _roleManager.RoleExistsAsync(roleName))
       {

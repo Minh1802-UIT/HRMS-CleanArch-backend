@@ -44,19 +44,23 @@ namespace Employee.UnitTests.Features.Auth.Commands
       var result = await _forgotHandler.Handle(new ForgotPasswordCommand { Email = email }, CancellationToken.None);
 
       // Assert
-      Assert.Equal("Mã đặt lại mật khẩu đã được gửi đến email của bạn.", result);
+      Assert.Equal("Nếu email tồn tại trong hệ thống, mã đặt lại mật khẩu sẽ được gửi đến email của bạn.", result);
       _mockEmailService.Verify(x => x.SendAsync(email, It.IsAny<string>(), It.IsAny<string>(), true), Times.Once);
     }
 
     [Fact]
-    public async Task ForgotPassword_InvalidEmail_ShouldThrow()
+    public async Task ForgotPassword_InvalidEmail_ShouldReturnNeutralMessage()
     {
-      // Arrange
+      // Arrange — email không tồn tại, trả về thông báo trung lập (anti-enumeration)
       var email = "unknown@example.com";
       _mockIdentityService.Setup(x => x.GetUserByEmailAsync(email)).ReturnsAsync((UserDto?)null);
 
-      // Act & Assert
-      await Assert.ThrowsAsync<ValidationException>(() => _forgotHandler.Handle(new ForgotPasswordCommand { Email = email }, CancellationToken.None));
+      // Act
+      var result = await _forgotHandler.Handle(new ForgotPasswordCommand { Email = email }, CancellationToken.None);
+
+      // Assert — không throw exception, trả về cùng thông báo trung lập
+      Assert.Equal("Nếu email tồn tại trong hệ thống, mã đặt lại mật khẩu sẽ được gửi đến email của bạn.", result);
+      _mockEmailService.Verify(x => x.SendAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()), Times.Never);
     }
 
     // --- Reset Password Tests ---

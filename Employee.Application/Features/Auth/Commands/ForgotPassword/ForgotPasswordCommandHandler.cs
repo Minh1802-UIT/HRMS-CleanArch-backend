@@ -18,8 +18,10 @@ namespace Employee.Application.Features.Auth.Commands.ForgotPassword
     public async Task<string> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
     {
       var userDto = await _identityService.GetUserByEmailAsync(request.Email.Trim());
+      // Trả về thông báo trung lập để tránh user enumeration (OWASP)
+      // Không tiết lộ email có tồn tại trong hệ thống hay không
       if (userDto == null)
-        throw new ValidationException("Email không tồn tại trong hệ thống.");
+        return "Nếu email tồn tại trong hệ thống, mã đặt lại mật khẩu sẽ được gửi đến email của bạn.";
 
       // Generate reset token using IIdentityService
       var token = await _identityService.GenerateForgotPasswordTokenAsync(request.Email.Trim());
@@ -44,7 +46,7 @@ namespace Employee.Application.Features.Auth.Commands.ForgotPassword
 
       await _emailService.SendAsync(request.Email.Trim(), subject, body, isHtml: true);
 
-      return "Mã đặt lại mật khẩu đã được gửi đến email của bạn.";
+      return "Nếu email tồn tại trong hệ thống, mã đặt lại mật khẩu sẽ được gửi đến email của bạn.";
     }
   }
 }

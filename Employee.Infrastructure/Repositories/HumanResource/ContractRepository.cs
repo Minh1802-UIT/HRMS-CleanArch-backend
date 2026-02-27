@@ -26,7 +26,8 @@ namespace Employee.Infrastructure.Repositories.HumanResource
         .Include(c => (object)c.Status)
         .Include("Salary.BasicSalary")
         .Include("Salary.TransportAllowance")
-        .Include("Salary.LunchAllowance");
+        .Include("Salary.LunchAllowance")
+        .Include("Salary.OtherAllowance");
 
       var results = await _collection
         .Find(filter)
@@ -39,7 +40,8 @@ namespace Employee.Infrastructure.Repositories.HumanResource
         Status = c.Status.ToString(),
         BasicSalary = c.Salary?.BasicSalary ?? 0,
         TransportAllowance = c.Salary?.TransportAllowance ?? 0,
-        LunchAllowance = c.Salary?.LunchAllowance ?? 0
+        LunchAllowance = c.Salary?.LunchAllowance ?? 0,
+        OtherAllowance = c.Salary?.OtherAllowance ?? 0
       }).ToList();
     }
 

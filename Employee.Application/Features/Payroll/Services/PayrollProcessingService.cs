@@ -50,7 +50,7 @@ namespace Employee.Application.Features.Payroll.Services
 
           // 1. Calculate Income
           decimal baseSalary = salaryInfo.BasicSalary;
-          decimal allowances = salaryInfo.TransportAllowance + salaryInfo.LunchAllowance;
+          decimal allowances = salaryInfo.TransportAllowance + salaryInfo.LunchAllowance + salaryInfo.OtherAllowance;
           decimal overtimeHours = (decimal)(bucket?.TotalOvertime ?? 0);
           decimal standardWorkingDays = (decimal)data.Settings.StandardWorkingDays;
           if (standardWorkingDays <= 0) standardWorkingDays = 22; // Safe fallback

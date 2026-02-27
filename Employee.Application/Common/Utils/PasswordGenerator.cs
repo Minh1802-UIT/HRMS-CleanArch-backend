@@ -48,9 +48,8 @@ namespace Employee.Application.Common.Utils
 
     private static char GetRandomChar(string validChars, RandomNumberGenerator rng)
     {
-      var bytes = new byte[1];
-      rng.GetBytes(bytes);
-      return validChars[bytes[0] % validChars.Length];
+      // Dùng RandomNumberGenerator.GetInt32 để tránh modulo bias
+      return validChars[RandomNumberGenerator.GetInt32(validChars.Length)];
         }
     }
 }

@@ -22,15 +22,6 @@ namespace Employee.API.Endpoints.Payroll
       return ResultUtils.Success(result, "Retrieved paginated payroll list successfully.");
     }
 
-    public static async Task<IResult> GetByMonthPagedList(
-      [FromQuery] string month,
-      [FromBody] PaginationParams pagination,
-      IPayrollService service)
-    {
-      var result = await service.GetByMonthPagedAsync(month, pagination);
-      return ResultUtils.Success(result, $"Retrieved paginated payroll for {month} successfully.");
-    }
-
     // 1. GET MY HISTORY
     public static async Task<IResult> GetMyHistory(
         ICurrentUser currentUser,
@@ -41,9 +32,16 @@ namespace Employee.API.Endpoints.Payroll
     }
 
     // 2. GET BY ID (Chi tiết 1 phiếu lương)
-    public static async Task<IResult> GetById(string id, IPayrollService service)
+    public static async Task<IResult> GetById(string id, IPayrollService service, ICurrentUser currentUser)
     {
       var item = await service.GetByIdAsync(id);
+      // Employee chỉ được xem phiếu lương của chính mình; Admin/HR được xem tất cả
+      if (!currentUser.IsInRole("Admin") && !currentUser.IsInRole("HR"))
+      {
+        var employeeId = currentUser.EmployeeId ?? currentUser.UserId;
+        if (item.EmployeeId != employeeId)
+          return ResultUtils.Fail("PAYROLL_FORBIDDEN", "Bạn không có quyền xem phiếu lương này.", 403);
+      }
       return ResultUtils.Success(item);
     }
 
@@ -94,8 +92,16 @@ namespace Employee.API.Endpoints.Payroll
       return ResultUtils.Success($"Payroll status updated via CQRS.");
     }
 
-    public static async Task<IResult> GetPdf(string id, IPayslipService service)
+    public static async Task<IResult> GetPdf(string id, IPayslipService service, IPayrollService payrollService, ICurrentUser currentUser)
     {
+      // Employee chỉ được tải payslip của chính mình; Admin/HR được tải tất cả
+      if (!currentUser.IsInRole("Admin") && !currentUser.IsInRole("HR"))
+      {
+        var payroll = await payrollService.GetByIdAsync(id);
+        var employeeId = currentUser.EmployeeId ?? currentUser.UserId;
+        if (payroll.EmployeeId != employeeId)
+          return ResultUtils.Fail("PAYSLIP_FORBIDDEN", "Bạn không có quyền tải payslip này.", 403);
+      }
       var pdfBytes = await service.GeneratePayslipPdfAsync(id);
       if (pdfBytes == null) return ResultUtils.Fail("PAYSLIP_NOT_FOUND", $"Payslip PDF not found for payroll id '{id}'.", 404);
 

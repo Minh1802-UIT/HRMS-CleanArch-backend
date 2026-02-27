@@ -40,9 +40,16 @@ namespace Employee.API.Endpoints.Leave
     }
 
     // 2. GET BY ID (Xem chi tiết 1 đơn)
-    public static async Task<IResult> GetById(string id, ISender sender)
+    public static async Task<IResult> GetById(string id, ISender sender, ICurrentUser currentUser)
     {
       var item = await sender.Send(new GetLeaveRequestByIdQuery(id));
+      // Employee chỉ được xem đơn nghỉ phép của chính mình; Admin/HR/Manager được xem tất cả
+      if (!currentUser.IsInRole("Admin") && !currentUser.IsInRole("HR") && !currentUser.IsInRole("Manager"))
+      {
+        var employeeId = currentUser.EmployeeId ?? currentUser.UserId;
+        if (item.EmployeeId != employeeId)
+          return ResultUtils.Fail("LEAVE_REQUEST_FORBIDDEN", "Bạn không có quyền xem đơn nghỉ phép này.", 403);
+      }
       return ResultUtils.Success(item);
     }
 
@@ -116,7 +123,8 @@ namespace Employee.API.Endpoints.Leave
       {
         Id = id,
         ReviewDto = dto,
-        ApprovedBy = currentUser.EmployeeId ?? currentUser.UserId
+        ApprovedBy = currentUser.EmployeeId ?? currentUser.UserId,
+        ApprovedByName = currentUser.UserName ?? currentUser.UserId
       };
 
       await sender.Send(command);

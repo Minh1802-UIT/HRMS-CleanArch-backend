@@ -4,20 +4,19 @@ using Employee.Application.Common.Interfaces;
 using Employee.Application.Features.Auth.Commands.Register;
 using Employee.Application.Features.HumanResource.Events;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace Employee.Application.Features.HumanResource.EventHandlers
 {
   public class CreateUserEventHandler : INotificationHandler<EmployeeCreatedEvent>
   {
-    private readonly ISender _sender;
-    private readonly IEmailService _emailService;
     private readonly IServiceProvider _serviceProvider;
+    private readonly ILogger<CreateUserEventHandler> _logger;
 
-    public CreateUserEventHandler(ISender sender, IEmailService emailService, IServiceProvider serviceProvider)
+    public CreateUserEventHandler(IServiceProvider serviceProvider, ILogger<CreateUserEventHandler> logger)
     {
-      _sender = sender;
-      _emailService = emailService;
       _serviceProvider = serviceProvider;
+      _logger = logger;
     }
 
     public Task Handle(EmployeeCreatedEvent notification, CancellationToken cancellationToken)
@@ -71,9 +70,12 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
 
           await emailService.SendAsync(employee.Email, subject, body, isHtml: true);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-          // Ghi log lỗi nếu cần thiết
+          _logger.LogError(ex,
+              "Tạo tài khoản hoặc gửi email chào mừng thất bại cho nhân viên {EmployeeCode} (ID: {EmployeeId}). " +
+              "Nhân viên đã được tạo nhưng chưa có tài khoản hệ thống.",
+              employee.EmployeeCode, employee.Id);
         }
       });
 

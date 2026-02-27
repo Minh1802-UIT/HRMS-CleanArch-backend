@@ -10,4 +10,5 @@ public class ContractSalaryProjection
   public decimal BasicSalary { get; set; }
   public decimal TransportAllowance { get; set; }
   public decimal LunchAllowance { get; set; }
+  public decimal OtherAllowance { get; set; }
 }
