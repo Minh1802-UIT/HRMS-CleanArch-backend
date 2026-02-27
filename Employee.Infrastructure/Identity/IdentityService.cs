@@ -9,6 +9,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Employee.Application.Common.Interfaces.Organization.IRepository;
 
 namespace Employee.Infrastructure.Identity
 {
@@ -18,17 +20,20 @@ namespace Employee.Infrastructure.Identity
     private readonly RoleManager<ApplicationRole> _roleManager;
     private readonly ITokenService _tokenService;
     private readonly IConfiguration _config;
+    private readonly IServiceProvider _serviceProvider;
 
     public IdentityService(
         UserManager<ApplicationUser> userManager,
         RoleManager<ApplicationRole> roleManager,
         ITokenService tokenService,
-        IConfiguration config)
+        IConfiguration config,
+        IServiceProvider serviceProvider)
     {
       _userManager = userManager;
       _roleManager = roleManager;
       _tokenService = tokenService;
       _config = config;
+      _serviceProvider = serviceProvider;
     }
 
     public async Task<string?> GetUserNameAsync(string userId)
@@ -190,7 +195,30 @@ namespace Employee.Infrastructure.Identity
       if (!string.IsNullOrEmpty(dto.Email))
       {
         var existingEmail = await _userManager.FindByEmailAsync(dto.Email);
-        if (existingEmail != null) throw new ConflictException("Email đã tồn tại");
+        if (existingEmail != null)
+        {
+          if (!string.IsNullOrEmpty(existingEmail.EmployeeId))
+          {
+            using var scope = _serviceProvider.CreateScope();
+            var employeeRepo = scope.ServiceProvider.GetRequiredService<IEmployeeRepository>();
+            var employeeExists = await employeeRepo.GetByIdAsync(existingEmail.EmployeeId);
+
+            if (employeeExists == null)
+            {
+              // The user account is an orphan from a previously failed or rolled-back transaction.
+              // Delete the orphan so the email can be used.
+              await _userManager.DeleteAsync(existingEmail);
+            }
+            else
+            {
+              throw new ConflictException("Email đã tồn tại");
+            }
+          }
+          else
+          {
+            throw new ConflictException("Email đã tồn tại");
+          }
+        }
       }
 
       var user = new ApplicationUser
