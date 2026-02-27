@@ -9,52 +9,48 @@ namespace Employee.Application.Common.Utils
 
         public static string Generate(int length = 12, int numberOfNonAlphanumericCharacters = 2)
         {
-            if (length < 1 || length > 128) throw new ArgumentOutOfRangeException(nameof(length));
-            if (numberOfNonAlphanumericCharacters > length) throw new ArgumentOutOfRangeException(nameof(numberOfNonAlphanumericCharacters));
+      if (length < 8 || length > 128) throw new ArgumentOutOfRangeException(nameof(length), "Length must be between 8 and 128");
 
-            using var rng = RandomNumberGenerator.Create();
-            var byteBuffer = new byte[length];
-            rng.GetBytes(byteBuffer);
+      using var rng = RandomNumberGenerator.Create();
 
-            var characterBuffer = new char[length];
-
-            for (var iter = 0; iter < length; iter++)
+      var chars = new List<char>
             {
-                var i = byteBuffer[iter] % 62;
+                GetRandomChar("abcdefghijklmnopqrstuvwxyz", rng),
+                GetRandomChar("ABCDEFGHIJKLMNOPQRSTUVWXYZ", rng),
+                GetRandomChar("0123456789", rng)
+            };
 
-                if (i < 10)
-                {
-                    characterBuffer[iter] = (char)('0' + i);
-                }
-                else if (i < 36)
-                {
-                    characterBuffer[iter] = (char)('A' + i - 10);
-                }
-                else
-                {
-                    characterBuffer[iter] = (char)('a' + i - 36);
-                }
+      for (int i = 0; i < numberOfNonAlphanumericCharacters; i++)
+      {
+        chars.Add(GetRandomChar(new string(Punctuations), rng));
+      }
+
+      string allChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789" + new string(Punctuations);
+      while (chars.Count < length)
+      {
+        chars.Add(GetRandomChar(allChars, rng));
             }
 
-            if (numberOfNonAlphanumericCharacters > 0)
+      // Shuffle the characters
+      for (int i = chars.Count - 1; i > 0; i--)
             {
-                for (var iter = 0; iter < numberOfNonAlphanumericCharacters; iter++)
-                {
-                    int pos;
-                    do
-                    {
-                        var indexByte = new byte[1];
-                        rng.GetBytes(indexByte);
-                        pos = indexByte[0] % length;
-                    } while (!char.IsLetterOrDigit(characterBuffer[pos]));
+        var rngBytes = new byte[4];
+        rng.GetBytes(rngBytes);
+        int j = (int)(BitConverter.ToUInt32(rngBytes, 0) % (uint)(i + 1));
 
-                    var puncByte = new byte[1];
-                    rng.GetBytes(puncByte);
-                    characterBuffer[pos] = Punctuations[puncByte[0] % Punctuations.Length];
-                }
-            }
+        var temp = chars[i];
+        chars[i] = chars[j];
+        chars[j] = temp;
+      }
 
-            return new string(characterBuffer);
+      return new string(chars.ToArray());
+    }
+
+    private static char GetRandomChar(string validChars, RandomNumberGenerator rng)
+    {
+      var bytes = new byte[1];
+      rng.GetBytes(bytes);
+      return validChars[bytes[0] % validChars.Length];
         }
     }
 }
