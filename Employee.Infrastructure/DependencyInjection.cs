@@ -122,11 +122,20 @@ namespace Employee.Infrastructure
 
     public static IServiceCollection AddEmailService(this IServiceCollection services, IConfiguration configuration, bool isDevelopment)
     {
-      var sendGridKey = configuration["EmailSettings:SendGridApiKey"] ?? Environment.GetEnvironmentVariable("SendGridApiKey");
-      var smtpPassword = configuration["EmailSettings:Password"] ?? Environment.GetEnvironmentVariable("Password");
+      var sendGridKey = configuration["EmailSettings:SendGridApiKey"];
+      if (string.IsNullOrEmpty(sendGridKey) || sendGridKey == "OVERRIDE_VIA_USER_SECRETS_OR_ENV")
+      {
+        sendGridKey = Environment.GetEnvironmentVariable("SendGridApiKey") ?? Environment.GetEnvironmentVariable("EmailSettings__SendGridApiKey");
+      }
 
-      bool hasSendGrid = !string.IsNullOrEmpty(sendGridKey) && sendGridKey != "OVERRIDE_VIA_USER_SECRETS_OR_ENV";
-      bool hasSmtp = !string.IsNullOrEmpty(smtpPassword) && smtpPassword != "OVERRIDE_VIA_USER_SECRETS_OR_ENV";
+      var smtpPassword = configuration["EmailSettings:Password"];
+      if (string.IsNullOrEmpty(smtpPassword) || smtpPassword == "OVERRIDE_VIA_USER_SECRETS_OR_ENV")
+      {
+        smtpPassword = Environment.GetEnvironmentVariable("Password") ?? Environment.GetEnvironmentVariable("EmailSettings__Password");
+      }
+
+      bool hasSendGrid = !string.IsNullOrWhiteSpace(sendGridKey) && sendGridKey != "OVERRIDE_VIA_USER_SECRETS_OR_ENV";
+      bool hasSmtp = !string.IsNullOrWhiteSpace(smtpPassword) && smtpPassword != "OVERRIDE_VIA_USER_SECRETS_OR_ENV";
 
       if (hasSendGrid)
       {
