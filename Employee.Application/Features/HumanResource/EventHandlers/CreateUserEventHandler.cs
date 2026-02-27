@@ -3,6 +3,7 @@ using Employee.Application.Common.Utils;
 using Employee.Application.Common.Interfaces;
 using Employee.Application.Features.Auth.Commands.Register;
 using Employee.Application.Features.HumanResource.Events;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace Employee.Application.Features.HumanResource.EventHandlers
 {
@@ -10,37 +11,43 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
   {
     private readonly ISender _sender;
     private readonly IEmailService _emailService;
+    private readonly IServiceProvider _serviceProvider;
 
-    public CreateUserEventHandler(ISender sender, IEmailService emailService)
+    public CreateUserEventHandler(ISender sender, IEmailService emailService, IServiceProvider serviceProvider)
     {
       _sender = sender;
       _emailService = emailService;
+      _serviceProvider = serviceProvider;
     }
 
-    public async Task Handle(EmployeeCreatedEvent notification, CancellationToken cancellationToken)
+    public Task Handle(EmployeeCreatedEvent notification, CancellationToken cancellationToken)
     {
       var employee = notification.Employee;
 
-      // 1. Generate a cryptographically random temporary password.
-      //    MustChangePassword = true forces the user to set their own password on first login.
-      var tempPassword = PasswordGenerator.Generate();
-
-      await _sender.Send(new RegisterCommand
+      // Xử lý tạo tài khoản và gửi email ngầm (Fire-and-forget)
+      // Để API trả về 201 Created ngay lập tức mà không phải chờ SMTP server
+      _ = Task.Run(async () =>
       {
-        Username = employee.EmployeeCode,
-        Email = employee.Email,
-        FullName = employee.FullName,
-        Password = tempPassword,
-        EmployeeId = employee.Id,
-        MustChangePassword = true
-      }, cancellationToken);
+        using var scope = _serviceProvider.CreateScope();
+        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
 
-      // 2. Email the temporary password so the employee can log in for the first time.
-      //    The system will force a password change on first login.
-      try
-      {
-        var subject = "🎉 Chào mừng đến HRMS - Thông tin tài khoản của bạn";
-        var body = $@"
+        var tempPassword = PasswordGenerator.Generate();
+
+        try
+        {
+          await sender.Send(new RegisterCommand
+          {
+            Username = employee.EmployeeCode,
+            Email = employee.Email,
+            FullName = employee.FullName,
+            Password = tempPassword,
+            EmployeeId = employee.Id,
+            MustChangePassword = true
+          });
+
+          var subject = "🎉 Chào mừng đến HRMS - Thông tin tài khoản của bạn";
+          var body = $@"
 <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
   <h2 style='color: #2563eb;'>Chào mừng, {employee.FullName}!</h2>
   <p>Tài khoản của bạn đã được tạo trong hệ thống <strong>Employee HR System</strong>.</p>
@@ -62,13 +69,15 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
   <p style='color: #9ca3af; font-size: 12px;'>Employee HR System — Email tự động, vui lòng không trả lời.</p>
 </div>";
 
-        await _emailService.SendAsync(employee.Email, subject, body, isHtml: true);
-      }
-      catch
-      {
-        // Non-critical: account was created successfully.
-        // Admin can trigger a password reset manually if email delivery fails.
-      }
+          await emailService.SendAsync(employee.Email, subject, body, isHtml: true);
+        }
+        catch (Exception)
+        {
+          // Ghi log lỗi nếu cần thiết
+        }
+      });
+
+      return Task.CompletedTask;
     }
   }
 }
