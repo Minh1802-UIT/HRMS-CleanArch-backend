@@ -1,5 +1,6 @@
 ﻿using AspNetCore.Identity.MongoDbCore.Extensions;
 using AspNetCore.Identity.MongoDbCore.Infrastructure;
+using Microsoft.AspNetCore.Identity;
 using Carter;
 using Employee.API.Middlewares;
 using Employee.API.Services;
@@ -111,7 +112,8 @@ builder.Services.AddScoped<ICurrentUser, CurrentUserService>();
 builder.Services.AddScoped<Employee.Application.Common.Interfaces.ICorrelationIdProvider, Employee.API.Services.CorrelationIdProvider>();
 builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
-builder.Services.ConfigureMongoDbIdentity<ApplicationUser, ApplicationRole, Guid>(mongoConfig);
+builder.Services.ConfigureMongoDbIdentity<ApplicationUser, ApplicationRole, Guid>(mongoConfig)
+    .AddDefaultTokenProviders();
 
 // 1.6. Authentication & JWT
 builder.Services.AddAuthentication(options =>
