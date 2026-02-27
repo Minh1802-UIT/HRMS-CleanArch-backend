@@ -55,6 +55,8 @@ namespace Employee.Infrastructure.Persistence
       BsonClassMap.RegisterClassMap<ContractEntity>(cm =>
       {
         cm.AutoMap();
+        cm.SetIgnoreExtraElements(true);
+        cm.MapCreator(c => (ContractEntity)System.Activator.CreateInstance(typeof(ContractEntity), true)!);
       });
 
       // Auth Mappings

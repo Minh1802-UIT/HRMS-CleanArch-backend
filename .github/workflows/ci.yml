@@ -106,8 +106,3 @@ jobs:
           path: '**/TestResults/*.trx'
           reporter: dotnet-trx
           fail-on-error: true
-
-      # ── 9. Emit short SHA for downstream jobs ──────────────────
-      - name: Emit short SHA
-        id: sha
-        run: echo "short=$(echo $GITHUB_SHA | cut -c1-7)" >> $GITHUB_OUTPUT
