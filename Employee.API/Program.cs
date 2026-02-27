@@ -418,7 +418,9 @@ app.UseAuthorization();
 
 // Protect uploaded files from anonymous access; public assets remain open
 app.UseWhen(
-    context => context.Request.Path.StartsWithSegments("/uploads"),
+    context => context.Request.Path.StartsWithSegments("/uploads")
+               && !context.Request.Path.StartsWithSegments("/uploads/avatars")
+               && !context.Request.Path.StartsWithSegments("/uploads/general"),
     branch => branch.Use(async (ctx, next) =>
     {
       if (ctx.User?.Identity?.IsAuthenticated != true)
