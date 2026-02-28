@@ -126,13 +126,13 @@ namespace Employee.Infrastructure
             var sendGridKey = configuration["EmailSettings:SendGridApiKey"];
             if (string.IsNullOrEmpty(sendGridKey) || sendGridKey == "OVERRIDE_VIA_USER_SECRETS_OR_ENV")
             {
-                sendGridKey = Environment.GetEnvironmentVariable("SendGridApiKey") ?? Environment.GetEnvironmentVariable("EmailSettings__SendGridApiKey");
+                sendGridKey = Environment.GetEnvironmentVariable("EmailSettings__SendGridApiKey") ?? Environment.GetEnvironmentVariable("SendGridApiKey");
             }
 
             var smtpPassword = configuration["EmailSettings:Password"];
             if (string.IsNullOrEmpty(smtpPassword) || smtpPassword == "OVERRIDE_VIA_USER_SECRETS_OR_ENV")
             {
-                smtpPassword = Environment.GetEnvironmentVariable("Password") ?? Environment.GetEnvironmentVariable("EmailSettings__Password");
+                smtpPassword = Environment.GetEnvironmentVariable("EmailSettings__Password") ?? Environment.GetEnvironmentVariable("Password");
             }
 
             bool hasSendGrid = !string.IsNullOrWhiteSpace(sendGridKey) && sendGridKey != "OVERRIDE_VIA_USER_SECRETS_OR_ENV";
