@@ -1,6 +1,7 @@
 using Employee.Application.Common.Exceptions;
 using Employee.Application.Common.Interfaces;
 using MediatR;
+using Microsoft.Extensions.Configuration;
 
 namespace Employee.Application.Features.Auth.Commands.ForgotPassword
 {
@@ -8,11 +9,13 @@ namespace Employee.Application.Features.Auth.Commands.ForgotPassword
     {
         private readonly IIdentityService _identityService;
         private readonly IEmailService _emailService;
+        private readonly IConfiguration _configuration;
 
-        public ForgotPasswordCommandHandler(IIdentityService identityService, IEmailService emailService)
+        public ForgotPasswordCommandHandler(IIdentityService identityService, IEmailService emailService, IConfiguration configuration)
         {
             _identityService = identityService;
             _emailService = emailService;
+            _configuration = configuration;
         }
 
         public async Task<string> Handle(ForgotPasswordCommand request, CancellationToken cancellationToken)
@@ -29,8 +32,8 @@ namespace Employee.Application.Features.Auth.Commands.ForgotPassword
             // Send professional HTML email
             var subject = "🔒 Yêu cầu đặt lại mật khẩu - Employee HR System";
             // Tạo đường link URL tới trang Frontend với Query Params (bắt buộc phải UrlEncode)
-            // Cấu hình URL Frontend (ưu tiên biến môi trường lấy từ Render, mặc định Localhost)
-            var frontendUrl = Environment.GetEnvironmentVariable("FrontendUrl") ?? "http://localhost:4200";
+            // Lấy từ Cấu hình JSON trước, nếu không có mới lấy biến Môi trường
+            var frontendUrl = _configuration["FrontendUrl"] ?? Environment.GetEnvironmentVariable("FrontendUrl") ?? "http://localhost:4200";
             var encodedToken = System.Web.HttpUtility.UrlEncode(token);
             var encodedEmail = System.Web.HttpUtility.UrlEncode(request.Email.Trim());
             var resetLink = $"{frontendUrl}/reset-password?email={encodedEmail}&token={encodedToken}";
