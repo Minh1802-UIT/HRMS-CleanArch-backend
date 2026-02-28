@@ -8,45 +8,45 @@ using Microsoft.Extensions.Logging;
 
 namespace Employee.Application.Features.HumanResource.EventHandlers
 {
-  public class CreateUserEventHandler : INotificationHandler<EmployeeCreatedEvent>
-  {
-    private readonly IServiceProvider _serviceProvider;
-    private readonly ILogger<CreateUserEventHandler> _logger;
-
-    public CreateUserEventHandler(IServiceProvider serviceProvider, ILogger<CreateUserEventHandler> logger)
+    public class CreateUserEventHandler : INotificationHandler<EmployeeCreatedEvent>
     {
-      _serviceProvider = serviceProvider;
-      _logger = logger;
-    }
+        private readonly IServiceScopeFactory _scopeFactory;
+        private readonly ILogger<CreateUserEventHandler> _logger;
 
-    public Task Handle(EmployeeCreatedEvent notification, CancellationToken cancellationToken)
-    {
-      var employee = notification.Employee;
-
-      // Xử lý tạo tài khoản và gửi email ngầm (Fire-and-forget)
-      // Để API trả về 201 Created ngay lập tức mà không phải chờ SMTP server
-      _ = Task.Run(async () =>
-      {
-        using var scope = _serviceProvider.CreateScope();
-        var sender = scope.ServiceProvider.GetRequiredService<ISender>();
-        var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
-
-        var tempPassword = PasswordGenerator.Generate();
-
-        try
+        public CreateUserEventHandler(IServiceScopeFactory scopeFactory, ILogger<CreateUserEventHandler> logger)
         {
-          await sender.Send(new RegisterCommand
-          {
-            Username = employee.EmployeeCode,
-            Email = employee.Email,
-            FullName = employee.FullName,
-            Password = tempPassword,
-            EmployeeId = employee.Id,
-            MustChangePassword = true
-          });
+            _scopeFactory = scopeFactory;
+            _logger = logger;
+        }
 
-          var subject = "🎉 Chào mừng đến HRMS - Thông tin tài khoản của bạn";
-          var body = $@"
+        public Task Handle(EmployeeCreatedEvent notification, CancellationToken cancellationToken)
+        {
+            var employee = notification.Employee;
+
+            // Xử lý tạo tài khoản và gửi email ngầm (Fire-and-forget)
+            // Để API trả về 201 Created ngay lập tức mà không phải chờ SMTP server
+            _ = Task.Run(async () =>
+            {
+                using var scope = _scopeFactory.CreateScope();
+                var sender = scope.ServiceProvider.GetRequiredService<ISender>();
+                var emailService = scope.ServiceProvider.GetRequiredService<IEmailService>();
+
+                var tempPassword = PasswordGenerator.Generate();
+
+                try
+                {
+                    await sender.Send(new RegisterCommand
+                    {
+                        Username = employee.EmployeeCode,
+                        Email = employee.Email,
+                        FullName = employee.FullName,
+                        Password = tempPassword,
+                        EmployeeId = employee.Id,
+                        MustChangePassword = true
+                    });
+
+                    var subject = "🎉 Chào mừng đến HRMS - Thông tin tài khoản của bạn";
+                    var body = $@"
 <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
   <h2 style='color: #2563eb;'>Chào mừng, {employee.FullName}!</h2>
   <p>Tài khoản của bạn đã được tạo trong hệ thống <strong>Employee HR System</strong>.</p>
@@ -68,18 +68,18 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
   <p style='color: #9ca3af; font-size: 12px;'>Employee HR System — Email tự động, vui lòng không trả lời.</p>
 </div>";
 
-          await emailService.SendAsync(employee.Email, subject, body, isHtml: true);
-        }
-        catch (Exception ex)
-        {
-          _logger.LogError(ex,
-              "Tạo tài khoản hoặc gửi email chào mừng thất bại cho nhân viên {EmployeeCode} (ID: {EmployeeId}). " +
-              "Nhân viên đã được tạo nhưng chưa có tài khoản hệ thống.",
-              employee.EmployeeCode, employee.Id);
-        }
-      });
+                    await emailService.SendAsync(employee.Email, subject, body, isHtml: true);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex,
+                  "Tạo tài khoản hoặc gửi email chào mừng thất bại cho nhân viên {EmployeeCode} (ID: {EmployeeId}). " +
+                  "Nhân viên đã được tạo nhưng chưa có tài khoản hệ thống.",
+                  employee.EmployeeCode, employee.Id);
+                }
+            });
 
-      return Task.CompletedTask;
+            return Task.CompletedTask;
+        }
     }
-  }
 }
