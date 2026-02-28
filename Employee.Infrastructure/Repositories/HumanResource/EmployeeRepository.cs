@@ -27,11 +27,29 @@ namespace Employee.Infrastructure.Repositories.HumanResource
         {
             var filter = SoftDeleteFilter.GetActiveOnlyFilter<EmployeeEntity>();
 
-            // Optional keyword search across Full-text index (FullName & EmployeeCode)
+            // Optional keyword search across FullName & EmployeeCode using Regex
             if (!string.IsNullOrEmpty(pagination.SearchTerm))
             {
-                var term = pagination.SearchTerm;
-                filter &= Builders<EmployeeEntity>.Filter.Text(term);
+                var termRegex = new MongoDB.Bson.BsonRegularExpression(pagination.SearchTerm, "i"); // Case-insensitive
+                var searchFilter = Builders<EmployeeEntity>.Filter.Or(
+                    Builders<EmployeeEntity>.Filter.Regex(x => x.FullName, termRegex),
+                    Builders<EmployeeEntity>.Filter.Regex(x => x.EmployeeCode, termRegex)
+                );
+                filter = Builders<EmployeeEntity>.Filter.And(filter, searchFilter);
+            }
+
+            // Optional Department Filter
+            if (!string.IsNullOrEmpty(pagination.DepartmentId))
+            {
+                filter = Builders<EmployeeEntity>.Filter.And(filter,
+                    Builders<EmployeeEntity>.Filter.Eq("JobDetails.DepartmentId", pagination.DepartmentId));
+            }
+
+            // Optional Position Filter
+            if (!string.IsNullOrEmpty(pagination.PositionId))
+            {
+                filter = Builders<EmployeeEntity>.Filter.And(filter,
+                    Builders<EmployeeEntity>.Filter.Eq("JobDetails.PositionId", pagination.PositionId));
             }
 
             var totalCount = await _collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
@@ -117,7 +135,11 @@ namespace Employee.Infrastructure.Repositories.HumanResource
             var filter = SoftDeleteFilter.GetActiveOnlyFilter<EmployeeEntity>();
             if (!string.IsNullOrEmpty(keyword))
             {
-                var keywordFilter = Builders<EmployeeEntity>.Filter.Text(keyword);
+                var termRegex = new MongoDB.Bson.BsonRegularExpression(keyword, "i"); // Case-insensitive
+                var keywordFilter = Builders<EmployeeEntity>.Filter.Or(
+                    Builders<EmployeeEntity>.Filter.Regex(x => x.FullName, termRegex),
+                    Builders<EmployeeEntity>.Filter.Regex(x => x.EmployeeCode, termRegex)
+                );
                 filter = Builders<EmployeeEntity>.Filter.And(filter, keywordFilter);
             }
 
