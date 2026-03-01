@@ -1,84 +1,55 @@
-﻿using System.ComponentModel.DataAnnotations;
 using System.Text.Json.Serialization;
 
 namespace Employee.Application.Features.Auth.Dtos
 {
-  // 1. REGISTER (Đăng ký)
+  // 1. REGISTER (�ang k�)
   public class RegisterDto
   {
-    [Required(ErrorMessage = "Username is required.")]
-    [StringLength(50, MinimumLength = 3, ErrorMessage = "Username must be between 3 and 50 characters.")]
-    [RegularExpression(@"^[a-zA-Z0-9._-]+$", ErrorMessage = "Username can only contain letters, numbers, dots, underscores, and hyphens.")]
     public string Username { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Email is required.")]
-    [EmailAddress(ErrorMessage = "Invalid email format.")]
-    [MaxLength(100, ErrorMessage = "Email must not exceed 100 characters.")]
     public string Email { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Password is required.")]
-    [MinLength(6, ErrorMessage = "Password must be at least 6 characters long.")]
-    // Có thể mở comment dòng dưới nếu muốn bắt buộc mật khẩu mạnh (Chữ hoa, thường, số, ký tự đặc biệt)
-    // [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$", ErrorMessage = "Password must have at least 1 uppercase, 1 lowercase, 1 number, and 1 special character.")]
+    // C� th? m? comment d�ng du?i n?u mu?n b?t bu?c m?t kh?u m?nh (Ch? hoa, thu?ng, s?, k� t? d?c bi?t)
     public string Password { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Full Name is required.")]
-    [MaxLength(100, ErrorMessage = "Full Name must not exceed 100 characters.")]
     public string FullName { get; set; } = string.Empty;
 
-    // ID nhân viên (Optional - Vì có thể tạo user Admin không gắn với nhân viên nào)
-    [MaxLength(50, ErrorMessage = "Employee ID must not exceed 50 characters.")]
+    // ID nh�n vi�n (Optional - V� c� th? t?o user Admin kh�ng g?n v?i nh�n vi�n n�o)
     public string? EmployeeId { get; set; }
 
     // Flag: if true, the user is required to change their password on first login
     public bool MustChangePassword { get; set; } = false;
   }
 
-  // 2. LOGIN (Đăng nhập)
+  // 2. LOGIN (�ang nh?p)
   public class LoginDto
   {
-    [Required(ErrorMessage = "Username is required.")]
     public string Username { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Password is required.")]
     public string Password { get; set; } = string.Empty;
   }
 
-  // 3. CREATE ROLE (Tạo quyền)
+  // 3. CREATE ROLE (T?o quy?n)
   public class CreateRoleDto
   {
-    [Required(ErrorMessage = "Role Name is required.")]
-    [MaxLength(20, ErrorMessage = "Role Name must not exceed 20 characters.")]
-    // Chỉ cho phép chữ cái và gạch dưới (VD: "HR_MANAGER", "ADMIN") để tránh lỗi hệ thống
-    [RegularExpression(@"^[a-zA-Z0-9_]+$", ErrorMessage = "Role Name can only contain letters, numbers and underscores.")]
+    // Ch? cho ph�p ch? c�i v� g?ch du?i (VD: "HR_MANAGER", "ADMIN") d? tr�nh l?i h? th?ng
     public string RoleName { get; set; } = string.Empty;
   }
 
-  // 4. ASSIGN ROLE (Gán quyền)
+  // 4. ASSIGN ROLE (G�n quy?n)
   public class AssignRoleDto
   {
-    [Required(ErrorMessage = "Username is required.")]
     public string Username { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Role Name is required.")]
     public string RoleName { get; set; } = string.Empty;
   }
 
-  // 5. (Bổ sung) REFRESH TOKEN
-  // DTO này rất quan trọng để lấy token mới khi token cũ hết hạn
+  // 5. (B? sung) REFRESH TOKEN
+  // DTO n�y r?t quan tr?ng d? l?y token m?i khi token cu h?t h?n
   public class RefreshTokenDto
   {
-    [Required(ErrorMessage = "Access Token is required.")]
     public string AccessToken { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Refresh Token is required.")]
     public string RefreshToken { get; set; } = string.Empty;
   }
 
-  // 5b. Cookie-based refresh — refresh token comes from httpOnly cookie
+  // 5b. Cookie-based refresh � refresh token comes from httpOnly cookie
   public class RefreshAccessTokenDto
   {
-    [Required(ErrorMessage = "Access Token is required.")]
     public string AccessToken { get; set; } = string.Empty;
   }
 
@@ -94,7 +65,7 @@ namespace Employee.Application.Features.Auth.Dtos
 
   /// <summary>
   /// The EXACT shape returned to the client from POST /api/auth/login.
-  /// RefreshToken is intentionally excluded — it lives in an httpOnly cookie only.
+  /// RefreshToken is intentionally excluded � it lives in an httpOnly cookie only.
   /// Using [JsonPropertyName] guarantees camelCase regardless of serializer settings.
   /// </summary>
   public class LoginSuccessDto
@@ -130,27 +101,15 @@ namespace Employee.Application.Features.Auth.Dtos
   // NEW-3: Forgot Password
   public class ForgotPasswordDto
   {
-    [Required(ErrorMessage = "Email is required.")]
-    [EmailAddress(ErrorMessage = "Invalid email format.")]
     public string Email { get; set; } = string.Empty;
   }
 
   // NEW-3: Reset Password
   public class ResetPasswordDto
   {
-    [Required(ErrorMessage = "Email is required.")]
-    [EmailAddress(ErrorMessage = "Invalid email format.")]
     public string Email { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Token is required.")]
     public string Token { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "New Password is required.")]
-    [MinLength(6, ErrorMessage = "Password must be at least 6 characters long.")]
     public string NewPassword { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Confirm Password is required.")]
-    [Compare("NewPassword", ErrorMessage = "Passwords do not match.")]
     public string ConfirmPassword { get; set; } = string.Empty;
   }
 }

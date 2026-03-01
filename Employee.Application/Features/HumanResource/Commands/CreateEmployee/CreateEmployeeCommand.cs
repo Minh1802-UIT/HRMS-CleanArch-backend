@@ -1,3 +1,4 @@
+using Employee.Application.Common.Security;
 using Employee.Domain.Common.Models;
 using Employee.Application.Features.HumanResource.Dtos;
 using MediatR;
@@ -5,7 +6,8 @@ using MediatR;
 namespace Employee.Application.Features.HumanResource.Commands.CreateEmployee
 {
     // Command trả về EmployeeDto (giống như Service cũ)
-    public class CreateEmployeeCommand : IRequest<EmployeeDto>
+    [Authorize(Roles = "Admin,HR")]
+public class CreateEmployeeCommand : IRequest<EmployeeDto>
     {
         public string EmployeeCode { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;

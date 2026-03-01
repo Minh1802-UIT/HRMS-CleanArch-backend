@@ -1,3 +1,5 @@
+using Employee.Application.Common;
+using Employee.Application.Common.Interfaces;
 using Employee.Application.Common.Models;
 using Employee.Application.Common.Exceptions;
 using Employee.Domain.Interfaces.Repositories;
@@ -18,17 +20,20 @@ namespace Employee.Application.Features.HumanResource.Commands.UpdateEmployee
     private readonly IDepartmentRepository _deptRepo;
     private readonly IPositionRepository _posRepo;
     private readonly IPublisher _publisher;
+    private readonly ICacheService _cache;
 
     public UpdateEmployeeHandler(
         IEmployeeRepository repo,
         IDepartmentRepository deptRepo,
         IPositionRepository posRepo,
-        IPublisher publisher)
+        IPublisher publisher,
+        ICacheService cache)
     {
       _repo = repo;
       _deptRepo = deptRepo;
       _posRepo = posRepo;
       _publisher = publisher;
+      _cache = cache;
     }
 
     public async Task Handle(UpdateEmployeeCommand request, CancellationToken cancellationToken)
@@ -88,6 +93,10 @@ namespace Employee.Application.Features.HumanResource.Commands.UpdateEmployee
                   System.Text.Json.JsonSerializer.Serialize(oldVal),
                   System.Text.Json.JsonSerializer.Serialize(new { dto.FullName, dto.Email, dto.JobDetails?.DepartmentId, dto.JobDetails?.PositionId }))),
           cancellationToken);
+
+      // 6. Invalidate caches
+      await _cache.RemoveAsync(CacheKeys.Employee(request.Id));
+      await _cache.RemoveAsync(CacheKeys.EmployeeLookup);
     }
   }
 }

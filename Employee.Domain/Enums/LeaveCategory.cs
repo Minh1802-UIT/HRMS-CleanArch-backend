@@ -1,6 +1,6 @@
 namespace Employee.Domain.Enums;
 
-public enum LeaveTypeEnum
+public enum LeaveCategory
 {
   Annual,
   Sick,

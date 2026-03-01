@@ -43,7 +43,7 @@ namespace Employee.UnitTests.Features.Leave.Commands
     private static LeaveRequest BuildPendingRequest(string empId = "emp-1", string id = "req-1")
     {
       // FromDate/ToDate in the future so domain validation passes
-      var request = new LeaveRequest(empId, LeaveTypeEnum.Annual,
+      var request = new LeaveRequest(empId, LeaveCategory.Annual,
           DateTime.UtcNow.AddDays(1), DateTime.UtcNow.AddDays(3), "Vacation");
       request.SetId(id);
       return request;

@@ -1,4 +1,3 @@
-﻿using System.ComponentModel.DataAnnotations;
 
 namespace Employee.Application.Features.Attendance.Dtos
 {
@@ -9,7 +8,7 @@ namespace Employee.Application.Features.Attendance.Dtos
     public string Name { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
 
-    // Trả về dạng string "HH:mm" cho FE dễ hiển thị
+    // Tr? v? d?ng string "HH:mm" cho FE d? hi?n th?
     public string StartTime { get; set; } = string.Empty;
     public string EndTime { get; set; } = string.Empty;
     public string BreakStartTime { get; set; } = string.Empty;
@@ -24,15 +23,11 @@ namespace Employee.Application.Features.Attendance.Dtos
   // ================== CREATE ==================
   public class CreateShiftDto
   {
-    [Required]
     public string Name { get; set; } = string.Empty;
-    [Required]
     public string Code { get; set; } = string.Empty;
 
-    // Input nhận vào TimeSpan (FE gửi "08:00:00")
-    [Required]
+    // Input nh?n v�o TimeSpan (FE g?i "08:00:00")
     public TimeSpan StartTime { get; set; }
-    [Required]
     public TimeSpan EndTime { get; set; }
 
     public TimeSpan BreakStartTime { get; set; }
@@ -46,7 +41,6 @@ namespace Employee.Application.Features.Attendance.Dtos
   // ================== UPDATE ==================
   public class UpdateShiftDto : CreateShiftDto
   {
-    [Required]
     public string Id { get; set; } = string.Empty;
     public bool IsActive { get; set; }
   }

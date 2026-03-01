@@ -1,4 +1,3 @@
-﻿using System.ComponentModel.DataAnnotations;
 
 namespace Employee.Application.Features.Leave.Dtos
 {
@@ -14,39 +13,30 @@ namespace Employee.Application.Features.Leave.Dtos
     public string EmployeeCode { get; set; } = string.Empty; // Added EmployeeCode
     public string LeaveTypeName { get; set; } = string.Empty;
     public string Year { get; set; } = string.Empty; // Added Year
-    public double TotalDays { get; set; } // Tổng được cấp (Annual Quota)
+    public double TotalDays { get; set; } // T?ng du?c c?p (Annual Quota)
     public double AccruedDays { get; set; } // Added Accrued
-    public double UsedDays { get; set; }  // Đã dùng
-    public double RemainingDays { get; set; } // Còn lại
+    public double UsedDays { get; set; }  // �� d�ng
+    public double RemainingDays { get; set; } // C�n l?i
   }
 
   // ==========================================
-  // CREATE (Input - Cấp mới đầu năm)
+  // CREATE (Input - C?p m?i d?u nam)
   // ==========================================
   public class CreateAllocationDto
   {
-    [Required(ErrorMessage = "Employee ID is required.")]
     public string EmployeeId { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Leave Type ID is required.")]
     public string LeaveTypeId { get; set; } = string.Empty;
-
-    [Range(0, 365, ErrorMessage = "Number of days must be valid.")]
     public double NumberOfDays { get; set; }
 
     public int Year { get; set; }
   }
 
   // ==========================================
-  // UPDATE (Input - Sửa lại số dư nếu cấp sai)
+  // UPDATE (Input - S?a l?i s? du n?u c?p sai)
   // ==========================================
   public class UpdateAllocationDto
   {
-    [Required]
     public string Id { get; set; } = string.Empty;
-
-    [Required]
-    [Range(0, 365, ErrorMessage = "Number of days must be valid.")]
     public double NumberOfDays { get; set; }
   }
 }

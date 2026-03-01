@@ -29,7 +29,7 @@ namespace Employee.Infrastructure.Persistence
       BsonSerializer.RegisterSerializer(new EnumSerializer<InterviewStatus>(BsonType.String));
       BsonSerializer.RegisterSerializer(new EnumSerializer<JobVacancyStatus>(BsonType.String));
       BsonSerializer.RegisterSerializer(new EnumSerializer<LeaveStatus>(BsonType.String));
-      BsonSerializer.RegisterSerializer(new EnumSerializer<LeaveTypeEnum>(BsonType.String));
+      BsonSerializer.RegisterSerializer(new EnumSerializer<LeaveCategory>(BsonType.String));
       BsonSerializer.RegisterSerializer(new EnumSerializer<PayrollStatus>(BsonType.String));
       BsonSerializer.RegisterSerializer(new EnumSerializer<RawLogType>(BsonType.String));
 

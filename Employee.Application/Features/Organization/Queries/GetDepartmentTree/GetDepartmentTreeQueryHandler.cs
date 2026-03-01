@@ -1,3 +1,4 @@
+using Employee.Application.Common;
 using Employee.Application.Common.Interfaces;
 using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Features.Organization.Dtos;
@@ -16,12 +17,10 @@ namespace Employee.Application.Features.Organization.Queries.GetDepartmentTree
       ICacheService cache,
       IEmployeeRepository employeeRepo) : IRequestHandler<GetDepartmentTreeQuery, List<DepartmentNodeDto>>
   {
-    private const string DEPARTMENT_TREE_KEY = "DEPARTMENT_TREE";
-
     public async Task<List<DepartmentNodeDto>> Handle(GetDepartmentTreeQuery request, CancellationToken cancellationToken)
     {
       // 1. Check Cache
-      var cachedTree = await cache.GetAsync<List<DepartmentNodeDto>>(DEPARTMENT_TREE_KEY);
+      var cachedTree = await cache.GetAsync<List<DepartmentNodeDto>>(CacheKeys.DepartmentTree);
       if (cachedTree != null) return cachedTree;
 
       // 2. If not in cache, get from DB
@@ -39,7 +38,7 @@ namespace Employee.Application.Features.Organization.Queries.GetDepartmentTree
       }
 
       // 3. Save to Cache (1 hour)
-      await cache.SetAsync(DEPARTMENT_TREE_KEY, result, TimeSpan.FromHours(1));
+      await cache.SetAsync(CacheKeys.DepartmentTree, result, TimeSpan.FromHours(1));
 
       return result;
     }

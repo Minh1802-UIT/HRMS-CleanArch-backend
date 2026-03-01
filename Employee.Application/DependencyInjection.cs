@@ -31,8 +31,9 @@ namespace Employee.Application
       {
         cfg.RegisterServicesFromAssembly(assembly);
         // Pipeline order (outermost → innermost → handler):
-        //   LoggingBehavior  →  ValidationBehavior  →  Handler
+        //   LoggingBehavior  →  AuthorizationBehavior  →  ValidationBehavior  →  Handler
         cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(LoggingBehavior<,>));
+        cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(AuthorizationBehavior<,>));
         cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
       });
 

@@ -1,3 +1,4 @@
+using Employee.Application.Common;
 using Employee.Application.Common.Models;
 using Employee.Application.Common.Interfaces;
 using Employee.Application.Common.Exceptions;
@@ -20,19 +21,22 @@ namespace Employee.Application.Features.HumanResource.Commands.CreateEmployee
     private readonly IPositionRepository _posRepo;
     private readonly IPublisher _publisher;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ICacheService _cache;
 
     public CreateEmployeeHandler(
         IEmployeeRepository repo,
         IDepartmentRepository deptRepo,
         IPositionRepository posRepo,
         IPublisher publisher,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        ICacheService cache)
     {
       _repo = repo;
       _deptRepo = deptRepo;
       _posRepo = posRepo;
       _publisher = publisher;
       _unitOfWork = unitOfWork;
+      _cache = cache;
     }
 
     public async Task<EmployeeDto> Handle(CreateEmployeeCommand request, CancellationToken cancellationToken)
@@ -80,6 +84,10 @@ namespace Employee.Application.Features.HumanResource.Commands.CreateEmployee
             cancellationToken);
 
         await _unitOfWork.CommitTransactionAsync();
+
+        // 7. Invalidate caches
+        await _cache.RemoveAsync(CacheKeys.EmployeeLookup);
+
         return resultDto;
       }
       catch (Exception)

@@ -1,6 +1,8 @@
+using Employee.Application.Common.Security;
 using MediatR;
 
 namespace Employee.Application.Features.Recruitment.Commands.Interview.DeleteInterview
 {
-  public record DeleteInterviewCommand(string Id) : IRequest;
+  [Authorize(Roles = "Admin,HR")]
+public record DeleteInterviewCommand(string Id) : IRequest;
 }

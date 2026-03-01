@@ -35,9 +35,9 @@ namespace Employee.Application.Features.Leave.Mappers
         public static LeaveRequest ToEntity(this CreateLeaveRequestDto dto, string employeeId)
         {
       // Map from string to enum if possible, or use a default
-      if (!Enum.TryParse<LeaveTypeEnum>(dto.LeaveType, true, out var leaveType))
+      if (!Enum.TryParse<LeaveCategory>(dto.LeaveType, true, out var leaveType))
             {
-        leaveType = LeaveTypeEnum.Annual;
+        leaveType = LeaveCategory.Annual;
       }
 
       return new LeaveRequest(

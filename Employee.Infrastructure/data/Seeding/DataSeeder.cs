@@ -64,7 +64,7 @@ namespace Employee.Infrastructure.data.Seeding
         await EnsureSystemSettingsAsync(settingRepo);
         Console.WriteLine("? System settings verified.");
 
-        // Efficient existence check — only count, don't load all documents
+        // Efficient existence check ï¿½ only count, don't load all documents
         var employeeCount = await empRepo.CountActiveAsync();
         if (employeeCount > 0)
         {
@@ -95,7 +95,7 @@ namespace Employee.Infrastructure.data.Seeding
           return;
         }
 
-        Console.WriteLine("?? Database is empty in Production — running initial seed...");
+        Console.WriteLine("?? Database is empty in Production ï¿½ running initial seed...");
         // Fall through to the full seeding logic below
       }
       else
@@ -513,7 +513,7 @@ namespace Employee.Infrastructure.data.Seeding
         {
           var fromDate = DateTime.UtcNow.AddDays(r.Next(1, 10));
           var toDate = fromDate.AddDays(r.Next(1, 5));
-          var req = new LeaveRequest(emp.Id, r.NextDouble() > 0.3 ? LeaveTypeEnum.Annual : LeaveTypeEnum.Sick, fromDate, toDate, "Vacation");
+          var req = new LeaveRequest(emp.Id, r.NextDouble() > 0.3 ? LeaveCategory.Annual : LeaveCategory.Sick, fromDate, toDate, "Vacation");
           if (r.NextDouble() > 0.5) req.Approve("Seeder", "Auto-approved");
           await leaveRepo.CreateAsync(req);
         }
@@ -606,7 +606,7 @@ namespace Employee.Infrastructure.data.Seeding
     /// </summary>
     private static async Task EnsureSystemSettingsAsync(ISystemSettingRepository repo)
     {
-      // Only insert if key doesn't exist — won't overwrite admin-modified values
+      // Only insert if key doesn't exist ï¿½ won't overwrite admin-modified values
       var requiredSettings = new List<SystemSetting>
       {
           new("BHXH_RATE", "Payroll", "0.08", "Social Insurance Rate (Employee)"),
@@ -621,7 +621,7 @@ namespace Employee.Infrastructure.data.Seeding
 
       foreach (var setting in requiredSettings)
       {
-        // Only create if not already present — preserves existing values
+        // Only create if not already present ï¿½ preserves existing values
         var existing = await repo.GetByKeyAsync(setting.Key);
         if (existing == null)
         {

@@ -1,3 +1,4 @@
+using Employee.Application.Common;
 using Employee.Application.Common.Interfaces;
 using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Features.Organization.Dtos;
@@ -13,12 +14,10 @@ namespace Employee.Application.Features.Organization.Queries.GetPositionTree
 {
   public class GetPositionTreeQueryHandler(IPositionRepository repo, ICacheService cache) : IRequestHandler<GetPositionTreeQuery, List<PositionNodeDto>>
   {
-    private const string POSITION_TREE_KEY = "POSITION_TREE";
-
     public async Task<List<PositionNodeDto>> Handle(GetPositionTreeQuery request, CancellationToken cancellationToken)
     {
       // 1. Check Cache
-      var cachedTree = await cache.GetAsync<List<PositionNodeDto>>(POSITION_TREE_KEY);
+      var cachedTree = await cache.GetAsync<List<PositionNodeDto>>(CacheKeys.PositionTree);
       if (cachedTree != null) return cachedTree;
 
       // 2. If not in cache, get from DB
@@ -32,7 +31,7 @@ namespace Employee.Application.Features.Organization.Queries.GetPositionTree
       }
 
       // 3. Save to Cache (1 hour)
-      await cache.SetAsync(POSITION_TREE_KEY, result, TimeSpan.FromHours(1));
+      await cache.SetAsync(CacheKeys.PositionTree, result, TimeSpan.FromHours(1));
 
       return result;
     }

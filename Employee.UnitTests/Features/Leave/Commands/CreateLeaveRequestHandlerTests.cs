@@ -93,7 +93,7 @@ namespace Employee.UnitTests.Features.Leave.Commands
     // ─── Validation Tests ─────────────────────────────────────────────────
 
     [Fact]
-    public async Task Handle_WhenLeaveTypeEnumNameNotFoundInDb_ShouldThrowNotFoundException()
+    public async Task Handle_WhenLeaveCategoryNameNotFoundInDb_ShouldThrowNotFoundException()
     {
       // The command uses an enum-parseable name ("Annual"), but the DB has nothing for that code
       _mockLeaveTypeRepo.Setup(r => r.GetByCodeAsync("Annual", It.IsAny<CancellationToken>())).ReturnsAsync((LeaveType?)null);
@@ -120,7 +120,7 @@ namespace Employee.UnitTests.Features.Leave.Commands
     [Fact]
     public async Task Handle_WhenLeaveTypeIdHasInvalidCode_ShouldThrowValidationException()
     {
-      // The leave type doc exists but its Code is not a valid LeaveTypeEnum value
+      // The leave type doc exists but its Code is not a valid LeaveCategory value
       var lt = BuildLeaveType("lt-99", "INVALID_CODE");
       _mockLeaveTypeRepo.Setup(r => r.GetByIdAsync("lt-99", It.IsAny<CancellationToken>())).ReturnsAsync(lt);
 

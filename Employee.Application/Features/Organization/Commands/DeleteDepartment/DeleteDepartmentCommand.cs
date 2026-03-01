@@ -1,6 +1,8 @@
+using Employee.Application.Common.Security;
 using MediatR;
 
 namespace Employee.Application.Features.Organization.Commands.DeleteDepartment
 {
-  public record DeleteDepartmentCommand(string Id) : IRequest;
+  [Authorize(Roles = "Admin")]
+public record DeleteDepartmentCommand(string Id) : IRequest;
 }

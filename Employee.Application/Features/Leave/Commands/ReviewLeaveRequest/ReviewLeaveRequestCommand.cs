@@ -1,9 +1,11 @@
+using Employee.Application.Common.Security;
 using Employee.Application.Features.Leave.Dtos;
 using MediatR;
 
 namespace Employee.Application.Features.Leave.Commands.ReviewLeaveRequest
 {
-    public class ReviewLeaveRequestCommand : IRequest
+    [Authorize(Roles = "Admin,HR,Manager")]
+public class ReviewLeaveRequestCommand : IRequest
     {
         public string Id { get; set; } = string.Empty;
         public ReviewLeaveRequestDto ReviewDto { get; set; } = new();

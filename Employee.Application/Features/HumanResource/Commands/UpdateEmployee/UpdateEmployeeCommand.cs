@@ -1,10 +1,12 @@
+using Employee.Application.Common.Security;
 using Employee.Domain.Common.Models;
 using Employee.Application.Features.HumanResource.Dtos;
 using MediatR;
 
 namespace Employee.Application.Features.HumanResource.Commands.UpdateEmployee
 {
-  public class UpdateEmployeeCommand : IRequest
+  [Authorize(Roles = "Admin,HR")]
+public class UpdateEmployeeCommand : IRequest
   {
     public string Id { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;

@@ -1,3 +1,4 @@
+using Employee.Application.Common;
 using Employee.Application.Common.Exceptions;
 using Employee.Application.Common.Interfaces;
 using Employee.Domain.Interfaces.Repositories;
@@ -11,8 +12,6 @@ namespace Employee.Application.Features.Organization.Commands.UpdateDepartment
 {
   public class UpdateDepartmentHandler(IDepartmentRepository repo, ICacheService cache) : IRequestHandler<UpdateDepartmentCommand>
   {
-    private const string DEPARTMENT_TREE_KEY = "DEPARTMENT_TREE";
-
     public async Task Handle(UpdateDepartmentCommand request, CancellationToken cancellationToken)
     {
       var dept = await repo.GetByIdAsync(request.Id, cancellationToken);
@@ -37,7 +36,7 @@ namespace Employee.Application.Features.Organization.Commands.UpdateDepartment
       dept.SetParent(request.Dto.ParentId);
 
       await repo.UpdateAsync(request.Id, dept, cancellationToken);
-      await cache.RemoveAsync(DEPARTMENT_TREE_KEY);
+      await cache.RemoveAsync(CacheKeys.DepartmentTree);
     }
 
     private async Task<bool> IsDescendantAsync(string parentId, string potentialDescendantId, CancellationToken cancellationToken = default)

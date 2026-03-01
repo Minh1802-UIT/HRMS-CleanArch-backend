@@ -1,19 +1,15 @@
-﻿using System.ComponentModel.DataAnnotations;
 
 namespace Employee.Application.Features.Organization.Dtos
 {
   // ==========================================
-  // 1. NESTED DTO (Dùng để hứng dữ liệu lương)
+  // 1. NESTED DTO (D�ng d? h?ng d? li?u luong)
   // ==========================================
   public class SalaryRangeDto
   {
-    [Range(0, double.MaxValue, ErrorMessage = "Minimum salary must be positive.")]
     public decimal Min { get; set; }
-
-    [Range(0, double.MaxValue, ErrorMessage = "Maximum salary must be positive.")]
     public decimal Max { get; set; }
 
-    public string Currency { get; set; } = "VND"; // Mặc định
+    public string Currency { get; set; } = "VND"; // M?c d?nh
   }
 
   // ==========================================
@@ -25,11 +21,11 @@ namespace Employee.Application.Features.Organization.Dtos
     public string Title { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
 
-    // Trả về DTO, không trả về Domain Value Object
+    // Tr? v? DTO, kh�ng tr? v? Domain Value Object
     public SalaryRangeDto? SalaryRange { get; set; }
 
     public string? DepartmentId { get; set; }
-    // Dữ liệu phân cấp
+    // D? li?u ph�n c?p
     public string? ParentId { get; set; }
     public string? ParentTitle { get; set; }
     public int EmployeeCount { get; set; }
@@ -49,19 +45,11 @@ namespace Employee.Application.Features.Organization.Dtos
   // ==========================================
   public class CreatePositionDto
   {
-    [Required(ErrorMessage = "Position Title is required.")]
-    [MaxLength(100, ErrorMessage = "Title must not exceed 100 characters.")]
     public string Title { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Position Code is required.")]
-    [MaxLength(20, ErrorMessage = "Code must not exceed 20 characters.")]
-    [RegularExpression(@"^[A-Z0-9-_]+$", ErrorMessage = "Code can only contain uppercase letters, numbers, hyphens.")]
     public string Code { get; set; } = string.Empty;
 
-    // SalaryRange là tùy chọn (có thể null)
+    // SalaryRange l� t�y ch?n (c� th? null)
     public SalaryRangeDto? SalaryRange { get; set; }
-
-    [Required(ErrorMessage = "DepartmentId is required.")]
     public string DepartmentId { get; set; } = string.Empty;
 
     public string? ParentId { get; set; }
@@ -72,11 +60,7 @@ namespace Employee.Application.Features.Organization.Dtos
   // ==========================================
   public class UpdatePositionDto
   {
-    [Required]
     public string Id { get; set; } = string.Empty;
-
-    [Required(ErrorMessage = "Position Title is required.")]
-    [MaxLength(100)]
     public string Title { get; set; } = string.Empty;
 
     public SalaryRangeDto? SalaryRange { get; set; }

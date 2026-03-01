@@ -9,7 +9,7 @@ namespace Employee.Application.Features.Leave.Commands.CreateLeaveRequest
         {
             RuleFor(p => p.LeaveType)
                 .NotEmpty().WithMessage("{PropertyName} is required.")
-                .IsEnumName(typeof(LeaveTypeEnum), caseSensitive: false)
+                .IsEnumName(typeof(LeaveCategory), caseSensitive: false)
                 .WithMessage("{PropertyName} must be a valid leave type (Annual, Sick, Unpaid).");
 
             RuleFor(p => p.FromDate)

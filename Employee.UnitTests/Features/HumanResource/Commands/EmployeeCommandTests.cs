@@ -28,6 +28,7 @@ namespace Employee.UnitTests.Features.HumanResource.Commands
     private readonly Mock<IPositionRepository> _mockPosRepo;
     private readonly Mock<IPublisher> _mockPublisher;
     private readonly Mock<IUnitOfWork> _mockUnitOfWork;
+    private readonly Mock<ICacheService> _mockCache;
 
     private readonly CreateEmployeeHandler _createHandler;
     private readonly UpdateEmployeeHandler _updateHandler;
@@ -39,14 +40,15 @@ namespace Employee.UnitTests.Features.HumanResource.Commands
       _mockPosRepo = new Mock<IPositionRepository>();
       _mockPublisher = new Mock<IPublisher>();
       _mockUnitOfWork = new Mock<IUnitOfWork>();
+      _mockCache = new Mock<ICacheService>();
 
       _createHandler = new CreateEmployeeHandler(
           _mockRepo.Object, _mockDeptRepo.Object, _mockPosRepo.Object,
-          _mockPublisher.Object, _mockUnitOfWork.Object);
+          _mockPublisher.Object, _mockUnitOfWork.Object, _mockCache.Object);
 
       _updateHandler = new UpdateEmployeeHandler(
           _mockRepo.Object, _mockDeptRepo.Object, _mockPosRepo.Object,
-          _mockPublisher.Object);
+          _mockPublisher.Object, _mockCache.Object);
     }
 
     // --- Create Employee Tests ---

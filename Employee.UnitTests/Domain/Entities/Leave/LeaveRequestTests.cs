@@ -14,7 +14,7 @@ namespace Employee.UnitTests.Domain.Entities.Leave
             var to = from.AddDays(2);
 
             // Act
-            var request = new LeaveRequest("emp1", LeaveTypeEnum.Annual, from, to, "Vacation");
+            var request = new LeaveRequest("emp1", LeaveCategory.Annual, from, to, "Vacation");
 
             // Assert
             Assert.Equal("emp1", request.EmployeeId);
@@ -37,7 +37,7 @@ namespace Employee.UnitTests.Domain.Entities.Leave
                 reason = new string('a', 301);
             }
 
-            Assert.Throws<ArgumentException>(() => new LeaveRequest(empId!, LeaveTypeEnum.Annual, from, to, reason!));
+            Assert.Throws<ArgumentException>(() => new LeaveRequest(empId!, LeaveCategory.Annual, from, to, reason!));
         }
 
         [Fact]
@@ -46,14 +46,14 @@ namespace Employee.UnitTests.Domain.Entities.Leave
             var from = DateTime.UtcNow.AddDays(1);
             var to = from.AddDays(-1);
 
-            Assert.Throws<ArgumentException>(() => new LeaveRequest("emp1", LeaveTypeEnum.Annual, from, to, "Reason"));
+            Assert.Throws<ArgumentException>(() => new LeaveRequest("emp1", LeaveCategory.Annual, from, to, "Reason"));
         }
 
         [Fact]
         public void Approve_WhenPending_ShouldSucceed()
         {
             // Arrange
-            var request = new LeaveRequest("emp1", LeaveTypeEnum.Annual, DateTime.UtcNow, DateTime.UtcNow, "Reason");
+            var request = new LeaveRequest("emp1", LeaveCategory.Annual, DateTime.UtcNow, DateTime.UtcNow, "Reason");
 
             // Act
             request.Approve("manager1", "Enjoy your vacation");
@@ -68,7 +68,7 @@ namespace Employee.UnitTests.Domain.Entities.Leave
         public void Approve_WhenAlreadyApproved_ShouldThrowException()
         {
             // Arrange
-            var request = new LeaveRequest("emp1", LeaveTypeEnum.Annual, DateTime.UtcNow, DateTime.UtcNow, "Reason");
+            var request = new LeaveRequest("emp1", LeaveCategory.Annual, DateTime.UtcNow, DateTime.UtcNow, "Reason");
             request.Approve("mgr1", "ok");
 
             // Act & Assert
@@ -79,7 +79,7 @@ namespace Employee.UnitTests.Domain.Entities.Leave
         public void Reject_WhenPending_ShouldSucceed()
         {
             // Arrange
-            var request = new LeaveRequest("emp1", LeaveTypeEnum.Annual, DateTime.UtcNow, DateTime.UtcNow, "Reason");
+            var request = new LeaveRequest("emp1", LeaveCategory.Annual, DateTime.UtcNow, DateTime.UtcNow, "Reason");
 
             // Act
             request.Reject("manager1", "Too many people off");
@@ -94,14 +94,14 @@ namespace Employee.UnitTests.Domain.Entities.Leave
         public void Update_WhenPending_ShouldSucceed()
         {
             // Arrange
-            var request = new LeaveRequest("emp1", LeaveTypeEnum.Annual, DateTime.UtcNow, DateTime.UtcNow, "Old Reason");
+            var request = new LeaveRequest("emp1", LeaveCategory.Annual, DateTime.UtcNow, DateTime.UtcNow, "Old Reason");
             var newTo = DateTime.UtcNow.AddDays(5);
 
             // Act
-            request.Update(LeaveTypeEnum.Sick, DateTime.UtcNow, newTo, "New Reason", System.DateTime.UtcNow);
+            request.Update(LeaveCategory.Sick, DateTime.UtcNow, newTo, "New Reason", System.DateTime.UtcNow);
 
             // Assert
-            Assert.Equal(LeaveTypeEnum.Sick, request.LeaveType);
+            Assert.Equal(LeaveCategory.Sick, request.LeaveType);
             Assert.Equal("New Reason", request.Reason);
             Assert.Equal(newTo, request.ToDate);
         }
@@ -110,18 +110,18 @@ namespace Employee.UnitTests.Domain.Entities.Leave
         public void Update_WhenNotPending_ShouldThrowException()
         {
             // Arrange
-            var request = new LeaveRequest("emp1", LeaveTypeEnum.Annual, DateTime.UtcNow, DateTime.UtcNow, "Reason");
+            var request = new LeaveRequest("emp1", LeaveCategory.Annual, DateTime.UtcNow, DateTime.UtcNow, "Reason");
             request.Approve("mgr", "ok");
 
             // Act & Assert
-            Assert.Throws<InvalidOperationException>(() => request.Update(LeaveTypeEnum.Annual, DateTime.UtcNow, DateTime.UtcNow, "Update", System.DateTime.UtcNow));
+            Assert.Throws<InvalidOperationException>(() => request.Update(LeaveCategory.Annual, DateTime.UtcNow, DateTime.UtcNow, "Update", System.DateTime.UtcNow));
         }
 
         [Fact]
         public void Cancel_ShouldSetStatusToCancelled()
         {
             // Arrange
-            var request = new LeaveRequest("emp1", LeaveTypeEnum.Annual, DateTime.UtcNow, DateTime.UtcNow, "Reason");
+            var request = new LeaveRequest("emp1", LeaveCategory.Annual, DateTime.UtcNow, DateTime.UtcNow, "Reason");
 
             // Act
             request.Cancel(System.DateTime.UtcNow);

@@ -1,3 +1,4 @@
+using Employee.Application.Common;
 using Employee.Application.Common.Exceptions;
 using Employee.Application.Common.Interfaces;
 using Employee.Domain.Interfaces.Repositories;
@@ -11,8 +12,6 @@ namespace Employee.Application.Features.Organization.Commands.CreateDepartment
 {
   public class CreateDepartmentHandler(IDepartmentRepository repo, ICacheService cache) : IRequestHandler<CreateDepartmentCommand, DepartmentDto>
   {
-    private const string DEPARTMENT_TREE_KEY = "DEPARTMENT_TREE";
-
     public async Task<DepartmentDto> Handle(CreateDepartmentCommand request, CancellationToken cancellationToken)
     {
       if (!string.IsNullOrEmpty(request.Dto.ParentId))
@@ -23,7 +22,7 @@ namespace Employee.Application.Features.Organization.Commands.CreateDepartment
 
       var dept = request.Dto.ToEntity();
       await repo.CreateAsync(dept, cancellationToken);
-      await cache.RemoveAsync(DEPARTMENT_TREE_KEY);
+      await cache.RemoveAsync(CacheKeys.DepartmentTree);
       return dept.ToDto()!;
     }
   }

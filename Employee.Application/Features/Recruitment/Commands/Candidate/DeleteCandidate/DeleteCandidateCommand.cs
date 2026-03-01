@@ -1,6 +1,8 @@
+using Employee.Application.Common.Security;
 using MediatR;
 
 namespace Employee.Application.Features.Recruitment.Commands.Candidate.DeleteCandidate
 {
-  public record DeleteCandidateCommand(string Id) : IRequest;
+  [Authorize(Roles = "Admin,HR")]
+public record DeleteCandidateCommand(string Id) : IRequest;
 }

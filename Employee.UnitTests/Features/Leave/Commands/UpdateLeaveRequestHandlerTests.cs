@@ -31,7 +31,7 @@ namespace Employee.UnitTests.Features.Leave.Commands
             int daysFromNow = 5)
         {
             var from = DateTime.UtcNow.Date.AddDays(daysFromNow);
-            var req = new LeaveRequest(empId, LeaveTypeEnum.Annual, from, from.AddDays(2), "Original reason");
+            var req = new LeaveRequest(empId, LeaveCategory.Annual, from, from.AddDays(2), "Original reason");
             req.SetId(id);
             return req;
         }

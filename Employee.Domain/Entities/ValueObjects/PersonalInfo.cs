@@ -19,19 +19,6 @@ namespace Employee.Domain.Entities.ValueObjects
     public int DependentCount { get; init; } = 0;
   }
 
-  public record JobDetails
-  {
-    public string DepartmentId { get; init; } = string.Empty; // Reference
-    public string PositionId { get; init; } = string.Empty;   // Reference
-    public string ManagerId { get; init; } = string.Empty;    // Reference
-    public string ShiftId { get; init; } = string.Empty;      // Reference to Shift
-    public DateTime JoinDate { get; init; }
-    public EmployeeStatus Status { get; init; } = EmployeeStatus.Probation;
-    public string? ResumeUrl { get; init; }   // Resume URL
-    public string? ContractUrl { get; init; } // Contract URL
-    public DateTime? ProbationEndDate { get; init; } // End of probation period
-  }
-
   public record BankDetails
   {
     public string BankName { get; init; } = string.Empty;

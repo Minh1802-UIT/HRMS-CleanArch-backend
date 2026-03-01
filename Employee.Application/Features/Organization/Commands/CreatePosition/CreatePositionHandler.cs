@@ -1,3 +1,4 @@
+using Employee.Application.Common;
 using Employee.Application.Common.Exceptions;
 using Employee.Application.Common.Interfaces;
 using Employee.Domain.Interfaces.Repositories;
@@ -14,8 +15,6 @@ namespace Employee.Application.Features.Organization.Commands.CreatePosition
       ICacheService cache,
       IDepartmentRepository deptRepo) : IRequestHandler<CreatePositionCommand, string>
   {
-    private const string POSITION_TREE_KEY = "POSITION_TREE";
-
     public async Task<string> Handle(CreatePositionCommand request, CancellationToken cancellationToken)
     {
       if (!string.IsNullOrEmpty(request.Dto.ParentId))
@@ -31,7 +30,7 @@ namespace Employee.Application.Features.Organization.Commands.CreatePosition
       var pos = request.Dto.ToEntity();
 
       await repo.CreateAsync(pos, cancellationToken);
-      await cache.RemoveAsync(POSITION_TREE_KEY);
+      await cache.RemoveAsync(CacheKeys.PositionTree);
       return pos.Id;
     }
   }

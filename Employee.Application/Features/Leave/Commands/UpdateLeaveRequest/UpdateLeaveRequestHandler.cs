@@ -24,7 +24,7 @@ namespace Employee.Application.Features.Leave.Commands.UpdateLeaveRequest
                 throw new ValidationException("Bạn không có quyền sửa đơn này");
 
             // Parse Enum
-            if (!Enum.TryParse<Employee.Domain.Enums.LeaveTypeEnum>(request.Dto.LeaveType, true, out var leaveTypeEnum))
+            if (!Enum.TryParse<Employee.Domain.Enums.LeaveCategory>(request.Dto.LeaveType, true, out var leaveCategory))
             {
                 throw new ValidationException($"Loại nghỉ phép '{request.Dto.LeaveType}' không hợp lệ.");
             }
@@ -38,7 +38,7 @@ namespace Employee.Application.Features.Leave.Commands.UpdateLeaveRequest
 
             try
             {
-                entity.Update(leaveTypeEnum, request.Dto.FromDate, request.Dto.ToDate, request.Dto.Reason, _dateTime.UtcNow);
+                entity.Update(leaveCategory, request.Dto.FromDate, request.Dto.ToDate, request.Dto.Reason, _dateTime.UtcNow);
             }
             catch (InvalidOperationException ex)
             {

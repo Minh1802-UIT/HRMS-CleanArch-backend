@@ -1,4 +1,3 @@
-﻿using System.ComponentModel.DataAnnotations;
 
 namespace Employee.Application.Features.Leave.Dtos
 {
@@ -31,17 +30,9 @@ namespace Employee.Application.Features.Leave.Dtos
     // ==========================================
     public class CreateLeaveRequestDto
     {
-        [Required(ErrorMessage = "Leave Type is required.")]
         public string LeaveType { get; set; } = "Annual";
-
-        [Required(ErrorMessage = "From Date is required.")]
         public DateTime FromDate { get; set; }
-
-        [Required(ErrorMessage = "To Date is required.")]
         public DateTime ToDate { get; set; }
-
-        [Required(ErrorMessage = "Reason is required.")]
-        [MaxLength(500, ErrorMessage = "Reason must not exceed 500 characters.")]
         public string Reason { get; set; } = string.Empty;
     }
 
@@ -50,7 +41,6 @@ namespace Employee.Application.Features.Leave.Dtos
     // ==========================================
     public class UpdateLeaveRequestDto : CreateLeaveRequestDto
     {
-        [Required]
         public string Id { get; set; } = string.Empty;
     }
 
@@ -59,14 +49,8 @@ namespace Employee.Application.Features.Leave.Dtos
     // ==========================================
     public class ReviewLeaveRequestDto
     {
-        [Required]
         public string Id { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Status is required.")]
-        [RegularExpression("^(Approved|Rejected)$", ErrorMessage = "Status must be 'Approved' or 'Rejected'.")]
         public string Status { get; set; } = "Approved";
-
-        [MaxLength(500, ErrorMessage = "Manager Comment must not exceed 500 characters.")]
         public string? ManagerComment { get; set; }
     }
 

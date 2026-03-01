@@ -38,7 +38,7 @@ namespace Employee.UnitTests.Features.Leave.Commands
             string id = "req-1",
             int fromDaysOffset = 5)
         {
-            var request = new LeaveRequest(empId, LeaveTypeEnum.Annual,
+            var request = new LeaveRequest(empId, LeaveCategory.Annual,
                 DateTime.UtcNow.AddDays(fromDaysOffset),
                 DateTime.UtcNow.AddDays(fromDaysOffset + 2),
                 "Vacation");

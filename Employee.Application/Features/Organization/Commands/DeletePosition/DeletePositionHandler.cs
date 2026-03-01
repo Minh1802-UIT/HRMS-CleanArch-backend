@@ -1,3 +1,4 @@
+using Employee.Application.Common;
 using Employee.Application.Common.Exceptions;
 using Employee.Application.Common.Interfaces;
 using Employee.Domain.Interfaces.Repositories;
@@ -13,8 +14,6 @@ namespace Employee.Application.Features.Organization.Commands.DeletePosition
       ICacheService cache,
       IEmployeeRepository employeeRepo) : IRequestHandler<DeletePositionCommand>
   {
-    private const string POSITION_TREE_KEY = "POSITION_TREE";
-
     public async Task Handle(DeletePositionCommand request, CancellationToken cancellationToken)
     {
       // IMP-1: Check employee references
@@ -28,7 +27,7 @@ namespace Employee.Application.Features.Organization.Commands.DeletePosition
         throw new ValidationException("Không thể xóa chức vụ đang có chức vụ con.");
 
       await repo.DeleteAsync(request.Id, cancellationToken);
-      await cache.RemoveAsync(POSITION_TREE_KEY);
+      await cache.RemoveAsync(CacheKeys.PositionTree);
     }
   }
 }

@@ -36,11 +36,11 @@ namespace Employee.Application.Features.Leave.Commands.CreateLeaveRequest
     {
       // 1.0 Resolve LeaveType: request.LeaveType can be either a document ID or an enum code
       string leaveTypeId;
-      Employee.Domain.Enums.LeaveTypeEnum leaveTypeEnum;
+      Employee.Domain.Enums.LeaveCategory leaveCategory;
       Employee.Domain.Entities.Leave.LeaveType? resolvedType;
 
       // Try parsing as enum first (e.g., "Annual", "Sick", "Unpaid")
-      if (Enum.TryParse<Employee.Domain.Enums.LeaveTypeEnum>(request.LeaveType, true, out leaveTypeEnum))
+      if (Enum.TryParse<Employee.Domain.Enums.LeaveCategory>(request.LeaveType, true, out leaveCategory))
       {
         // It's an enum name — resolve the document ID via Code
         resolvedType = await _leaveTypeRepo.GetByCodeAsync(request.LeaveType, cancellationToken);
@@ -55,7 +55,7 @@ namespace Employee.Application.Features.Leave.Commands.CreateLeaveRequest
         if (resolvedType == null)
           throw new NotFoundException($"Không tìm thấy loại phép có ID '{request.LeaveType}'.");
 
-        if (!Enum.TryParse<Employee.Domain.Enums.LeaveTypeEnum>(resolvedType.Code, true, out leaveTypeEnum))
+        if (!Enum.TryParse<Employee.Domain.Enums.LeaveCategory>(resolvedType.Code, true, out leaveCategory))
           throw new ValidationException($"Mã loại phép '{resolvedType.Code}' không hợp lệ.");
         leaveTypeId = resolvedType.Id;
       }
@@ -86,7 +86,7 @@ namespace Employee.Application.Features.Leave.Commands.CreateLeaveRequest
       // 3. Create Entity directly (DDD)
       var entity = new Employee.Domain.Entities.Leave.LeaveRequest(
           request.EmployeeId,
-          leaveTypeEnum,
+          leaveCategory,
           request.FromDate,
           request.ToDate,
           request.Reason

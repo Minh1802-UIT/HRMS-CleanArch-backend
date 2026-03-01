@@ -1,42 +1,33 @@
-﻿using System.ComponentModel.DataAnnotations;
 
 namespace Employee.Application.Features.HumanResource.Dtos
 {
     // ----------------------------------------------------
-    // 1. SHARED DTOs (Dùng chung cho cả Create và Update)
+    // 1. SHARED DTOs (D�ng chung cho c? Create v� Update)
     // ----------------------------------------------------
 
     public class SalaryInfoInputDto
     {
-        [Required(ErrorMessage = "Basic Salary is required.")]
-        [Range(0, double.MaxValue, ErrorMessage = "Basic Salary must be a positive number.")]
         public decimal BasicSalary { get; set; }
-
-        [Range(0, double.MaxValue, ErrorMessage = "Transport Allowance must be a positive number.")]
         public decimal TransportAllowance { get; set; }
-
-        [Range(0, double.MaxValue, ErrorMessage = "Lunch Allowance must be a positive number.")]
         public decimal LunchAllowance { get; set; }
-
-        [Range(0, double.MaxValue, ErrorMessage = "Other Allowance must be a positive number.")]
         public decimal OtherAllowance { get; set; }
     }
 
     // ----------------------------------------------------
-    // 2. VIEW DTO (Output - Trả về cho Frontend)
+    // 2. VIEW DTO (Output - Tr? v? cho Frontend)
     // ----------------------------------------------------
     public class ContractDto
     {
         public string Id { get; set; } = string.Empty;
         public string EmployeeId { get; set; } = string.Empty;
-        public string EmployeeName { get; set; } = string.Empty; // FE cần tên để hiển thị
+        public string EmployeeName { get; set; } = string.Empty; // FE c?n t�n d? hi?n th?
         public string ContractCode { get; set; } = string.Empty;
         public string ContractType { get; set; } = string.Empty; // Fixed-Term, Indefinite...
         public DateTime StartDate { get; set; }
         public DateTime? EndDate { get; set; }
         public string Status { get; set; } = string.Empty; // Active, Expired, Terminated
 
-        // Thông tin lương (Flatten hoặc Nested tùy convention, ở đây để Nested cho gọn)
+        // Th�ng tin luong (Flatten ho?c Nested t�y convention, ? d�y d? Nested cho g?n)
         public SalaryInfoDto Salary { get; set; } = new();
     }
 
@@ -44,7 +35,7 @@ namespace Employee.Application.Features.HumanResource.Dtos
     {
         public decimal BasicSalary { get; set; }
         public decimal TotalSalary { get; set; } // Gross salary (Basic + Allowances)
-                                                 // ... các phụ cấp khác
+                                                 // ... c�c ph? c?p kh�c
     }
 
     // ----------------------------------------------------
@@ -52,27 +43,16 @@ namespace Employee.Application.Features.HumanResource.Dtos
     // ----------------------------------------------------
     public class CreateContractDto
     {
-        [Required(ErrorMessage = "Employee ID is required.")]
         public string EmployeeId { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Contract Code is required.")]
-        [MaxLength(50, ErrorMessage = "Contract Code must not exceed 50 characters.")]
-        // Mã hợp đồng: Cho phép cả chữ hoa, chữ thường, số, dấu gạch
-        [RegularExpression(@"^[a-zA-Z0-9-_]+$", ErrorMessage = "Contract Code can only contain letters, numbers, hyphens, and underscores.")]
+        // M� h?p d?ng: Cho ph�p c? ch? hoa, ch? thu?ng, s?, d?u g?ch
         public string ContractCode { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Contract Type is required.")]
-        // Có thể validate cứng các loại hợp đồng ở đây nếu muốn (VD: Probation, Official...)
+        // C� th? validate c?ng c�c lo?i h?p d?ng ? d�y n?u mu?n (VD: Probation, Official...)
         public string ContractType { get; set; } = "Fixed-Term";
-
-        [Required(ErrorMessage = "Start Date is required.")]
         public DateTime StartDate { get; set; }
 
-        // EndDate có thể null (Hợp đồng không xác định thời hạn)
-        // Lưu ý: Logic "EndDate > StartDate" nên để Service check hoặc Custom Attribute
+        // EndDate c� th? null (H?p d?ng kh�ng x�c d?nh th?i h?n)
+        // Luu �: Logic "EndDate > StartDate" n�n d? Service check ho?c Custom Attribute
         public DateTime? EndDate { get; set; }
-
-        [Required(ErrorMessage = "Salary information is required.")]
         public SalaryInfoInputDto Salary { get; set; } = new();
     }
 
@@ -81,18 +61,17 @@ namespace Employee.Application.Features.HumanResource.Dtos
     // ----------------------------------------------------
     public class UpdateContractDto
     {
-        [Required]
         public string Id { get; set; } = string.Empty;
 
-        // Mã hợp đồng (ContractCode) và EmployeeId thường KHÔNG được sửa.
-        // Chỉ cho sửa ngày kết thúc (Gia hạn) hoặc thông tin lương.
+        // M� h?p d?ng (ContractCode) v� EmployeeId thu?ng KH�NG du?c s?a.
+        // Ch? cho s?a ng�y k?t th�c (Gia h?n) ho?c th�ng tin luong.
 
         public DateTime? EndDate { get; set; }
 
-        // Nếu cập nhật cả lương
+        // N?u c?p nh?t c? luong
         public SalaryInfoInputDto? Salary { get; set; }
 
-        // Trạng thái (VD: Chấm dứt hợp đồng sớm)
+        // Tr?ng th�i (VD: Ch?m d?t h?p d?ng s?m)
         public string? Status { get; set; }
     }
 }

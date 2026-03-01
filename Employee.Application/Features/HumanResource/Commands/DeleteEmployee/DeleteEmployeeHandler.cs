@@ -1,3 +1,5 @@
+using Employee.Application.Common;
+using Employee.Application.Common.Interfaces;
 using Employee.Application.Common.Models;
 using Employee.Application.Common.Exceptions;
 using Employee.Domain.Interfaces.Repositories;
@@ -11,15 +13,18 @@ namespace Employee.Application.Features.HumanResource.Commands.DeleteEmployee
     private readonly IEmployeeRepository _repo;
     private readonly IPublisher _publisher;
     private readonly IDepartmentRepository _deptRepo;
+    private readonly ICacheService _cache;
 
     public DeleteEmployeeHandler(
         IEmployeeRepository repo,
         IPublisher publisher,
-        IDepartmentRepository deptRepo)
+        IDepartmentRepository deptRepo,
+        ICacheService cache)
     {
       _repo = repo;
       _publisher = publisher;
       _deptRepo = deptRepo;
+      _cache = cache;
     }
 
     public async Task Handle(DeleteEmployeeCommand request, CancellationToken cancellationToken)
@@ -40,6 +45,10 @@ namespace Employee.Application.Features.HumanResource.Commands.DeleteEmployee
       // 2. 📢 Bắn sự kiện "Nhân viên đã bị xóa"
       // Event Handler sẽ lo việc: Xóa User Auth, Ghi Log, Xóa Hợp đồng...
       await _publisher.Publish(new EmployeeDeletedEvent(request.Id, emp.EmployeeCode, emp.FullName), cancellationToken);
+
+      // 3. Invalidate caches
+      await _cache.RemoveAsync(CacheKeys.Employee(request.Id));
+      await _cache.RemoveAsync(CacheKeys.EmployeeLookup);
     }
   }
 }

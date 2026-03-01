@@ -1,43 +1,40 @@
-﻿using System.ComponentModel.DataAnnotations;
 
 namespace Employee.Application.Features.Attendance.Dtos
 {
   // ==========================================
-  // 1. INPUT: CHECK-IN / CHECK-OUT (Gửi RawLog)
+  // 1. INPUT: CHECK-IN / CHECK-OUT (G?i RawLog)
   // ==========================================
   public class CheckInRequestDto
   {
-    // "CheckIn" hoặc "CheckOut"
-    [Required]
-    [RegularExpression("^(CheckIn|CheckOut)$")]
+    // "CheckIn" ho?c "CheckOut"
     public string Type { get; set; } = "CheckIn";
 
     public string? EmployeeId { get; set; }
     public string DeviceId { get; set; } = "MobileApp";
 
-    // Tọa độ (nếu có)
+    // T?a d? (n?u c�)
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
   }
 
   // ==========================================
-  // 2. OUTPUT: BẢNG CÔNG THÁNG (Từ AttendanceBucket)
+  // 2. OUTPUT: B?NG C�NG TH�NG (T? AttendanceBucket)
   // ==========================================
   public class MonthlyAttendanceDto
   {
     public string EmployeeId { get; set; } = string.Empty;
     public string Month { get; set; } = string.Empty; // "02-2026"
 
-    // Tổng hợp nhanh
+    // T?ng h?p nhanh
     public int TotalPresent { get; set; }
     public int TotalLate { get; set; }
-    public double TotalWorkingHours { get; set; } // Cộng dồn giờ làm
+    public double TotalWorkingHours { get; set; } // C?ng d?n gi? l�m
 
-    // Chi tiết từng ngày
+    // Chi ti?t t?ng ng�y
     public List<DailyLogDto> Logs { get; set; } = new();
   }
 
-  // DTO chi tiết cho từng ngày (Mapping từ ValueObject DailyLog)
+  // DTO chi ti?t cho t?ng ng�y (Mapping t? ValueObject DailyLog)
   public class DailyLogDto
   {
     public DateTime Date { get; set; }
@@ -63,7 +60,7 @@ namespace Employee.Application.Features.Attendance.Dtos
     public DateTime FromDate { get; set; }
     public DateTime ToDate { get; set; }
 
-    // Tổng hợp trong khoảng thời gian này
+    // T?ng h?p trong kho?ng th?i gian n�y
     public double TotalWorkingHours { get; set; }
     public double TotalOvertimeHours { get; set; }
 
@@ -91,6 +88,6 @@ namespace Employee.Application.Features.Attendance.Dtos
     public double Overtime { get; set; }
     public string Status { get; set; } = "Pending"; // Approved, Rejected, Pending
 
-    public List<double> DailyHours { get; set; } = new(); // Giờ làm từng ngày để vẽ chart/table
+    public List<double> DailyHours { get; set; } = new(); // Gi? l�m t?ng ng�y d? v? chart/table
   }
 }

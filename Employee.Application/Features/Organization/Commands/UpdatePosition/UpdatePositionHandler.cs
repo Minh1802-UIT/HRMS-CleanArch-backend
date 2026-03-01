@@ -1,3 +1,4 @@
+using Employee.Application.Common;
 using Employee.Application.Common.Exceptions;
 using Employee.Application.Common.Interfaces;
 using Employee.Domain.Interfaces.Repositories;
@@ -13,8 +14,6 @@ namespace Employee.Application.Features.Organization.Commands.UpdatePosition
       ICacheService cache,
       IDepartmentRepository deptRepo) : IRequestHandler<UpdatePositionCommand>
   {
-    private const string POSITION_TREE_KEY = "POSITION_TREE";
-
     public async Task Handle(UpdatePositionCommand request, CancellationToken cancellationToken)
     {
       var existing = await repo.GetByIdAsync(request.Id, cancellationToken);
@@ -64,7 +63,7 @@ namespace Employee.Application.Features.Organization.Commands.UpdatePosition
       existing.SetParent(request.Dto.ParentId);
 
       await repo.UpdateAsync(request.Id, existing, cancellationToken);
-      await cache.RemoveAsync(POSITION_TREE_KEY);
+      await cache.RemoveAsync(CacheKeys.PositionTree);
     }
 
     private async Task<bool> IsSubordinateAsync(string parentId, string potentialSubordinateId, CancellationToken cancellationToken = default)

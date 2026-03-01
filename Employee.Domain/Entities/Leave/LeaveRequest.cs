@@ -6,7 +6,7 @@ namespace Employee.Domain.Entities.Leave
     public class LeaveRequest : BaseEntity
     {
         public string EmployeeId { get; private set; } = null!; // Automatically taken from Token
-        public LeaveTypeEnum LeaveType { get; private set; } // Annual, Sick, Unpaid
+        public LeaveCategory LeaveType { get; private set; } // Annual, Sick, Unpaid
         public DateTime FromDate { get; private set; }
         public DateTime ToDate { get; private set; }
         public string Reason { get; private set; } = null!;
@@ -18,7 +18,7 @@ namespace Employee.Domain.Entities.Leave
         private LeaveRequest() { }
 
         // Factory Constructor
-        public LeaveRequest(string employeeId, LeaveTypeEnum leaveType, DateTime fromDate, DateTime toDate, string reason)
+        public LeaveRequest(string employeeId, LeaveCategory leaveType, DateTime fromDate, DateTime toDate, string reason)
         {
             if (string.IsNullOrWhiteSpace(employeeId)) throw new ArgumentException("EmployeeId is required.");
             if (string.IsNullOrWhiteSpace(reason)) throw new ArgumentException("Reason is required.");
@@ -64,7 +64,7 @@ namespace Employee.Domain.Entities.Leave
             SetUpdatedAt(cancelledAt);
         }
 
-    public void Update(LeaveTypeEnum leaveType, DateTime fromDate, DateTime toDate, string reason, DateTime updatedAt)
+    public void Update(LeaveCategory leaveType, DateTime fromDate, DateTime toDate, string reason, DateTime updatedAt)
         {
             if (Status != LeaveStatus.Pending)
             {

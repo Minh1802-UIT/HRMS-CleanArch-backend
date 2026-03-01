@@ -15,7 +15,7 @@ namespace Employee.Application.Features.Leave.Commands.UpdateLeaveRequest
 
       RuleFor(x => x.Dto.LeaveType)
           .NotEmpty().WithMessage("Leave type is required.")
-          .IsEnumName(typeof(LeaveTypeEnum), caseSensitive: false)
+          .IsEnumName(typeof(LeaveCategory), caseSensitive: false)
           .WithMessage("Leave type must be a valid value (Annual, Sick, Unpaid).");
 
       RuleFor(x => x.Dto.FromDate)

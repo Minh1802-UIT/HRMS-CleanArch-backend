@@ -1,9 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
 
 namespace Employee.Application.Features.Payroll.Dtos
 {
   // ==========================================
-  // 1. VIEW DTO (Output - Xem bảng lương)
+  // 1. VIEW DTO (Output - Xem b?ng luong)
   // ==========================================
   public class PayrollDto
   {
@@ -13,26 +12,26 @@ namespace Employee.Application.Features.Payroll.Dtos
     // Format: "MM-yyyy" (VD: "02-2026")
     public string Month { get; set; } = string.Empty;
 
-    // --- Thu nhập ---
-    public decimal BaseSalary { get; set; } // Lương cứng
-    public decimal Allowances { get; set; } // Tổng phụ cấp
-    public decimal Bonus { get; set; }      // Thưởng thêm
-    public decimal OvertimePay { get; set; } // Lương tăng ca
+    // --- Thu nh?p ---
+    public decimal BaseSalary { get; set; } // Luong c?ng
+    public decimal Allowances { get; set; } // T?ng ph? c?p
+    public decimal Bonus { get; set; }      // Thu?ng th�m
+    public decimal OvertimePay { get; set; } // Luong tang ca
 
-    // --- Công ---
-    public double TotalWorkingDays { get; set; }  // Công chuẩn (VD: 22)
-    public double ActualWorkingDays { get; set; } // Công thực tế (VD: 20.5)
-    public double PayableDays { get; set; }       // Công tính lương (Thực tế + Phép năm)
+    // --- C�ng ---
+    public double TotalWorkingDays { get; set; }  // C�ng chu?n (VD: 22)
+    public double ActualWorkingDays { get; set; } // C�ng th?c t? (VD: 20.5)
+    public double PayableDays { get; set; }       // C�ng t�nh luong (Th?c t? + Ph�p nam)
 
-    // --- Tổng kết ---
-    public decimal GrossIncome { get; set; }     // Tổng thu nhập trước thuế
-    public decimal TotalDeductions { get; set; } // Tổng khấu trừ (BHXH, Thuế, Phạt...)
-    public decimal FinalNetSalary { get; set; }  // Thực lĩnh (Gross - Deductions)
+    // --- T?ng k?t ---
+    public decimal GrossIncome { get; set; }     // T?ng thu nh?p tru?c thu?
+    public decimal TotalDeductions { get; set; } // T?ng kh?u tr? (BHXH, Thu?, Ph?t...)
+    public decimal FinalNetSalary { get; set; }  // Th?c linh (Gross - Deductions)
 
     public string Status { get; set; } = string.Empty; // Draft, Approved, Paid, Rejected
     public DateTime? PaidDate { get; set; }
 
-    // --- Metadata (UI hiển thị) ---
+    // --- Metadata (UI hi?n th?) ---
     public string EmployeeName { get; set; } = "Unknown";
     public string EmployeeCode { get; set; } = "Unknown";
     public string DepartmentName { get; set; } = "Unknown";
@@ -41,30 +40,24 @@ namespace Employee.Application.Features.Payroll.Dtos
   }
 
   // ==========================================
-  // 2. GENERATE DTO (Input - Yêu cầu tính lương)
+  // 2. GENERATE DTO (Input - Y�u c?u t�nh luong)
   // ==========================================
   public class GeneratePayrollDto
   {
-    [Required]
-    // Tháng cần tính lương (VD: "02-2026")
-    [RegularExpression(@"^\d{2}-\d{4}$", ErrorMessage = "Month format must be MM-yyyy")]
+    // Th�ng c?n t�nh luong (VD: "02-2026")
     public string Month { get; set; } = string.Empty;
 
-    // Nếu null -> Tính cho tất cả nhân viên (Batch Job)
-    // Nếu có value -> Tính lại cho 1 nhân viên cụ thể
+    // N?u null -> T�nh cho t?t c? nh�n vi�n (Batch Job)
+    // N?u c� value -> T�nh l?i cho 1 nh�n vi�n c? th?
     public string? EmployeeId { get; set; }
   }
 
   // ==========================================
-  // 3. UPDATE STATUS DTO (Input - Duyệt/Thanh toán)
+  // 3. UPDATE STATUS DTO (Input - Duy?t/Thanh to�n)
   // ==========================================
   public class UpdatePayrollStatusDto
   {
-    [Required]
     public string Id { get; set; } = string.Empty;
-
-    [Required]
-    [RegularExpression("^(Approved|Paid|Rejected)$", ErrorMessage = "Invalid status. Must be Approved, Paid, or Rejected.")]
     public string Status { get; set; } = "Approved";
   }
 }
