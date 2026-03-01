@@ -115,8 +115,8 @@ namespace Employee.Infrastructure
             // ==========================================
             // 9. INFRASTRUCTURE SERVICES
             // ==========================================
-            services.Configure<FileStorageOptions>(configuration.GetSection(FileStorageOptions.SectionName));
-            services.AddScoped<IFileService, FileService>();
+            services.Configure<SupabaseStorageOptions>(configuration.GetSection(SupabaseStorageOptions.SectionName));
+            services.AddScoped<IFileService, SupabaseFileService>();
             services.AddScoped<ICacheService, CacheService>();
 
             return services;

@@ -44,6 +44,8 @@ services:
       - JwtSettings__Key=${JWT_SECRET_KEY}
       - JwtSettings__Issuer=EmployeeAPI
       - JwtSettings__Audience=EmployeeClient
+    volumes:
+      - upload_data:/app/wwwroot/uploads
     depends_on:
       app_db:
         condition: service_healthy
@@ -80,6 +82,7 @@ services:
 # Define Volumes & Networks
 volumes:
   mongo_data:
+  upload_data:
 
 networks:
   employee_network:
