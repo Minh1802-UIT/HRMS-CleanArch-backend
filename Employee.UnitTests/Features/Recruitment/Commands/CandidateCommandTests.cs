@@ -31,6 +31,9 @@ namespace Employee.UnitTests.Features.Recruitment.Commands
       candidate.SetId(id);
       _mockRepo.Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(candidate);
 
+      // Advance through the pipeline: Applied → Interviewing → Hired
+      candidate.UpdateStatus(CandidateStatus.Interviewing);
+
       var command = new UpdateCandidateStatusCommand(id, "Hired");
 
       // Act

@@ -132,7 +132,7 @@ namespace Employee.UnitTests.Features.Leave.Commands
       await _handler.Handle(command, CancellationToken.None);
 
       _mockRepo.Verify(r => r.UpdateAsync("req-1", It.Is<LeaveRequest>(e =>
-          e.Status == LeaveStatus.Approved), It.IsAny<CancellationToken>()), Times.Once);
+          e.Status == LeaveStatus.Approved), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
 
       _mockAllocationService.Verify(s => s.UpdateUsedDaysAsync(
           "emp-1", "lt-1", entity.FromDate.Year.ToString(), It.IsAny<double>()), Times.Once);
@@ -159,7 +159,7 @@ namespace Employee.UnitTests.Features.Leave.Commands
       await _handler.Handle(command, CancellationToken.None);
 
       _mockRepo.Verify(r => r.UpdateAsync("req-1", It.Is<LeaveRequest>(e =>
-          e.Status == LeaveStatus.Rejected), It.IsAny<CancellationToken>()), Times.Once);
+          e.Status == LeaveStatus.Rejected), It.IsAny<int>(), It.IsAny<CancellationToken>()), Times.Once);
 
       // Allocation should NOT be deducted for rejected requests
       _mockAllocationService.Verify(s => s.UpdateUsedDaysAsync(
