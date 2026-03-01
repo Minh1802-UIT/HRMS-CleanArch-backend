@@ -1,3 +1,4 @@
+using Employee.Application.Common.Dtos;
 using Employee.Application.Common.Interfaces;
 using Employee.Infrastructure.Persistence;
 using Employee.Domain.Interfaces.Repositories;
@@ -9,7 +10,7 @@ using Employee.Infrastructure.Repositories.Common;
 
 namespace Employee.Infrastructure.Repositories.HumanResource
 {
-  public class ContractRepository : BaseRepository<ContractEntity>, IContractRepository
+  public class ContractRepository : BaseRepository<ContractEntity>, IContractRepository, IContractQueryRepository
   {
     public ContractRepository(IMongoContext context) : base(context, "contracts")
     {

@@ -1,3 +1,5 @@
+using Employee.Application.Common.Dtos;
+using Employee.Application.Common.Interfaces;
 using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Domain.Entities.Leave;
@@ -17,15 +19,18 @@ namespace Employee.Application.Features.Leave.Services
         private readonly ILeaveAllocationRepository _allocationRepo;
         private readonly ILeaveTypeRepository _leaveTypeRepo;
         private readonly IEmployeeRepository _employeeRepo;
+        private readonly IEmployeeQueryRepository _employeeQueryRepo;
 
         public LeaveAllocationService(
             ILeaveAllocationRepository allocationRepo,
             ILeaveTypeRepository leaveTypeRepo,
-            IEmployeeRepository employeeRepo)
+            IEmployeeRepository employeeRepo,
+            IEmployeeQueryRepository employeeQueryRepo)
         {
             _allocationRepo = allocationRepo;
             _leaveTypeRepo = leaveTypeRepo;
             _employeeRepo = employeeRepo;
+            _employeeQueryRepo = employeeQueryRepo;
         }
 
         public async Task<IEnumerable<LeaveAllocationDto>> GetBalanceByEmployeeIdAsync(string employeeId)
@@ -35,7 +40,7 @@ namespace Employee.Application.Features.Leave.Services
             var leaveTypes = leaveTypesPaged.Items;
             var typeMap = leaveTypes.ToDictionary(t => t.Id, t => t.Name);
 
-            var employees = await _employeeRepo.GetLookupAsync(employeeId, 1);
+            var employees = await _employeeQueryRepo.GetLookupAsync(employeeId, 1);
             var empName = employees.Any() ? employees.First().Label : "Unknown";
             var empCode = (employees.Any() ? employees.First().SecondaryLabel : null) ?? "Unknown";
 
@@ -52,7 +57,7 @@ namespace Employee.Application.Features.Leave.Services
 
             if (!string.IsNullOrWhiteSpace(keyword))
             {
-                var employees = await _employeeRepo.GetLookupAsync(keyword, 100);
+                var employees = await _employeeQueryRepo.GetLookupAsync(keyword, 100);
                 if (!employees.Any())
                 {
                     return new PagedResult<LeaveAllocationDto>

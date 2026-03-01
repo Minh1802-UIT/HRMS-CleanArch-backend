@@ -325,17 +325,35 @@ namespace Employee.Infrastructure.Identity
 
         public async Task<LoginResponseDto> RefreshTokenAsync(string accessToken, string rawRefreshToken)
         {
-            // ── 1. Validate the access token (expired is fine — we re-issue it) ─────
-            var principal = _tokenService.GetPrincipalFromExpiredToken(accessToken);
-            if (principal == null)
-                throw new UnauthorizedAccessException("Access token không hợp lệ.");
+            ApplicationUser? user;
 
-            var username = principal.Identity?.Name;
-            if (string.IsNullOrEmpty(username))
-                throw new UnauthorizedAccessException("Không tìm thấy thông tin user từ token.");
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                // ── Silent re-auth on page reload: no in-memory token available. ────
+                // Locate the user directly via the refresh-token hash.
+                // This is triggered when the frontend keeps the access token in memory
+                // only, and the page reload clears that in-memory state.
+                var lookupHash = _tokenService.HashToken(rawRefreshToken);
+                user = await _userManager.Users
+                    .Where(u => u.RefreshTokens.Any(t => t.TokenHash == lookupHash))
+                    .FirstOrDefaultAsync();
+                if (user == null)
+                    throw new UnauthorizedAccessException("Refresh token không hợp lệ.");
+            }
+            else
+            {
+                // ── Normal path: validate principal from the (possibly expired) token ─
+                var principal = _tokenService.GetPrincipalFromExpiredToken(accessToken);
+                if (principal == null)
+                    throw new UnauthorizedAccessException("Access token không hợp lệ.");
 
-            var user = await _userManager.FindByNameAsync(username)
+                var username = principal.Identity?.Name;
+                if (string.IsNullOrEmpty(username))
+                    throw new UnauthorizedAccessException("Không tìm thấy thông tin user từ token.");
+
+                user = await _userManager.FindByNameAsync(username)
                        ?? throw new NotFoundException("User không tồn tại.");
+            }
 
             // ── 2. Hash the incoming token and look it up ─────────────────────────
             var incomingHash = _tokenService.HashToken(rawRefreshToken);

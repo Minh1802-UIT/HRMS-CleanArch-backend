@@ -1,4 +1,4 @@
-using Employee.Domain.Common.Models;
+using Employee.Application.Common.Dtos;
 using MediatR;
 using System.Collections.Generic;
 

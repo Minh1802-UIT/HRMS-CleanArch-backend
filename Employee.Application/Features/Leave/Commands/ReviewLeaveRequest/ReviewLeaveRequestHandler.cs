@@ -72,7 +72,9 @@ namespace Employee.Application.Features.Leave.Commands.ReviewLeaveRequest
         throw new ValidationException("Chỉ được phép 'Approved' hoặc 'Rejected'.");
       }
 
-      await _repo.UpdateAsync(request.Id, entity, cancellationToken);
+      // Optimistic concurrency: rejects with ConcurrencyException (→ HTTP 409) if
+      // another request already modified this document since the client last read it.
+      await _repo.UpdateAsync(request.Id, entity, request.ExpectedVersion, cancellationToken);
 
       // Deduct Balance if Approved (leaveType already resolved above)
       if (entity.Status == Employee.Domain.Enums.LeaveStatus.Approved && leaveTypeDocId != null)

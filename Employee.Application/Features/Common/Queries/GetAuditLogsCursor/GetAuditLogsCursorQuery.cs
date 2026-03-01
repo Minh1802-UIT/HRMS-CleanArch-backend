@@ -12,8 +12,13 @@ namespace Employee.Application.Features.Common.Queries.GetAuditLogsCursor
     /// </summary>
     public string? AfterCursor { get; set; }
 
-    /// <summary>Items per page. Capped at 100.</summary>
-    public int PageSize { get; set; } = 20;
+    /// <summary>Items per page. Clamped to [1, 100] to prevent DoS via oversized requests.</summary>
+    private int _pageSize = 20;
+    public int PageSize
+    {
+        get => _pageSize;
+        set => _pageSize = Math.Min(Math.Max(value, 1), 100);
+    }
 
     public DateTime? StartDate  { get; set; }
     public DateTime? EndDate    { get; set; }

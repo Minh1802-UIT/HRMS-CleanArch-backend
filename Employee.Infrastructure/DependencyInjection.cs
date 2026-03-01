@@ -68,7 +68,9 @@ namespace Employee.Infrastructure
             // 4. HUMAN RESOURCES REPOSITORIES
             // ==========================================
             services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+            services.AddScoped<IEmployeeQueryRepository, EmployeeRepository>();
             services.AddScoped<IContractRepository, ContractRepository>();
+            services.AddScoped<IContractQueryRepository, ContractRepository>();
             services.AddScoped<IJobVacancyRepository, JobVacancyRepository>();
             services.AddScoped<ICandidateRepository, CandidateRepository>();
             services.AddScoped<IInterviewRepository, InterviewRepository>();

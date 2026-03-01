@@ -27,6 +27,11 @@ namespace Employee.Infrastructure.data.Configurations
                         cm.MapIdMember(c => c.Id)
                           .SetIdGenerator(StringObjectIdGenerator.Instance)
                           .SetSerializer(new StringSerializer(BsonType.ObjectId));
+
+                        // Prevent DomainEvents list from being persisted to MongoDB.
+                        // MongoMappingConfig also does this but its BaseEntity block is skipped
+                        // when this class runs first (IsClassMapRegistered returns true).
+                        cm.UnmapProperty(c => c.DomainEvents);
                     });
                 }
             }

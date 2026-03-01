@@ -1,3 +1,5 @@
+using Employee.Application.Common.Dtos;
+using Employee.Application.Common.Interfaces;
 using Employee.Domain.Interfaces.Repositories;
 using Employee.Domain.Common.Models;
 using Employee.Application.Features.HumanResource.Dtos;
@@ -8,12 +10,12 @@ namespace Employee.Application.Features.HumanResource.Queries.GetEmployeesPaged
 {
   public class GetEmployeesPagedQueryHandler : IRequestHandler<GetEmployeesPagedQuery, PagedResult<EmployeeListDto>>
   {
-    private readonly IEmployeeRepository _repo;
+    private readonly IEmployeeQueryRepository _repo;
     private readonly IDepartmentRepository _deptRepo;
     private readonly IPositionRepository _posRepo;
 
     public GetEmployeesPagedQueryHandler(
-        IEmployeeRepository repo,
+        IEmployeeQueryRepository repo,
         IDepartmentRepository deptRepo,
         IPositionRepository posRepo)
     {

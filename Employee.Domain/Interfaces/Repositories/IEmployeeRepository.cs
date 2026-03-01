@@ -9,18 +9,12 @@ namespace Employee.Domain.Interfaces.Repositories
     {
         Task<List<EmployeeEntity>> GetAllIncludingDeletedAsync(CancellationToken cancellationToken = default);
 
-        /// <summary>
-        /// Projection-only paged query for the Employee list page.
-        /// Fetches ~500 bytes/employee instead of ~5 KB by excluding PersonalInfo + BankDetails.
-        /// Also applies SearchTerm (regex on FullName/EmployeeCode) and honours SortBy.
-        /// </summary>
-        Task<PagedResult<EmployeeListSummary>> GetPagedListAsync(PaginationParams pagination, CancellationToken cancellationToken = default);
         Task<bool> ExistsByCodeAsync(string code, CancellationToken cancellationToken = default);
 
-        // New: Lookup for dropdowns (search-as-you-type)
-        Task<List<LookupDto>> GetLookupAsync(string? keyword = null, int limit = 20, CancellationToken cancellationToken = default);
+        // Projection/DTO-returning methods are on IEmployeeQueryRepository (Application layer)
+        // to avoid Domain interfaces depending on Application-layer types.
 
-        // New: Optimized join - Get only names for specific IDs
+        // Optimized join - Get only names for specific IDs
         Task<Dictionary<string, (string Name, string Code)>> GetNamesByIdsAsync(List<string> ids, CancellationToken cancellationToken = default);
 
         // New: Projection for PayrollProcessing - Get only active employee IDs

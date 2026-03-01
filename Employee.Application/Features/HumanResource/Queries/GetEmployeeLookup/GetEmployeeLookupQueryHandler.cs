@@ -1,6 +1,6 @@
 using Employee.Application.Common;
+using Employee.Application.Common.Dtos;
 using Employee.Application.Common.Interfaces;
-using Employee.Domain.Common.Models;
 using Employee.Domain.Interfaces.Repositories;
 using MediatR;
 using System.Collections.Generic;
@@ -11,10 +11,10 @@ namespace Employee.Application.Features.HumanResource.Queries.GetEmployeeLookup
 {
   public class GetEmployeeLookupQueryHandler : IRequestHandler<GetEmployeeLookupQuery, List<LookupDto>>
   {
-    private readonly IEmployeeRepository _repo;
+    private readonly IEmployeeQueryRepository _repo;
     private readonly ICacheService _cache;
 
-    public GetEmployeeLookupQueryHandler(IEmployeeRepository repo, ICacheService cache)
+    public GetEmployeeLookupQueryHandler(IEmployeeQueryRepository repo, ICacheService cache)
     {
       _repo = repo;
       _cache = cache;

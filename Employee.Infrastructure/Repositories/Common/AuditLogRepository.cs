@@ -42,12 +42,8 @@ namespace Employee.Infrastructure.Repositories.Common
 
       if (!string.IsNullOrEmpty(pagination.SearchTerm))
       {
-        var search = pagination.SearchTerm.ToLower();
-        filter &= filterBuilder.Or(
-            filterBuilder.Regex(x => x.UserName, new BsonRegularExpression(search, "i")),
-            filterBuilder.Regex(x => x.TableName, new BsonRegularExpression(search, "i")),
-            filterBuilder.Regex(x => x.Action,    new BsonRegularExpression(search, "i"))
-        );
+        // $text uses the text index on (UserName, TableName, Action) — O(log N) vs COLLSCAN for $regex
+        filter &= filterBuilder.Text(pagination.SearchTerm);
       }
 
       var totalCount = await _collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
@@ -101,11 +97,8 @@ namespace Employee.Infrastructure.Repositories.Common
 
       if (!string.IsNullOrEmpty(searchTerm))
       {
-        filter &= fb.Or(
-          fb.Regex(x => x.UserName, new BsonRegularExpression(searchTerm, "i")),
-          fb.Regex(x => x.TableName, new BsonRegularExpression(searchTerm, "i")),
-          fb.Regex(x => x.Action,    new BsonRegularExpression(searchTerm, "i"))
-        );
+        // $text uses the text index on (UserName, TableName, Action) — O(log N) vs COLLSCAN for $regex
+        filter &= fb.Text(searchTerm);
       }
 
       // ------ Cursor seek (replaces Skip) ------

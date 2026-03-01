@@ -31,12 +31,18 @@ namespace Employee.Domain.Entities.HumanResource
 
     public void Complete(string feedback)
     {
+      if (Status != InterviewStatus.Scheduled)
+        throw new InvalidOperationException($"Cannot complete interview in '{Status}' status. Only Scheduled interviews can be completed.");
       Status = InterviewStatus.Completed;
       Feedback = feedback;
     }
 
     public void Cancel()
     {
+      if (Status == InterviewStatus.Completed)
+        throw new InvalidOperationException("Cannot cancel an already completed interview.");
+      if (Status == InterviewStatus.Cancelled)
+        throw new InvalidOperationException("Interview is already cancelled.");
       Status = InterviewStatus.Cancelled;
     }
   }

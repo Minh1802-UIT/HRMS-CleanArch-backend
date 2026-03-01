@@ -52,6 +52,11 @@ namespace Employee.Application.Features.Leave.Dtos
         public string Id { get; set; } = string.Empty;
         public string Status { get; set; } = "Approved";
         public string? ManagerComment { get; set; }
+        /// <summary>
+        /// Optimistic concurrency version. Client must send the version from the GET response.
+        /// Server rejects with 409 if another user modified the leave request concurrently.
+        /// </summary>
+        public int ExpectedVersion { get; set; } = 1;
     }
 
     // ==========================================

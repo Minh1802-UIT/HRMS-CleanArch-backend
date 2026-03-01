@@ -31,6 +31,32 @@ namespace Employee.Domain.Entities.HumanResource
 
     public void UpdateStatus(CandidateStatus status)
     {
+      if (Status == status)
+        return; // idempotent
+
+      // Terminal states: Rejected and Onboarded cannot be changed.
+      if (Status == CandidateStatus.Rejected)
+        throw new InvalidOperationException("Cannot change status of a rejected candidate.");
+      if (Status == CandidateStatus.Onboarded)
+        throw new InvalidOperationException("Cannot change status of an onboarded candidate.");
+
+      // Pipeline guard: only move forward or to Rejected.
+      var allowed = (Status, status) switch
+      {
+        (CandidateStatus.Applied,      CandidateStatus.Interviewing) => true,
+        (CandidateStatus.Applied,      CandidateStatus.Rejected)     => true,
+        (CandidateStatus.Interviewing, CandidateStatus.Test)         => true,
+        (CandidateStatus.Interviewing, CandidateStatus.Hired)        => true,
+        (CandidateStatus.Interviewing, CandidateStatus.Rejected)     => true,
+        (CandidateStatus.Test,         CandidateStatus.Hired)        => true,
+        (CandidateStatus.Test,         CandidateStatus.Rejected)     => true,
+        (CandidateStatus.Hired,        CandidateStatus.Onboarded)    => true,
+        (CandidateStatus.Hired,        CandidateStatus.Rejected)     => true,
+        _ => false
+      };
+      if (!allowed)
+        throw new InvalidOperationException($"Cannot transition candidate from '{Status}' to '{status}'.");
+
       Status = status;
     }
 

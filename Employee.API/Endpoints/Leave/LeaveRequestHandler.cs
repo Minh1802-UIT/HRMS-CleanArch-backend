@@ -26,7 +26,7 @@ namespace Employee.API.Endpoints.Leave
       return ResultUtils.Success(result, "Retrieved paginated leave requests successfully.");
     }
 
-    // 1. GET MY LEAVES (Xem l?ch s? ngh? phép c?a chính mình)
+    // 1. GET MY LEAVES (Xem l?ch s? ngh? phï¿½p c?a chï¿½nh mï¿½nh)
     public static async Task<IResult> GetMyLeaves(
         ISender sender,
         ICurrentUser currentUser)
@@ -43,12 +43,12 @@ namespace Employee.API.Endpoints.Leave
     public static async Task<IResult> GetById(string id, ISender sender, ICurrentUser currentUser)
     {
       var item = await sender.Send(new GetLeaveRequestByIdQuery(id));
-      // Employee ch? du?c xem don ngh? phép c?a chính mình; Admin/HR/Manager du?c xem t?t c?
+      // Employee ch? du?c xem don ngh? phï¿½p c?a chï¿½nh mï¿½nh; Admin/HR/Manager du?c xem t?t c?
       if (!currentUser.IsInRole("Admin") && !currentUser.IsInRole("HR") && !currentUser.IsInRole("Manager"))
       {
         var employeeId = currentUser.EmployeeId ?? currentUser.UserId;
         if (item.EmployeeId != employeeId)
-          return ResultUtils.Fail("LEAVE_REQUEST_FORBIDDEN", "B?n không có quy?n xem don ngh? phép này.", 403);
+          return ResultUtils.Fail("LEAVE_REQUEST_FORBIDDEN", "B?n khï¿½ng cï¿½ quy?n xem don ngh? phï¿½p nï¿½y.", 403);
       }
       return ResultUtils.Success(item);
     }
@@ -124,7 +124,8 @@ namespace Employee.API.Endpoints.Leave
         Id = id,
         ReviewDto = dto,
         ApprovedBy = currentUser.EmployeeId ?? currentUser.UserId,
-        ApprovedByName = currentUser.UserName ?? currentUser.UserId
+        ApprovedByName = currentUser.UserName ?? currentUser.UserId,
+        ExpectedVersion = dto.ExpectedVersion
       };
 
       await sender.Send(command);

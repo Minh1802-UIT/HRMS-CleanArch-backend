@@ -30,6 +30,23 @@ namespace Employee.Domain.Entities.HumanResource
 
     public void UpdateStatus(JobVacancyStatus status)
     {
+      if (Status == status)
+        return; // idempotent — no-op if already in target state
+
+      // Prevent re-opening a closed vacancy without going through Draft first.
+      // Allowed: Draft ↔ Open, Open → Closed, Closed → Draft.
+      var allowed = (Status, status) switch
+      {
+        (JobVacancyStatus.Draft,   JobVacancyStatus.Open)   => true,
+        (JobVacancyStatus.Draft,   JobVacancyStatus.Closed) => true,
+        (JobVacancyStatus.Open,    JobVacancyStatus.Closed) => true,
+        (JobVacancyStatus.Open,    JobVacancyStatus.Draft)  => true,
+        (JobVacancyStatus.Closed,  JobVacancyStatus.Draft)  => true,
+        _ => false
+      };
+      if (!allowed)
+        throw new InvalidOperationException($"Cannot transition JobVacancy from '{Status}' to '{status}'.");
+
       Status = status;
     }
 

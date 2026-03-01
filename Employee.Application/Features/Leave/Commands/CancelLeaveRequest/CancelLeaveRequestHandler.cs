@@ -55,7 +55,10 @@ namespace Employee.Application.Features.Leave.Commands.CancelLeaveRequest
                     throw new NotFoundException($"Không tìm thấy loại phép '{entity.LeaveType}' trong hệ thống. Không thể hoàn trả ngày phép.");
 
                 var year = entity.FromDate.Year.ToString();
-                var days = Employee.Application.Common.Utils.DateHelper.CountWorkingDays(entity.FromDate, entity.ToDate);
+                // Dùng cùng logic với ReviewLeaveRequestHandler: Sandwich Rule → ngày lịch, ngược lại → ngày làm việc
+                var days = leaveTypeDoc.IsSandwichRuleApplied
+                    ? Employee.Application.Common.Utils.DateHelper.CountCalendarDays(entity.FromDate, entity.ToDate)
+                    : Employee.Application.Common.Utils.DateHelper.CountWorkingDays(entity.FromDate, entity.ToDate);
                 await _allocationService.RefundDaysAsync(entity.EmployeeId, leaveTypeDoc.Id, year, days);
             }
 

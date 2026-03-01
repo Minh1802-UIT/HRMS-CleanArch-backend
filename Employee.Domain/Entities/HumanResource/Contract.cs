@@ -47,11 +47,17 @@ namespace Employee.Domain.Entities.HumanResource
 
     public void Activate()
     {
+      if (Status != ContractStatus.Draft)
+        throw new InvalidOperationException($"Cannot activate contract in '{Status}' status. Only Draft contracts can be activated.");
       Status = ContractStatus.Active;
     }
 
     public void Terminate(string note, DateTime terminatedAt)
     {
+      if (Status == ContractStatus.Terminated)
+        throw new InvalidOperationException("Contract is already terminated.");
+      if (Status == ContractStatus.Expired)
+        throw new InvalidOperationException("Cannot terminate an already expired contract.");
       Status = ContractStatus.Terminated;
       Note = note;
       EndDate = terminatedAt;
@@ -59,6 +65,8 @@ namespace Employee.Domain.Entities.HumanResource
 
     public void Expire(DateTime endDate)
     {
+      if (Status != ContractStatus.Active)
+        throw new InvalidOperationException($"Cannot expire contract in '{Status}' status. Only Active contracts can expire.");
       Status = ContractStatus.Expired;
       EndDate = endDate;
     }

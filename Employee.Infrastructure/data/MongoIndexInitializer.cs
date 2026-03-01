@@ -4,6 +4,7 @@ using Employee.Domain.Entities.Attendance;
 using Employee.Domain.Entities.Payroll;
 using Employee.Domain.Entities.Leave;
 using Employee.Domain.Entities.Common;
+using Employee.Domain.Entities.Organization;
 using Employee.Infrastructure.Persistence;
 
 namespace Employee.Infrastructure.Data
@@ -93,10 +94,54 @@ namespace Employee.Infrastructure.Data
 
             // 7. SystemSettings
             var settings = context.GetCollection<SystemSetting>("system_settings");
-            await settings.Indexes.CreateOneAsync(
+            await settings.Indexes.CreateManyAsync(new[]
+            {
                 new CreateIndexModel<SystemSetting>(
                     Builders<SystemSetting>.IndexKeys.Ascending(x => x.Key),
-                    new CreateIndexOptions { Unique = true, Background = true }));
+                    new CreateIndexOptions { Unique = true, Background = true }),
+                // NEW: GetByGroupAsync filters by Group
+                new CreateIndexModel<SystemSetting>(
+                    Builders<SystemSetting>.IndexKeys.Ascending(x => x.Group),
+                    new CreateIndexOptions { Background = true, Name = "idx_systemsettings_group" })
+            });
+
+            // 7b. Departments
+            var departments = context.GetCollection<Department>("departments");
+            await departments.Indexes.CreateManyAsync(new[]
+            {
+                // Filters for sub-department tree queries (GetChildrenAsync)
+                new CreateIndexModel<Department>(
+                    Builders<Department>.IndexKeys.Ascending(x => x.ParentId),
+                    new CreateIndexOptions { Background = true, Name = "idx_departments_parentId" }),
+                // Filters for GetByManagerIdAsync
+                new CreateIndexModel<Department>(
+                    Builders<Department>.IndexKeys.Ascending(x => x.ManagerId),
+                    new CreateIndexOptions { Background = true, Name = "idx_departments_managerId" })
+            });
+
+            // 7c. Positions
+            var positions = context.GetCollection<Position>("positions");
+            await positions.Indexes.CreateManyAsync(new[]
+            {
+                // Supports GetByParentIdAsync (org chart traversal)
+                new CreateIndexModel<Position>(
+                    Builders<Position>.IndexKeys.Ascending(x => x.ParentId),
+                    new CreateIndexOptions { Background = true, Name = "idx_positions_parentId" })
+            });
+
+            // 7d. Shifts
+            var shifts = context.GetCollection<Shift>("shifts");
+            await shifts.Indexes.CreateOneAsync(
+                new CreateIndexModel<Shift>(
+                    Builders<Shift>.IndexKeys.Ascending(x => x.Code),
+                    new CreateIndexOptions { Unique = true, Background = true, Name = "idx_shifts_code" }));
+
+            // 7e. LeaveTypes
+            var leaveTypes = context.GetCollection<LeaveType>("leave_types");
+            await leaveTypes.Indexes.CreateOneAsync(
+                new CreateIndexModel<LeaveType>(
+                    Builders<LeaveType>.IndexKeys.Ascending(x => x.Code),
+                    new CreateIndexOptions { Unique = true, Background = true, Name = "idx_leavetypes_code" }));
 
             // 8. AuditLogs
             var auditLogs = context.GetCollection<AuditLog>("audit_logs");
@@ -143,10 +188,18 @@ namespace Employee.Infrastructure.Data
 
             // 10. RawAttendanceLogs (moved from repository constructor)
             var rawLogs = context.GetCollection<RawAttendanceLog>("raw_attendance_logs");
-            await rawLogs.Indexes.CreateOneAsync(
+            await rawLogs.Indexes.CreateManyAsync(new[]
+            {
                 new CreateIndexModel<RawAttendanceLog>(
                     Builders<RawAttendanceLog>.IndexKeys.Ascending(x => x.IsProcessed).Ascending(x => x.Timestamp),
-                    new CreateIndexOptions { Background = true }));
+                    new CreateIndexOptions { Background = true }),
+                // NEW: GetByEmployeeIdAsync filters by EmployeeId + Timestamp
+                new CreateIndexModel<RawAttendanceLog>(
+                    Builders<RawAttendanceLog>.IndexKeys
+                        .Ascending(x => x.EmployeeId)
+                        .Ascending(x => x.Timestamp),
+                    new CreateIndexOptions { Background = true, Name = "idx_rawattendancelogs_employeeId_timestamp" })
+            });
 
       // 11. PerformanceReviews — supports GetByEmployeeIdAsync
       var perfReviews = context.GetCollection<Employee.Domain.Entities.Performance.PerformanceReview>("performance_reviews");

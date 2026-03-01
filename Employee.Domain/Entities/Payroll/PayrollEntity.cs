@@ -126,6 +126,10 @@ namespace Employee.Domain.Entities.Payroll
 
     public void Reject()
     {
+      if (Status == PayrollStatus.Paid)
+        throw new InvalidOperationException("Cannot reject a payroll that has already been paid.");
+      if (Status == PayrollStatus.Rejected)
+        throw new InvalidOperationException("Payroll is already rejected.");
       Status = PayrollStatus.Rejected;
     }
   }

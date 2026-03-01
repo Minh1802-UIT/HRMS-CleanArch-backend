@@ -5,6 +5,7 @@ using Employee.Domain.Common.Models;
 using Employee.Domain.Entities.Payroll;
 using Employee.Domain.Entities.HumanResource;
 using System.Globalization;
+// ContractSalaryProjection is now in Application.Common.Dtos — no extra using needed (same assembly)
 
 namespace Employee.Application.Features.Payroll.Services
 {
@@ -12,6 +13,7 @@ namespace Employee.Application.Features.Payroll.Services
   {
     private readonly IEmployeeRepository _employeeRepo;
     private readonly IContractRepository _contractRepo;
+    private readonly IContractQueryRepository _contractQueryRepo;
     private readonly IAttendanceRepository _attendanceRepo;
     private readonly IPayrollRepository _payrollRepo;
     private readonly IDepartmentRepository _deptRepo;
@@ -21,6 +23,7 @@ namespace Employee.Application.Features.Payroll.Services
     public PayrollDataProvider(
         IEmployeeRepository employeeRepo,
         IContractRepository contractRepo,
+        IContractQueryRepository contractQueryRepo,
         IAttendanceRepository attendanceRepo,
         IPayrollRepository payrollRepo,
         IDepartmentRepository deptRepo,
@@ -29,6 +32,7 @@ namespace Employee.Application.Features.Payroll.Services
     {
       _employeeRepo = employeeRepo;
       _contractRepo = contractRepo;
+      _contractQueryRepo = contractQueryRepo;
       _attendanceRepo = attendanceRepo;
       _payrollRepo = payrollRepo;
       _deptRepo = deptRepo;
@@ -72,7 +76,7 @@ namespace Employee.Application.Features.Payroll.Services
       // 2. Employees & Contracts
       container.Employees = await _employeeRepo.GetAllActiveAsync();
 
-      var salaryInfos = await _contractRepo.GetActiveSalaryInfoAsync();
+      var salaryInfos = await _contractQueryRepo.GetActiveSalaryInfoAsync();
       container.SalaryMap = salaryInfos.ToDictionary(s => s.EmployeeId);
 
       // 3. Organization Names

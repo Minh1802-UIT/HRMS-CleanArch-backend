@@ -1,3 +1,5 @@
+using Employee.Application.Common.Dtos;
+using Employee.Application.Common.Interfaces;
 using Employee.Domain.Common.Models;
 using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Enums;
@@ -9,7 +11,7 @@ using MongoDB.Driver;
 
 namespace Employee.Infrastructure.Repositories.HumanResource
 {
-    public class EmployeeRepository : BaseRepository<EmployeeEntity>, IEmployeeRepository
+    public class EmployeeRepository : BaseRepository<EmployeeEntity>, IEmployeeRepository, IEmployeeQueryRepository
     {
         public EmployeeRepository(IMongoContext context) : base(context, "employees")
         {
