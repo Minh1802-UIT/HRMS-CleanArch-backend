@@ -1,5 +1,6 @@
 using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
+using Employee.Application.Features.Notifications.Mappers;
 using Employee.Domain.Entities.Notifications;
 using System.Collections.Generic;
 using System.Linq;
@@ -38,7 +39,7 @@ namespace Employee.Application.Features.Notifications.Services
         CancellationToken cancellationToken = default)
     {
       var list = await _repo.GetByUserIdAsync(userId, unreadOnly, 50, cancellationToken);
-      return list.Select(ToDto);
+      return list.Select(n => n.ToDto());
     }
 
     public async Task<int> GetUnreadCountAsync(string userId, CancellationToken cancellationToken = default)
@@ -57,19 +58,6 @@ namespace Employee.Application.Features.Notifications.Services
 
     public async Task MarkAllReadAsync(string userId, CancellationToken cancellationToken = default)
       => await _repo.MarkAllReadAsync(userId, cancellationToken);
-
-    private static NotificationDto ToDto(Notification n) => new NotificationDto
-    {
-      Id = n.Id,
-      UserId = n.UserId,
-      Title = n.Title,
-      Body = n.Body,
-      Type = n.Type,
-      IsRead = n.IsRead,
-      ReferenceId = n.ReferenceId,
-      ReferenceType = n.ReferenceType,
-      CreatedAt = n.CreatedAt
-    };
   }
 }
 

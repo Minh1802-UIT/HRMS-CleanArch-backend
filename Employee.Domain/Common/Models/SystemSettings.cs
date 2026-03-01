@@ -2,6 +2,10 @@ namespace Employee.Domain.Common.Models
 {
     public class SystemSettings
     {
-        public int TimezoneOffsetHours { get; set; } = 7;
+        /// <summary>
+        /// IANA timezone ID (e.g., "Asia/Ho_Chi_Minh") or Windows timezone ID.
+        /// Replaces the old hardcoded TimezoneOffsetHours = 7.
+        /// </summary>
+        public string TimezoneId { get; set; } = "Asia/Ho_Chi_Minh";
     }
 }

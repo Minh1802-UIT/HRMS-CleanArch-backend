@@ -7,11 +7,11 @@ namespace Employee.Application.Features.Attendance.Logic
 {
   public class AttendanceCalculator
   {
-    private readonly TimeSpan _systemOffset;
+    private readonly TimeZoneInfo _timeZone;
 
-    public AttendanceCalculator(TimeSpan systemOffset)
+    public AttendanceCalculator(TimeZoneInfo timeZone)
     {
-      _systemOffset = systemOffset;
+      _timeZone = timeZone;
     }
 
     /// <summary>
@@ -29,9 +29,9 @@ namespace Employee.Application.Features.Attendance.Logic
         return;
       }
 
-      // 2. Chuẩn bị Time (UTC -> Local)
-      var localCheckIn = log.CheckIn.Value + _systemOffset;
-      var localCheckOut = log.CheckOut.HasValue ? (log.CheckOut.Value + _systemOffset) : (DateTime?)null;
+      // 2. Chuẩn bị Time (UTC -> Local via TimeZoneInfo — DST-aware)
+      var localCheckIn = TimeZoneInfo.ConvertTimeFromUtc(log.CheckIn.Value, _timeZone);
+      var localCheckOut = log.CheckOut.HasValue ? (DateTime?)TimeZoneInfo.ConvertTimeFromUtc(log.CheckOut.Value, _timeZone) : null;
 
       // 3. Xây dựng khung giờ chuẩn của Ca
       var shiftStart = log.Date.Add(shift.StartTime);

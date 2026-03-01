@@ -22,7 +22,7 @@ namespace Employee.Application.Features.HumanResource.Commands.CreateEmployee
             // Validate Sub-Objects
             RuleFor(x => x.PersonalInfo.PhoneNumber)
                 .NotEmpty().WithMessage("Phone number is required.")
-                .Matches(@"^[0-9]+$").WithMessage("Phone number must imply digits.");
+                .Matches(@"^0[3-9]\d{8,9}$").WithMessage("Phone number must be a valid Vietnamese format (10-11 digits, starting with 03-09).");
 
             RuleFor(x => x.PersonalInfo.DateOfBirth)
                  .NotEmpty()

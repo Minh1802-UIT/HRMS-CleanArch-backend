@@ -9,7 +9,8 @@ namespace Employee.Application.Features.Recruitment.Validators
         {
             RuleFor(x => x.FullName).NotEmpty().WithMessage("Họ tên không được để trống.");
             RuleFor(x => x.Email).EmailAddress().WithMessage("Email không hợp lệ.");
-            RuleFor(x => x.Phone).NotEmpty().WithMessage("Số điện thoại không được để trống.");
+            RuleFor(x => x.Phone).NotEmpty().WithMessage("Số điện thoại không được để trống.")
+                .Matches(@"^0[3-9]\d{8,9}$").WithMessage("Số điện thoại phải đúng định dạng Việt Nam (10-11 số, bắt đầu bằng 03-09).");
             RuleFor(x => x.JobVacancyId).NotEmpty().WithMessage("Mã tin tuyển dụng không được để trống.");
         }
     }

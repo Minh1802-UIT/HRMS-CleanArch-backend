@@ -56,8 +56,9 @@ namespace Employee.Application
       services.AddScoped<IContractService, ContractService>();
 
       // Attendance
-      var timezoneOffset = configuration.GetValue<int>("SystemSettings:TimezoneOffsetHours", 7);
-      services.AddScoped<AttendanceCalculator>(sp => new AttendanceCalculator(TimeSpan.FromHours(timezoneOffset)));
+      var timezoneId = configuration.GetValue<string>("SystemSettings:TimezoneId") ?? "Asia/Ho_Chi_Minh";
+      var timeZone = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+      services.AddScoped<AttendanceCalculator>(sp => new AttendanceCalculator(timeZone));
       services.AddScoped<IShiftService, ShiftService>();
       services.AddScoped<IAttendanceService, AttendanceService>();
       services.AddScoped<IAttendanceProcessingService, AttendanceProcessingService>();
