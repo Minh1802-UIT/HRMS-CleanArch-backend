@@ -37,8 +37,20 @@ namespace Employee.API.Endpoints.Common
         Length = file.Length
       };
 
-      var path = await fileService.UploadFileAsync(uploadRequest, folderName);
-      return ResultUtils.Success(path, "File uploaded successfully.");
+      try
+      {
+        var path = await fileService.UploadFileAsync(uploadRequest, folderName);
+        return ResultUtils.Success(path, "File uploaded successfully.");
+      }
+      catch (InvalidOperationException ex)
+      {
+        return ResultUtils.Fail("FILE_UPLOAD_ERROR", ex.Message, 400);
+      }
+      catch (Exception ex)
+      {
+        return ResultUtils.Fail("FILE_UPLOAD_ERROR",
+            $"Upload failed: {ex.Message}", 500);
+      }
     }
   }
 }

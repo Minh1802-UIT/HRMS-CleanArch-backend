@@ -27,8 +27,31 @@ namespace Employee.Infrastructure.Services
             _options = options.Value;
             _logger = logger;
 
+            // Validate configuration – fail fast if env vars are missing
+            if (string.IsNullOrWhiteSpace(_options.ProjectUrl)
+                || _options.ProjectUrl.Contains("OVERRIDE", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogError(
+                    "SupabaseStorage:ProjectUrl is not configured. " +
+                    "Set the SupabaseStorage__ProjectUrl environment variable.");
+                throw new InvalidOperationException(
+                    "Supabase Storage is not configured. Missing ProjectUrl.");
+            }
+
+            if (string.IsNullOrWhiteSpace(_options.ServiceKey)
+                || _options.ServiceKey.Contains("OVERRIDE", StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogError(
+                    "SupabaseStorage:ServiceKey is not configured. " +
+                    "Set the SupabaseStorage__ServiceKey environment variable.");
+                throw new InvalidOperationException(
+                    "Supabase Storage is not configured. Missing ServiceKey.");
+            }
+
             // Storage REST API lives at {ProjectUrl}/storage/v1
             var storageUrl = $"{_options.ProjectUrl.TrimEnd('/')}/storage/v1";
+
+            _logger.LogInformation("Supabase Storage URL: {Url}", storageUrl);
 
             var headers = new Dictionary<string, string>
             {
@@ -63,25 +86,41 @@ namespace Employee.Infrastructure.Services
             var supabasePath = $"{folderName}/{fileName}";
 
             // ── 3. Upload to Supabase ──────────────────────────────
-            using var ms = new MemoryStream();
-            await file.Content.CopyToAsync(ms);
-            var data = ms.ToArray();
+            try
+            {
+                using var ms = new MemoryStream();
+                await file.Content.CopyToAsync(ms);
+                var data = ms.ToArray();
 
-            var bucket = _storageClient.From(_options.BucketName);
-            await bucket.Upload(
-                data,
-                supabasePath,
-                new Supabase.Storage.FileOptions
-                {
-                    ContentType = file.ContentType ?? "application/octet-stream",
-                    Upsert = false
-                });
+                _logger.LogInformation(
+                    "Uploading to Supabase: bucket={Bucket}, path={Path}, size={Size} bytes",
+                    _options.BucketName, supabasePath, data.Length);
 
-            _logger.LogInformation("File uploaded to Supabase: {Path}", supabasePath);
+                var bucket = _storageClient.From(_options.BucketName);
+                await bucket.Upload(
+                    data,
+                    supabasePath,
+                    new Supabase.Storage.FileOptions
+                    {
+                        ContentType = file.ContentType ?? "application/octet-stream",
+                        Upsert = false
+                    });
 
-            // ── 4. Return public URL ───────────────────────────────
-            var publicUrl = bucket.GetPublicUrl(supabasePath);
-            return publicUrl;
+                _logger.LogInformation("File uploaded to Supabase: {Path}", supabasePath);
+
+                // ── 4. Return public URL ───────────────────────────────
+                var publicUrl = bucket.GetPublicUrl(supabasePath);
+                _logger.LogInformation("Public URL: {Url}", publicUrl);
+                return publicUrl;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex,
+                    "Supabase upload failed: bucket={Bucket}, path={Path}, projectUrl={Url}",
+                    _options.BucketName, supabasePath, _options.ProjectUrl);
+                throw new InvalidOperationException(
+                    $"Failed to upload file to cloud storage: {ex.Message}", ex);
+            }
         }
     }
 }
