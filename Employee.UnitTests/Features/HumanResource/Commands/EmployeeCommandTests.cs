@@ -9,6 +9,7 @@ using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Entities.Organization;
 using Employee.Application.Features.Organization.Dtos;
 using Employee.Domain.Events;
+using Employee.Application.Common.Models;
 using Employee.Application.Common.Exceptions;
 using MediatR;
 using System.Threading;
@@ -88,7 +89,7 @@ namespace Employee.UnitTests.Features.HumanResource.Commands
 
       // Assert
       _mockRepo.Verify(x => x.CreateAsync(It.Is<EmployeeEntity>(e => e.EmployeeCode == "E001"), It.IsAny<CancellationToken>()), Times.Once);
-      _mockPublisher.Verify(x => x.Publish(It.IsAny<EmployeeCreatedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
+      _mockPublisher.Verify(x => x.Publish(It.IsAny<DomainEventNotification<EmployeeCreatedEvent>>(), It.IsAny<CancellationToken>()), Times.Once);
       _mockUnitOfWork.Verify(x => x.CommitTransactionAsync(), Times.Once);
     }
 
@@ -168,7 +169,7 @@ namespace Employee.UnitTests.Features.HumanResource.Commands
 
       // Assert
       _mockRepo.Verify(x => x.UpdateAsync(empId, existingEmp, version, It.IsAny<CancellationToken>()), Times.Once);
-      _mockPublisher.Verify(x => x.Publish(It.IsAny<EmployeeUpdatedEvent>(), It.IsAny<CancellationToken>()), Times.Once);
+      _mockPublisher.Verify(x => x.Publish(It.IsAny<DomainEventNotification<EmployeeUpdatedEvent>>(), It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]

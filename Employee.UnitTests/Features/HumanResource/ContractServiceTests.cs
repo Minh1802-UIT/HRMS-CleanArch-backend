@@ -8,6 +8,7 @@ using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Common.Models;
 using Employee.Application.Features.HumanResource.Dtos;
 using Employee.Domain.Events;
+using Employee.Application.Common.Models;
 using Employee.Application.Common.Exceptions;
 using MediatR;
 using Employee.Domain.Enums;
@@ -135,7 +136,7 @@ namespace Employee.UnitTests.Features.HumanResource
             await _service.CreateAsync(dto);
 
             // Assert
-            _mockPublisher.Verify(x => x.Publish(It.IsAny<ContractCreatedEvent>(), It.IsAny<System.Threading.CancellationToken>()), Times.Once);
+            _mockPublisher.Verify(x => x.Publish(It.IsAny<DomainEventNotification<ContractCreatedEvent>>(), It.IsAny<System.Threading.CancellationToken>()), Times.Once);
         }
     }
 }
