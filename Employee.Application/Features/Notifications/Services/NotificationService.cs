@@ -1,4 +1,4 @@
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Domain.Entities.Notifications;
 using System.Collections.Generic;
@@ -11,10 +11,12 @@ namespace Employee.Application.Features.Notifications.Services
   public class NotificationService : INotificationService
   {
     private readonly INotificationRepository _repo;
+    private readonly Employee.Domain.Interfaces.Common.IDateTimeProvider _dateTime;
 
-    public NotificationService(INotificationRepository repo)
+    public NotificationService(INotificationRepository repo, Employee.Domain.Interfaces.Common.IDateTimeProvider dateTime)
     {
       _repo = repo;
+      _dateTime = dateTime;
     }
 
     public async Task CreateAsync(
@@ -48,7 +50,7 @@ namespace Employee.Application.Features.Notifications.Services
       var notification = await _repo.GetByIdAsync(notificationId, cancellationToken);
       if (notification == null || notification.UserId != userId) return false;
 
-      notification.MarkRead();
+      notification.MarkRead(_dateTime.UtcNow);
       await _repo.UpdateAsync(notificationId, notification, cancellationToken);
       return true;
     }
@@ -70,3 +72,4 @@ namespace Employee.Application.Features.Notifications.Services
     };
   }
 }
+

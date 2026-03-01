@@ -1,12 +1,12 @@
 using Employee.Application.Common.Dtos;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using System.Globalization;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Enums;
 using System;

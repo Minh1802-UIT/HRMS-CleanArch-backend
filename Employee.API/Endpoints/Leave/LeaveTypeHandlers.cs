@@ -1,8 +1,8 @@
-﻿using Employee.API.Common;
+using Employee.API.Common;
 using Employee.Application.Common.Interfaces.Organization.IService; // Correct Namespace
 using Employee.Application.Features.Leave.Dtos;
 using Employee.Domain.Constants;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Employee.API.Endpoints.Leave

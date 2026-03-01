@@ -1,8 +1,10 @@
+using Employee.Application.Common.Models;
 using Employee.Application.Common.Exceptions;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
+using Employee.Domain.Common.Models;
 using Employee.Application.Features.HumanResource.Dtos;
 using Employee.Application.Features.HumanResource.Mappers;
-using Employee.Application.Features.HumanResource.Events;
+using Employee.Domain.Events;
 using MediatR;
 using System;
 using System.Threading;
@@ -79,7 +81,14 @@ namespace Employee.Application.Features.HumanResource.Commands.UpdateEmployee
       await _repo.UpdateAsync(request.Id, oldEmp, request.Version, cancellationToken);
 
       // 5. 📢 Bắn sự kiện "Nhân viên đã cập nhật" để ghi Log
-      await _publisher.Publish(new EmployeeUpdatedEvent(request.Id, oldVal, dto), cancellationToken);
+      await _publisher.Publish(
+          new DomainEventNotification<EmployeeUpdatedEvent>(
+              new EmployeeUpdatedEvent(
+                  request.Id,
+                  System.Text.Json.JsonSerializer.Serialize(oldVal),
+                  System.Text.Json.JsonSerializer.Serialize(new { dto.FullName, dto.Email, dto.JobDetails?.DepartmentId, dto.JobDetails?.PositionId }))),
+          cancellationToken);
     }
   }
 }
+

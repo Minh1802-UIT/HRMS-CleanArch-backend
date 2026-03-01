@@ -1,4 +1,4 @@
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Domain.Entities.Common;
 using MongoDB.Driver;
 using System.Collections.Generic;

@@ -1,7 +1,7 @@
 using Xunit;
 using Moq;
 using Employee.Application.Features.Attendance.Services;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Attendance.IService;
 using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Entities.Attendance;

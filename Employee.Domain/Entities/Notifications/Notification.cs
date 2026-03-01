@@ -48,12 +48,12 @@ namespace Employee.Domain.Entities.Notifications
       ReferenceType = referenceType;
     }
 
-    public void MarkRead()
+    public void MarkRead(DateTime readAt)
     {
       if (!IsRead)
       {
         IsRead = true;
-        SetUpdatedAt(DateTime.UtcNow);
+        SetUpdatedAt(readAt);
       }
     }
   }

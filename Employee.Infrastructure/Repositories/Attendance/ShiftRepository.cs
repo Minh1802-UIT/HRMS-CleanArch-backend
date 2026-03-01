@@ -1,7 +1,7 @@
-﻿using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Domain.Entities.Attendance;
 using MongoDB.Driver;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Employee.Infrastructure.Persistence;
 using Employee.Infrastructure.Repositories.Common;
 

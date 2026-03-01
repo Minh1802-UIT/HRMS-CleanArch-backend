@@ -1,6 +1,6 @@
-﻿using Employee.Application.Features.HumanResource.Dtos;
+using Employee.Application.Features.HumanResource.Dtos;
 using Employee.Domain.Entities.HumanResource;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 
 namespace Employee.Application.Common.Interfaces.Organization.IService
 {

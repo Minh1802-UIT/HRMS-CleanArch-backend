@@ -1,4 +1,4 @@
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using MediatR;
 using System.Threading;
 using System.Threading.Tasks;

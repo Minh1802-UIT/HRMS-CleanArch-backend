@@ -1,6 +1,6 @@
-﻿using Employee.Application.Common.Interfaces;
+using Employee.Application.Common.Interfaces;
 using Employee.Infrastructure.Persistence;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Infrastructure.data.Configurations;
 using Employee.Infrastructure.Repositories.Attendance;
 using Employee.Infrastructure.Repositories.Auth;

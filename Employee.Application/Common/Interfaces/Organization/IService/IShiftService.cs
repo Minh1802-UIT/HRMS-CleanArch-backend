@@ -1,5 +1,5 @@
 using Employee.Application.Features.Attendance.Dtos;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 
 namespace Employee.Application.Common.Interfaces.Attendance.IService
 {

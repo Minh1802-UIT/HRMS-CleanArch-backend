@@ -1,6 +1,6 @@
 using Xunit;
 using Moq;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Exceptions;
 using Employee.Application.Features.Recruitment.Commands.Interview.CreateInterview;
 using Employee.Application.Features.Recruitment.Commands.Interview.DeleteInterview;

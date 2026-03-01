@@ -1,10 +1,10 @@
 using Employee.Application.Common.Interfaces;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Domain.Entities.Payroll;
 using Employee.Domain.Enums;
 
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 
 using Employee.Domain.Services.Payroll;
 using Microsoft.Extensions.Logging;

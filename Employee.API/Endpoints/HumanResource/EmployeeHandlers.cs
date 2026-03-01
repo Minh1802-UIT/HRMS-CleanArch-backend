@@ -1,6 +1,6 @@
-﻿using Employee.API.Common;
+using Employee.API.Common;
 using Employee.Domain.Constants;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Employee.Application.Features.HumanResource.Dtos;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;

@@ -1,4 +1,4 @@
-﻿using Employee.API.Common; // ResultUtils
+using Employee.API.Common; // ResultUtils
 using Employee.Domain.Constants; // ErrorCodes
 using Employee.Application.Features.Organization.Dtos;
 using Employee.Application.Features.Organization.Queries.GetPositionsPaged;
@@ -7,7 +7,7 @@ using Employee.Application.Features.Organization.Queries.GetPositionTree;
 using Employee.Application.Features.Organization.Commands.CreatePosition;
 using Employee.Application.Features.Organization.Commands.UpdatePosition;
 using Employee.Application.Features.Organization.Commands.DeletePosition;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 
@@ -47,7 +47,7 @@ namespace Employee.API.Endpoints.Organization
     // 4. UPDATE
     public static async Task<IResult> Update(string id, [FromBody] UpdatePositionDto dto, ISender sender)
     {
-      // Validate ID trên URL và Body phải khớp nhau
+      // Validate ID tr�n URL v� Body ph?i kh?p nhau
       if (id != dto.Id)
       {
         return ResultUtils.Fail(ErrorCodes.InvalidData, "DevLog: URL ID mismatch.");

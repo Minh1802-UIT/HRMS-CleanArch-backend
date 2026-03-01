@@ -1,4 +1,4 @@
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Features.Performance.Dtos;
 using Employee.Application.Features.Performance.Mappers;
 using MediatR;

@@ -1,9 +1,11 @@
+using Employee.Application.Common.Models;
 using Employee.Application.Common.Interfaces;
 using Employee.Application.Common.Exceptions;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
+using Employee.Domain.Common.Models;
 using Employee.Application.Features.HumanResource.Dtos;
 using Employee.Application.Features.HumanResource.Mappers;
-using Employee.Application.Features.HumanResource.Events;
+using Employee.Domain.Events;
 using MediatR;
 using System;
 using System.Threading;
@@ -72,7 +74,10 @@ namespace Employee.Application.Features.HumanResource.Commands.CreateEmployee
 
         // 6. 📢 Bắn sự kiện "Nhân viên đã được tạo"
         var resultDto = employee.ToDto();
-        await _publisher.Publish(new EmployeeCreatedEvent(resultDto), cancellationToken);
+        await _publisher.Publish(
+            new DomainEventNotification<EmployeeCreatedEvent>(
+                new EmployeeCreatedEvent(employee.Id, employee.FullName, employee.Email, employee.PersonalInfo?.Phone ?? string.Empty)),
+            cancellationToken);
 
         await _unitOfWork.CommitTransactionAsync();
         return resultDto;
@@ -85,3 +90,4 @@ namespace Employee.Application.Features.HumanResource.Commands.CreateEmployee
     }
   }
 }
+

@@ -1,7 +1,8 @@
+using Employee.Application.Common.Models;
 using Employee.Application.Common.Exceptions;
 using Employee.Application.Common.Interfaces;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
-using Employee.Application.Features.HumanResource.Events;
+using Employee.Domain.Interfaces.Repositories;
+using Employee.Domain.Events;
 using Employee.Application.Features.HumanResource.Mappers;
 using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Entities.ValueObjects;
@@ -76,7 +77,8 @@ namespace Employee.Application.Features.Recruitment.Commands.OnboardCandidate
         await _candidateRepo.UpdateAsync(candidate.Id, candidate, cancellationToken);
 
         // 5. Publish Event
-        await _publisher.Publish(new EmployeeCreatedEvent(employee.ToDto()), cancellationToken);
+        await _publisher.Publish(new DomainEventNotification<EmployeeCreatedEvent>(
+            new EmployeeCreatedEvent(employee.Id, employee.FullName, employee.Email, employee.PersonalInfo?.Phone ?? string.Empty)), cancellationToken);
 
         await _unitOfWork.CommitTransactionAsync();
         return employee.Id;
@@ -89,3 +91,4 @@ namespace Employee.Application.Features.Recruitment.Commands.OnboardCandidate
     }
   }
 }
+

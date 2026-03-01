@@ -1,4 +1,4 @@
-﻿using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Employee.Application.Features.Payroll.Dtos;
 
 namespace Employee.Application.Common.Interfaces.Organization.IService

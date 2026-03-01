@@ -1,4 +1,4 @@
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Domain.Entities.Leave;
 using MongoDB.Driver;
 using Employee.Infrastructure.Persistence;

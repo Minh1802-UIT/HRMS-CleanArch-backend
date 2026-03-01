@@ -1,9 +1,9 @@
-﻿using Employee.API.Common; // ResultUtils
+using Employee.API.Common; // ResultUtils
 using Employee.Domain.Constants; // ErrorCodes
 using Employee.Application.Features.HumanResource.Dtos;
 using Employee.Application.Common.Interfaces.Organization.IService; // IContractService
 using Employee.Application.Common.Interfaces;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -30,26 +30,26 @@ namespace Employee.API.Endpoints.HumanResource
     // 3. CREATE
     public static async Task<IResult> Create([FromBody] CreateContractDto dto, IContractService service)
     {
-      // ℹ️ GHI CHÚ QUAN TRỌNG VỀ LOGIC BA:
-      // Handler KHÔNG check logic "Khoảng trống hợp đồng" hay "Ngày hiệu lực".
-      // Việc đó Service sẽ làm. Nếu sai logic, Service ném Exception, Middleware sẽ bắt.
+      // ?? GHI CH� QUAN TR?NG V? LOGIC BA:
+      // Handler KH�NG check logic "Kho?ng tr?ng h?p d?ng" hay "Ng�y hi?u l?c".
+      // Vi?c d� Service s? l�m. N?u sai logic, Service n�m Exception, Middleware s? b?t.
 
       var id = await service.CreateAsync(dto);
 
-      // Trả về 201 Created
+      // Tr? v? 201 Created
       return ResultUtils.Created(id, "Contract created successfully.");
     }
 
     // 4. UPDATE
     public static async Task<IResult> Update(string id, [FromBody] UpdateContractDto dto, IContractService service)
     {
-      // 1. Validate ID khớp (Filter không làm được việc này vì ID nằm trên URL)
+      // 1. Validate ID kh?p (Filter kh�ng l�m du?c vi?c n�y v� ID n?m tr�n URL)
       if (id != dto.Id)
       {
         return ResultUtils.Fail(ErrorCodes.InvalidData, "DevLog: URL ID does not match Body ID.");
       }
 
-      // 2. Gọi Service
+      // 2. G?i Service
       await service.UpdateAsync(id, dto);
 
       return ResultUtils.Success("Contract updated successfully.");
@@ -104,7 +104,7 @@ namespace Employee.API.Endpoints.HumanResource
     {
       if (string.IsNullOrEmpty(currentUser.EmployeeId))
       {
-        return ResultUtils.Fail("AUTH_UNLINKED", "Tài khoản chưa liên kết nhân viên.");
+        return ResultUtils.Fail("AUTH_UNLINKED", "T�i kho?n chua li�n k?t nh�n vi�n.");
       }
 
       var result = await service.GetByEmployeeIdAsync(currentUser.EmployeeId);

@@ -1,5 +1,6 @@
+using Employee.Application.Common.Models;
 using MediatR;
-using Employee.Application.Features.Leave.Events;
+using Employee.Domain.Events;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Microsoft.Extensions.Logging;
 
@@ -10,7 +11,7 @@ namespace Employee.Application.Features.Leave.EventHandlers
   /// - Logs structured info for monitoring dashboards
   /// - NEW-9: Sends in-app notification to the employee
   /// </summary>
-  public class LeaveRequestApprovedEventHandler : INotificationHandler<LeaveRequestApprovedEvent>
+  public class LeaveRequestApprovedEventHandler : INotificationHandler<DomainEventNotification<LeaveRequestApprovedEvent>>
   {
     private readonly ILogger<LeaveRequestApprovedEventHandler> _logger;
     private readonly INotificationService _notificationService;
@@ -23,22 +24,23 @@ namespace Employee.Application.Features.Leave.EventHandlers
       _notificationService = notificationService;
     }
 
-    public async Task Handle(LeaveRequestApprovedEvent notification, CancellationToken cancellationToken)
+    public async Task Handle(DomainEventNotification<LeaveRequestApprovedEvent> notificationWrapper, CancellationToken cancellationToken)
     {
       _logger.LogInformation(
           "[LeaveEvent] Approved — LeaveRequestId: {LeaveRequestId}, EmployeeId: {EmployeeId}, ApprovedBy: {ApprovedBy}, Days: {Days}",
-          notification.LeaveRequestId, notification.EmployeeId,
-          notification.ApprovedBy, notification.WorkingDaysDeducted);
+          notificationWrapper.DomainEvent.LeaveRequestId, notificationWrapper.DomainEvent.EmployeeId,
+          notificationWrapper.DomainEvent.ApprovedBy, notificationWrapper.DomainEvent.WorkingDaysDeducted);
 
       // NEW-9: Create in-app notification for the employee
       await _notificationService.CreateAsync(
-          userId: notification.EmployeeId,
+          userId: notificationWrapper.DomainEvent.EmployeeId,
           title: "Leave Request Approved ✅",
-          body: $"Your leave request ({notification.WorkingDaysDeducted} day(s)) has been approved by {notification.ApprovedBy}.",
+          body: $"Your leave request ({notificationWrapper.DomainEvent.WorkingDaysDeducted} day(s)) has been approved by {notificationWrapper.DomainEvent.ApprovedBy}.",
           type: "LeaveApproved",
-          referenceId: notification.LeaveRequestId,
+          referenceId: notificationWrapper.DomainEvent.LeaveRequestId,
           referenceType: "LeaveRequest",
           cancellationToken: cancellationToken);
     }
   }
 }
+

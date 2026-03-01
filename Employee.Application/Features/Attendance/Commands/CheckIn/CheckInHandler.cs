@@ -1,4 +1,4 @@
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Exceptions; // Add this
 using Employee.Application.Features.Attendance.Mappers;
 using MediatR;

@@ -1,4 +1,4 @@
-﻿using Employee.API.Common;
+using Employee.API.Common;
 using Employee.Application.Features.Organization.Dtos;
 using Employee.Application.Features.Organization.Queries.GetDepartmentsPaged;
 using Employee.Application.Features.Organization.Queries.GetDepartmentById;
@@ -7,7 +7,7 @@ using Employee.Application.Features.Organization.Commands.CreateDepartment;
 using Employee.Application.Features.Organization.Commands.UpdateDepartment;
 using Employee.Application.Features.Organization.Commands.DeleteDepartment;
 using Employee.Domain.Constants;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 

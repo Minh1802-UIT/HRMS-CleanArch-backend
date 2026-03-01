@@ -1,6 +1,6 @@
 using Employee.Application.Common.Exceptions;
 using Employee.Application.Common.Interfaces;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using MediatR;
 using System;
 using System.Threading;

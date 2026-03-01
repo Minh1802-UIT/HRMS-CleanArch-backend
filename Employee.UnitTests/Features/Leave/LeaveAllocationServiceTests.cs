@@ -1,12 +1,12 @@
 using Xunit;
 using Moq;
 using Employee.Application.Features.Leave.Services;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Domain.Entities.Leave;
 using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Entities.ValueObjects;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;

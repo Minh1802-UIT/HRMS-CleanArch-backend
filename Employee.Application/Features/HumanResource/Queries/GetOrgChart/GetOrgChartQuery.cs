@@ -1,3 +1,4 @@
+using Employee.Domain.Common.Models;
 using Employee.Application.Features.HumanResource.Dtos;
 using MediatR;
 using System.Collections.Generic;

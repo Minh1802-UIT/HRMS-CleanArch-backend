@@ -12,11 +12,11 @@ namespace Employee.Domain.Entities.HumanResource
     public string JobVacancyId { get; private set; } = null!;
     public CandidateStatus Status { get; private set; } = CandidateStatus.Applied;
     public string ResumeUrl { get; private set; } = string.Empty;
-    public DateTime AppliedDate { get; private set; } = DateTime.UtcNow;
+    public DateTime AppliedDate { get; private set; }
 
     private Candidate() { }
 
-    public Candidate(string fullName, string email, string phone, string jobVacancyId)
+    public Candidate(string fullName, string email, string phone, string jobVacancyId, DateTime appliedDate)
     {
       if (string.IsNullOrWhiteSpace(fullName)) throw new ArgumentException("FullName is required.");
       if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("Email is required.");
@@ -26,7 +26,7 @@ namespace Employee.Domain.Entities.HumanResource
       Phone = phone;
       JobVacancyId = jobVacancyId;
       Status = CandidateStatus.Applied;
-      AppliedDate = DateTime.UtcNow;
+      AppliedDate = appliedDate;
     }
 
     public void UpdateStatus(CandidateStatus status)

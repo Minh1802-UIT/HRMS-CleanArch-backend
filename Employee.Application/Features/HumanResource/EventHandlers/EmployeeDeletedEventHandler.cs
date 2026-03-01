@@ -1,13 +1,14 @@
+using Employee.Application.Common.Models;
 using MediatR;
 using Employee.Application.Common.Interfaces; // ICurrentUser
 using Employee.Application.Common.Interfaces.Organization.IService; // IAuditLogService
-using Employee.Application.Common.Interfaces.Organization.IRepository; // IMP-3
-using Employee.Application.Features.HumanResource.Events;
+using Employee.Domain.Interfaces.Repositories; // IMP-3
+using Employee.Domain.Events;
 using Employee.Application.Features.Auth.Commands.DeleteUser;
 
 namespace Employee.Application.Features.HumanResource.EventHandlers
 {
-  public class EmployeeDeletedEventHandler : INotificationHandler<EmployeeDeletedEvent>
+  public class EmployeeDeletedEventHandler : INotificationHandler<DomainEventNotification<EmployeeDeletedEvent>>
   {
     private readonly ISender _sender;
     private readonly IAuditLogService _auditService;
@@ -41,10 +42,10 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
       _payrollRepo = payrollRepo;
     }
 
-    public async Task Handle(EmployeeDeletedEvent notification, CancellationToken cancellationToken)
+    public async Task Handle(DomainEventNotification<EmployeeDeletedEvent> notificationWrapper, CancellationToken cancellationToken)
     {
       // 1. Xóa tài khoản User (Decoupled)
-      await _sender.Send(new DeleteUserByEmployeeIdCommand { EmployeeId = notification.EmployeeId }, cancellationToken);
+      await _sender.Send(new DeleteUserByEmployeeIdCommand { EmployeeId = notificationWrapper.DomainEvent.EmployeeId }, cancellationToken);
 
       // 2. Cleanup all related data — each step is isolated so a single failure
       //    does not leave the rest of the data uncleaned.
@@ -56,12 +57,12 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
         catch (Exception ex) { errors.Add(ex); }
       }
 
-      await TryDelete(() => _contractRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken));
-      await TryDelete(() => _attendanceRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken));
-      await TryDelete(() => _rawAttendanceRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken));
-      await TryDelete(() => _leaveRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken));
-      await TryDelete(() => _allocationRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken));
-      await TryDelete(() => _payrollRepo.DeleteByEmployeeIdAsync(notification.EmployeeId, cancellationToken));
+      await TryDelete(() => _contractRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken));
+      await TryDelete(() => _attendanceRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken));
+      await TryDelete(() => _rawAttendanceRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken));
+      await TryDelete(() => _leaveRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken));
+      await TryDelete(() => _allocationRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken));
+      await TryDelete(() => _payrollRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken));
 
       // 3. Ghi Log (Decoupled)
       await _auditService.LogAsync(
@@ -69,10 +70,11 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
           userName: _currentUser.UserName ?? "System",
           action: "DELETE_EMPLOYEE",
           tableName: "Employees",
-          recordId: notification.EmployeeId,
-          oldVal: new { Name = notification.FullName, Code = notification.EmployeeCode },
+          recordId: notificationWrapper.DomainEvent.EmployeeId,
+          oldVal: new { Name = notificationWrapper.DomainEvent.FullName, Code = notificationWrapper.DomainEvent.EmployeeCode },
           newVal: null
       );
     }
   }
 }
+

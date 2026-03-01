@@ -2,19 +2,20 @@ using Xunit;
 using Moq;
 using Employee.Application.Features.HumanResource.Commands.CreateEmployee;
 using Employee.Application.Features.HumanResource.Commands.UpdateEmployee;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Application.Common.Interfaces;
 using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Entities.Organization;
 using Employee.Application.Features.Organization.Dtos;
-using Employee.Application.Features.HumanResource.Events;
+using Employee.Domain.Events;
 using Employee.Application.Common.Exceptions;
 using MediatR;
 using System.Threading;
 using System.Threading.Tasks;
 using System;
 using Employee.Domain.Entities.ValueObjects;
+using Employee.Domain.Common.Models;
 using Employee.Application.Features.HumanResource.Dtos;
 
 namespace Employee.UnitTests.Features.HumanResource.Commands

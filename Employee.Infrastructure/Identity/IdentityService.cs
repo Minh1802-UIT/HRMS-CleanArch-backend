@@ -1,6 +1,6 @@
 using Employee.Application.Common.Interfaces;
 using Employee.Application.Common.Exceptions;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Employee.Application.Features.Auth.Dtos;
 using Employee.Infrastructure.Identity.Models;
 using Microsoft.AspNetCore.Identity;
@@ -10,7 +10,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using MongoDB.Driver;
 using MongoDB.Driver.Linq;
 

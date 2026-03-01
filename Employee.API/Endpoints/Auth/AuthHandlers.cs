@@ -1,4 +1,4 @@
-ï»¿using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Employee.API.Common;
 using Employee.Domain.Constants;
 using Employee.Application.Features.Auth.Dtos;
@@ -36,7 +36,7 @@ namespace Employee.API.Endpoints.Auth
       return ResultUtils.Created("Account registered successfully.");
     }
 
-    // 2. LOGIN (Public) â€” sets refresh token as httpOnly cookie
+    // 2. LOGIN (Public) — sets refresh token as httpOnly cookie
     public static async Task<IResult> Login([FromBody] LoginDto dto, ISender sender, HttpContext context)
     {
       var result = await sender.Send(new LoginCommand
@@ -45,7 +45,7 @@ namespace Employee.API.Endpoints.Auth
         Password = dto.Password
       });
 
-      // Secure refresh token in httpOnly cookie â€” never exposed to JavaScript
+      // Secure refresh token in httpOnly cookie — never exposed to JavaScript
       context.Response.Cookies.Append("refreshToken", result.RefreshToken, new CookieOptions
       {
         HttpOnly = true,
@@ -55,7 +55,7 @@ namespace Employee.API.Endpoints.Auth
         Path = "/"
       });
 
-      // Return a fixed typed contract â€” no anonymous objects, no guessing on the client.
+      // Return a fixed typed contract — no anonymous objects, no guessing on the client.
       return ResultUtils.Success(new LoginSuccessDto
       {
         AccessToken = result.AccessToken,
@@ -130,7 +130,7 @@ namespace Employee.API.Endpoints.Auth
       return ResultUtils.Success(roles, "Retrieved all roles successfully.");
     }
 
-    // 8. REFRESH TOKEN (Public) â€” reads refresh token from httpOnly cookie
+    // 8. REFRESH TOKEN (Public) — reads refresh token from httpOnly cookie
     public static async Task<IResult> RefreshToken([FromBody] RefreshAccessTokenDto dto, ISender sender, HttpContext context)
     {
       // Read refresh token from httpOnly cookie
@@ -162,7 +162,7 @@ namespace Employee.API.Endpoints.Auth
       }, "Token refreshed successfully.");
     }
 
-    // 11. LOGOUT â€” revokes server-side tokens then clears the httpOnly cookie
+    // 11. LOGOUT — revokes server-side tokens then clears the httpOnly cookie
     public static async Task<IResult> Logout(
         HttpContext context,
         IIdentityService identityService,

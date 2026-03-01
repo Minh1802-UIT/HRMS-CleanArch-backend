@@ -1,6 +1,6 @@
 using ClosedXML.Excel;
 using Employee.Application.Common.Interfaces;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using System.IO;
 using System.Threading.Tasks;
 

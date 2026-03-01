@@ -1,4 +1,4 @@
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Application.Common.Interfaces; // For ICacheService
 using Employee.Domain.Entities.Common;
@@ -10,11 +10,13 @@ namespace Employee.Application.Common.Services
   {
     private readonly ISystemSettingRepository _repo;
     private readonly ICacheService _cache;
+    private readonly Employee.Domain.Interfaces.Common.IDateTimeProvider _dateTime;
 
-    public SystemSettingService(ISystemSettingRepository repo, ICacheService cache)
+    public SystemSettingService(ISystemSettingRepository repo, ICacheService cache, Employee.Domain.Interfaces.Common.IDateTimeProvider dateTime)
     {
       _repo = repo;
       _cache = cache;
+      _dateTime = dateTime;
     }
 
     public async Task<string> GetStringAsync(string key, string defaultValue = "")
@@ -78,7 +80,7 @@ namespace Employee.Application.Common.Services
     {
       var setting = await _repo.GetByKeyAsync(key) ?? new SystemSetting(key, group);
 
-      setting.UpdateValue(value, description);
+      setting.UpdateValue(value, description, _dateTime.UtcNow);
 
       await _repo.UpsertAsync(setting);
 
@@ -88,3 +90,4 @@ namespace Employee.Application.Common.Services
     }
   }
 }
+

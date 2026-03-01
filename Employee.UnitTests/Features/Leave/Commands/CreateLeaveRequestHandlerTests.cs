@@ -5,7 +5,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Employee.Application.Features.Leave.Commands.CreateLeaveRequest;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Application.Common.Exceptions;
 using Employee.Application.Features.Leave.Dtos;

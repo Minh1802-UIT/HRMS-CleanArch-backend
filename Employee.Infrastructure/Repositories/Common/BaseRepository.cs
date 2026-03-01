@@ -1,6 +1,6 @@
 using System.Threading;
-using Employee.Application.Common.Interfaces.Common;
-using Employee.Application.Common.Models;
+using Employee.Domain.Interfaces.Repositories;
+using Employee.Domain.Common.Models;
 using Employee.Domain.Entities.Common;
 using Employee.Infrastructure.Persistence;
 using MongoDB.Driver;

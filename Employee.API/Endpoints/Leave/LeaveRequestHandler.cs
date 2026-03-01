@@ -1,6 +1,6 @@
-﻿using Employee.API.Common;
+using Employee.API.Common;
 using Employee.Domain.Constants;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Employee.Application.Features.Leave.Dtos;
 using Employee.Application.Common.Interfaces;
 using Employee.Application.Common.Interfaces.Organization.IService;
@@ -26,7 +26,7 @@ namespace Employee.API.Endpoints.Leave
       return ResultUtils.Success(result, "Retrieved paginated leave requests successfully.");
     }
 
-    // 1. GET MY LEAVES (Xem lịch sử nghỉ phép của chính mình)
+    // 1. GET MY LEAVES (Xem l?ch s? ngh? ph�p c?a ch�nh m�nh)
     public static async Task<IResult> GetMyLeaves(
         ISender sender,
         ICurrentUser currentUser)
@@ -39,21 +39,21 @@ namespace Employee.API.Endpoints.Leave
       return ResultUtils.Success(list);
     }
 
-    // 2. GET BY ID (Xem chi tiết 1 đơn)
+    // 2. GET BY ID (Xem chi ti?t 1 don)
     public static async Task<IResult> GetById(string id, ISender sender, ICurrentUser currentUser)
     {
       var item = await sender.Send(new GetLeaveRequestByIdQuery(id));
-      // Employee chỉ được xem đơn nghỉ phép của chính mình; Admin/HR/Manager được xem tất cả
+      // Employee ch? du?c xem don ngh? ph�p c?a ch�nh m�nh; Admin/HR/Manager du?c xem t?t c?
       if (!currentUser.IsInRole("Admin") && !currentUser.IsInRole("HR") && !currentUser.IsInRole("Manager"))
       {
         var employeeId = currentUser.EmployeeId ?? currentUser.UserId;
         if (item.EmployeeId != employeeId)
-          return ResultUtils.Fail("LEAVE_REQUEST_FORBIDDEN", "Bạn không có quyền xem đơn nghỉ phép này.", 403);
+          return ResultUtils.Fail("LEAVE_REQUEST_FORBIDDEN", "B?n kh�ng c� quy?n xem don ngh? ph�p n�y.", 403);
       }
       return ResultUtils.Success(item);
     }
 
-    // 3. CREATE (Tạo đơn xin nghỉ mới - CQRS)
+    // 3. CREATE (T?o don xin ngh? m?i - CQRS)
     public static async Task<IResult> Create(
         [FromBody] CreateLeaveRequestDto dto,
         ISender sender,
@@ -72,7 +72,7 @@ namespace Employee.API.Endpoints.Leave
       return ResultUtils.Created(resultDto, "Leave request submitted successfully via CQRS.");
     }
 
-    // 4. UPDATE (Sửa đơn - CQRS)
+    // 4. UPDATE (S?a don - CQRS)
     public static async Task<IResult> Update(
         string id,
         [FromBody] UpdateLeaveRequestDto dto,
@@ -96,7 +96,7 @@ namespace Employee.API.Endpoints.Leave
       return ResultUtils.Success("Leave request updated successfully via CQRS.");
     }
 
-    // 5. CANCEL (Hủy đơn - CQRS)
+    // 5. CANCEL (H?y don - CQRS)
     public static async Task<IResult> Cancel(
         string id,
         ISender sender,
@@ -107,7 +107,7 @@ namespace Employee.API.Endpoints.Leave
       return ResultUtils.Success("Leave request cancelled successfully via CQRS.");
     }
 
-    // 6. REVIEW (Sếp duyệt đơn - CQRS)
+    // 6. REVIEW (S?p duy?t don - CQRS)
     public static async Task<IResult> Review(
         string id,
         [FromBody] ReviewLeaveRequestDto dto,

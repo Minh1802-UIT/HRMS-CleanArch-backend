@@ -1,5 +1,6 @@
-﻿using Carter;
+using Carter;
 using Employee.API.Common;
+using Employee.Domain.Common.Models;
 using Employee.Application.Features.HumanResource.Dtos;
 
 namespace Employee.API.Endpoints.HumanResource
@@ -9,8 +10,8 @@ namespace Employee.API.Endpoints.HumanResource
     public void AddRoutes(IEndpointRouteBuilder app)
     {
       var group = app.MapGroup("/api/contracts")
-                     .WithTags("HumanResource - Contracts") // Tách tag cho dễ nhìn trên Swagger
-                     .RequireAuthorization(); // Mặc định yêu cầu đăng nhập
+                     .WithTags("HumanResource - Contracts") // T�ch tag cho d? nh�n tr�n Swagger
+                     .RequireAuthorization(); // M?c d?nh y�u c?u dang nh?p
 
       // 1. GET ALL (Admin/HR Only)
       group.MapGet("/", ContractHandlers.GetPaged)

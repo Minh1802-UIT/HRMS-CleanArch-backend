@@ -1,4 +1,5 @@
-﻿using Employee.Application.Features.HumanResource.Dtos;
+using Employee.Domain.Common.Models;
+using Employee.Application.Features.HumanResource.Dtos;
 using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Entities.ValueObjects;
 using Employee.Domain.Enums;

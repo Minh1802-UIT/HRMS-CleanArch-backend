@@ -1,13 +1,11 @@
-using Employee.Application.Common.Interfaces;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
-using Employee.Infrastructure.Persistence;
-using Employee.Application.Common.Models;
-using MongoDB.Driver;
+using Employee.Domain.Common.Models;
 using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Enums;
+using Employee.Domain.Interfaces.Repositories;
+using Employee.Infrastructure.Persistence;
 using Employee.Infrastructure.Repositories.Common;
-using Employee.Application.Features.HumanResource.Dtos;
 using MongoDB.Bson;
+using MongoDB.Driver;
 
 namespace Employee.Infrastructure.Repositories.HumanResource
 {

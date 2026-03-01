@@ -1,5 +1,5 @@
-using Employee.Application.Common.Interfaces.Organization.IRepository;
-using Employee.Application.Common.Models;
+using Employee.Domain.Interfaces.Repositories;
+using Employee.Domain.Common.Models;
 using Employee.Application.Features.HumanResource.Dtos;
 using MediatR;
 using System.Linq;

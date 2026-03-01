@@ -1,8 +1,8 @@
-﻿using Employee.Application.Common.Exceptions;
-using Employee.Application.Common.Models;
+using Employee.Application.Common.Exceptions;
+using Employee.Domain.Common.Models;
 using Employee.Application.Features.Payroll.Mappers;
 using Employee.Application.Features.Payroll.Dtos;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
 
 
@@ -21,7 +21,7 @@ namespace Employee.Application.Features.Payroll.Services
       var payroll = await _payrollRepo.GetByEmployeeAndMonthAsync(employeeId, month);
       if (payroll == null)
       {
-        throw new NotFoundException("Bảng lương chưa được tính cho nhân viên này. Vui lòng chạy tính lương trước.");
+        throw new NotFoundException("B?ng luong chua du?c t�nh cho nh�n vi�n n�y. Vui l�ng ch?y t�nh luong tru?c.");
       }
 
       return payroll.ToDto();

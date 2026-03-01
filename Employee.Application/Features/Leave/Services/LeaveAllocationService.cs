@@ -1,9 +1,9 @@
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Domain.Entities.Leave;
 using Employee.Application.Features.Leave.Dtos;
 using Employee.Application.Features.Leave.Mappers;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Employee.Domain.Enums;
 using System;
 using System.Collections.Generic;
@@ -132,7 +132,6 @@ namespace Employee.Application.Features.Leave.Services
                 {
                     var days = type.IsAccrual ? 0 : type.DefaultDaysPerYear;
                     var allocation = new LeaveAllocation(employeeId, type.Id, year, days);
-                    allocation.SetId(Guid.NewGuid().ToString());
 
                     if (type.IsAccrual)
                     {
@@ -184,7 +183,6 @@ namespace Employee.Application.Features.Leave.Services
                     if (!empAllocations.TryGetValue(type.Id, out var allocation))
                     {
                         allocation = new LeaveAllocation(emp.Id, type.Id, year, 0);
-                        allocation.SetId(Guid.NewGuid().ToString());
                     }
 
                     if (allocation.LastAccrualMonth == currentMonthKey)
@@ -282,7 +280,6 @@ namespace Employee.Application.Features.Leave.Services
                     else
                     {
                         toAlloc = new LeaveAllocation(emp.Id, leaveType.Id, toYearStr, carryDays);
-                        toAlloc.SetId(Guid.NewGuid().ToString());
                         toAllocMap[(emp.Id, leaveType.Id)] = toAlloc; // avoid duplicates
                     }
 

@@ -1,11 +1,12 @@
+using Employee.Application.Common.Models;
 using MediatR;
 using Employee.Application.Common.Interfaces; // ICurrentUser
 using Employee.Application.Common.Interfaces.Organization.IService; // IAuditLogService
-using Employee.Application.Features.HumanResource.Events;
+using Employee.Domain.Events;
 
 namespace Employee.Application.Features.HumanResource.EventHandlers
 {
-    public class EmployeeUpdatedEventHandler : INotificationHandler<EmployeeUpdatedEvent>
+    public class EmployeeUpdatedEventHandler : INotificationHandler<DomainEventNotification<EmployeeUpdatedEvent>>
     {
         private readonly IAuditLogService _auditService;
         private readonly ICurrentUser _currentUser;
@@ -16,7 +17,7 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
             _currentUser = currentUser;
         }
 
-        public async Task Handle(EmployeeUpdatedEvent notification, CancellationToken cancellationToken)
+        public async Task Handle(DomainEventNotification<EmployeeUpdatedEvent> notificationWrapper, CancellationToken cancellationToken)
         {
             // Ghi Audit Log tách biệt
             await _auditService.LogAsync(
@@ -24,13 +25,11 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
                 userName: _currentUser.UserName ?? "System",
                 action: "UPDATE_EMPLOYEE",
                 tableName: "Employees",
-                recordId: notification.EmployeeId,
-                oldVal: notification.OldValue,
-                newVal: new { 
-                    Name = notification.NewValue.FullName, 
-                    DeptId = notification.NewValue.JobDetails.DepartmentId 
-                }
+                recordId: notificationWrapper.DomainEvent.EmployeeId,
+                oldVal: notificationWrapper.DomainEvent.OldValuesJson,
+                newVal: notificationWrapper.DomainEvent.NewValuesJson
             );
         }
     }
 }
+

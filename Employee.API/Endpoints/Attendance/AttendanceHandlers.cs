@@ -1,14 +1,14 @@
-﻿using System.Linq;
+using System.Linq;
 using Employee.API.Common;
 using Employee.Application.Features.Attendance.Dtos;
 using Employee.Application.Common.Interfaces; // ICurrentUser
 using Employee.Domain.Constants;
 using Employee.Application.Common.Interfaces.Attendance.IService;
 using Employee.Application.Common.Interfaces.Organization.IService;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Employee.Application.Features.Attendance.Commands.CheckIn;
 
 namespace Employee.API.Endpoints.Attendance
@@ -60,7 +60,7 @@ namespace Employee.API.Endpoints.Attendance
       return ResultUtils.Success($"Recorded {dto.Type} successfully.");
     }
 
-    // 2. GET MY MONTHLY REPORT (User tự xem)
+    // 2. GET MY MONTHLY REPORT (User t? xem)
     public static async Task<IResult> GetMyReport(
         [FromQuery] string month,
         IAttendanceService service,
@@ -68,7 +68,7 @@ namespace Employee.API.Endpoints.Attendance
     {
       if (string.IsNullOrEmpty(currentUser.EmployeeId))
       {
-        return ResultUtils.Fail(ErrorCodes.UnlinkedAccount, "Tài khoản của bạn chưa được liên kết với hồ sơ nhân viên. Vui lòng liên hệ HR.");
+        return ResultUtils.Fail(ErrorCodes.UnlinkedAccount, "T�i kho?n c?a b?n chua du?c li�n k?t v?i h? so nh�n vi�n. Vui l�ng li�n h? HR.");
       }
 
       if (string.IsNullOrEmpty(month)) month = DateTime.UtcNow.ToString("MM-yyyy");
@@ -77,7 +77,7 @@ namespace Employee.API.Endpoints.Attendance
       return ResultUtils.Success(report);
     }
 
-    // 3. GET EMPLOYEE REPORT (Manager/HR xem của nhân viên)
+    // 3. GET EMPLOYEE REPORT (Manager/HR xem c?a nh�n vi�n)
     public static async Task<IResult> GetEmployeeReport(
         string employeeId,
         [FromQuery] string month,
@@ -178,7 +178,7 @@ namespace Employee.API.Endpoints.Attendance
       return ResultUtils.Success(result);
     }
 
-    // 7. TRIGGER PROCESSING (Kích hoạt tổng hợp dữ liệu)
+    // 7. TRIGGER PROCESSING (K�ch ho?t t?ng h?p d? li?u)
     public static async Task<IResult> ProcessLogs(IAttendanceProcessingService processingService)
     {
       string result = await processingService.ProcessRawLogsAsync();

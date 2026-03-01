@@ -1,6 +1,6 @@
 using Xunit;
 using Moq;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces;
 using Employee.Application.Common.Exceptions;
 using Employee.Application.Features.Recruitment.Commands.OnboardCandidate;
@@ -39,7 +39,7 @@ namespace Employee.UnitTests.Features.Recruitment.Commands
 
     private Candidate CreateHiredCandidate(string id)
     {
-      var candidate = new Candidate("Alice Nguyen", "alice@test.com", "0901234567", "jv1");
+      var candidate = new Candidate("Alice Nguyen", "alice@test.com", "0901234567", "jv1", System.DateTime.UtcNow);
       candidate.SetId(id);
       candidate.UpdateStatus(CandidateStatus.Hired);
       return candidate;
@@ -101,7 +101,7 @@ namespace Employee.UnitTests.Features.Recruitment.Commands
     public async Task Onboard_NonHiredCandidate_ShouldThrowValidationException()
     {
       // Arrange
-      var candidate = new Candidate("Bob", "bob@test.com", "0909", "jv1");
+      var candidate = new Candidate("Bob", "bob@test.com", "0909", "jv1", System.DateTime.UtcNow);
       candidate.SetId("cand2");
       // Status is Applied by default
       _mockCandidateRepo.Setup(x => x.GetByIdAsync("cand2", It.IsAny<CancellationToken>())).ReturnsAsync(candidate);
@@ -150,3 +150,4 @@ namespace Employee.UnitTests.Features.Recruitment.Commands
     }
   }
 }
+

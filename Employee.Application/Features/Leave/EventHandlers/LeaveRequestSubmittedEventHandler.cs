@@ -1,6 +1,7 @@
+using Employee.Application.Common.Models;
 using MediatR;
 using Employee.Application.Common.Interfaces.Organization.IService;
-using Employee.Application.Features.Leave.Events;
+using Employee.Domain.Events;
 using Microsoft.Extensions.Logging;
 
 namespace Employee.Application.Features.Leave.EventHandlers
@@ -10,7 +11,7 @@ namespace Employee.Application.Features.Leave.EventHandlers
   /// - Logs audit trail for the submission
   /// - Extension point: send notification to the manager
   /// </summary>
-  public class LeaveRequestSubmittedEventHandler : INotificationHandler<LeaveRequestSubmittedEvent>
+  public class LeaveRequestSubmittedEventHandler : INotificationHandler<DomainEventNotification<LeaveRequestSubmittedEvent>>
   {
     private readonly IAuditLogService _auditService;
     private readonly ILogger<LeaveRequestSubmittedEventHandler> _logger;
@@ -23,32 +24,33 @@ namespace Employee.Application.Features.Leave.EventHandlers
       _logger = logger;
     }
 
-    public async Task Handle(LeaveRequestSubmittedEvent notification, CancellationToken cancellationToken)
+    public async Task Handle(DomainEventNotification<LeaveRequestSubmittedEvent> notificationWrapper, CancellationToken cancellationToken)
     {
+      var evt = notificationWrapper.DomainEvent;
       _logger.LogInformation(
-          "[LeaveEvent] Submitted — EmployeeId: {EmployeeId}, LeaveRequestId: {LeaveRequestId}, Type: {LeaveType}, Days: {Days}",
-          notification.EmployeeId, notification.LeaveRequestId, notification.LeaveType, notification.Days);
+          "[LeaveEvent] Submitted — EmployeeId: {EmployeeId}, LeaveRequestId: {LeaveRequestId}, Type: {LeaveType}",
+          evt.EmployeeId, evt.LeaveRequestId, evt.LeaveType);
 
       await _auditService.LogAsync(
-          userId: notification.EmployeeId,
-          userName: notification.EmployeeId,
+          userId: evt.EmployeeId,
+          userName: evt.EmployeeId,
           action: "SUBMIT_LEAVE_REQUEST",
           tableName: "LeaveRequests",
-          recordId: notification.LeaveRequestId,
+          recordId: evt.LeaveRequestId,
           oldVal: null,
           newVal: new
           {
-            notification.LeaveType,
-            notification.FromDate,
-            notification.ToDate,
-            notification.Days,
-            notification.Reason,
+            evt.LeaveType,
+            evt.FromDate,
+            evt.ToDate,
+            evt.Reason,
             Status = "Pending"
           }
       );
 
       // TODO: Notify manager via email/push notification
-      // await _notificationService.NotifyManagerAsync(notification.EmployeeId, notification.LeaveRequestId);
+      // await _notificationService.NotifyManagerAsync(notificationWrapper.DomainEvent.EmployeeId, notificationWrapper.DomainEvent.LeaveRequestId);
     }
   }
 }
+

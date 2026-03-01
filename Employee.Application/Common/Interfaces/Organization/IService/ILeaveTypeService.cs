@@ -1,5 +1,5 @@
 using Employee.Application.Features.Leave.Dtos;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 
 namespace Employee.Application.Common.Interfaces.Organization.IService
 {

@@ -1,8 +1,9 @@
+using Employee.Application.Common.Models;
 using Employee.Application.Common.Exceptions;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Application.Features.Leave.Dtos;
-using Employee.Application.Features.Leave.Events;
+using Employee.Domain.Events;
 using Employee.Application.Features.Leave.Mappers;
 using MediatR;
 using Employee.Application.Common.Utils; // For DateHelper
@@ -106,17 +107,19 @@ namespace Employee.Application.Features.Leave.Commands.CreateLeaveRequest
       var dto = entity.ToDto(name, code);
 
       // 6. Publish Domain Event — decoupled side-effects (audit, notifications)
-      await _publisher.Publish(new LeaveRequestSubmittedEvent(
-          LeaveRequestId: entity.Id,
-          EmployeeId: entity.EmployeeId,
-          LeaveType: entity.LeaveType,
-          FromDate: entity.FromDate,
-          ToDate: entity.ToDate,
-          Days: daysRequested,
-          Reason: entity.Reason
-      ), cancellationToken);
+      await _publisher.Publish(
+          new DomainEventNotification<LeaveRequestSubmittedEvent>(
+              new LeaveRequestSubmittedEvent(
+                  LeaveRequestId: entity.Id,
+                  EmployeeId: entity.EmployeeId,
+                  LeaveType: entity.LeaveType.ToString(),
+                  FromDate: entity.FromDate,
+                  ToDate: entity.ToDate,
+                  Reason: entity.Reason)),
+          cancellationToken);
 
       return dto;
     }
   }
 }
+

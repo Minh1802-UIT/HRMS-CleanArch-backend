@@ -1,4 +1,4 @@
-﻿using Employee.Domain.Entities.Common;
+using Employee.Domain.Entities.Common;
 using Employee.Domain.Entities.ValueObjects;
 using Employee.Domain.Enums;
 using System;
@@ -50,11 +50,11 @@ namespace Employee.Domain.Entities.HumanResource
       Status = ContractStatus.Active;
     }
 
-    public void Terminate(string note)
+    public void Terminate(string note, DateTime terminatedAt)
     {
       Status = ContractStatus.Terminated;
       Note = note;
-      EndDate = DateTime.UtcNow;
+      EndDate = terminatedAt;
     }
 
     public void Expire(DateTime endDate)

@@ -1,14 +1,15 @@
+using Employee.Application.Common.Models;
 using MediatR;
 using Employee.Application.Common.Utils;
 using Employee.Application.Common.Interfaces;
 using Employee.Application.Features.Auth.Commands.Register;
-using Employee.Application.Features.HumanResource.Events;
+using Employee.Domain.Events;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace Employee.Application.Features.HumanResource.EventHandlers
 {
-    public class CreateUserEventHandler : INotificationHandler<EmployeeCreatedEvent>
+    public class CreateUserEventHandler : INotificationHandler<DomainEventNotification<EmployeeCreatedEvent>>
     {
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly ILogger<CreateUserEventHandler> _logger;
@@ -19,9 +20,9 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
             _logger = logger;
         }
 
-        public Task Handle(EmployeeCreatedEvent notification, CancellationToken cancellationToken)
+        public Task Handle(DomainEventNotification<EmployeeCreatedEvent> notificationWrapper, CancellationToken cancellationToken)
         {
-            var employee = notification.Employee;
+            var evt = notificationWrapper.DomainEvent;
 
             // Xử lý tạo tài khoản và gửi email ngầm (Fire-and-forget)
             // Để API trả về 201 Created ngay lập tức mà không phải chờ SMTP server
@@ -37,23 +38,23 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
                 {
                     await sender.Send(new RegisterCommand
                     {
-                        Username = employee.EmployeeCode,
-                        Email = employee.Email,
-                        FullName = employee.FullName,
+                        Username = evt.EmployeeId,  // Will be updated by identity service
+                        Email = evt.Email,
+                        FullName = evt.FullName,
                         Password = tempPassword,
-                        EmployeeId = employee.Id,
+                        EmployeeId = evt.EmployeeId,
                         MustChangePassword = true
                     });
 
                     var subject = "🎉 Chào mừng đến HRMS - Thông tin tài khoản của bạn";
                     var body = $@"
 <div style='font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;'>
-  <h2 style='color: #2563eb;'>Chào mừng, {employee.FullName}!</h2>
+  <h2 style='color: #2563eb;'>Chào mừng, {evt.FullName}!</h2>
   <p>Tài khoản của bạn đã được tạo trong hệ thống <strong>Employee HR System</strong>.</p>
   <table style='width:100%; border-collapse:collapse; margin: 20px 0;'>
     <tr>
       <td style='padding:8px; background:#f3f4f6; font-weight:bold; width:40%;'>Tên đăng nhập</td>
-      <td style='padding:8px; background:#f3f4f6;'>{employee.EmployeeCode}</td>
+      <td style='padding:8px; background:#f3f4f6;'>{evt.Email}</td>
     </tr>
     <tr>
       <td style='padding:8px; font-weight:bold;'>Mật khẩu tạm thời</td>
@@ -68,14 +69,14 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
   <p style='color: #9ca3af; font-size: 12px;'>Employee HR System — Email tự động, vui lòng không trả lời.</p>
 </div>";
 
-                    await emailService.SendAsync(employee.Email, subject, body, isHtml: true);
+                    await emailService.SendAsync(evt.Email, subject, body, isHtml: true);
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(ex,
-                  "Tạo tài khoản hoặc gửi email chào mừng thất bại cho nhân viên {EmployeeCode} (ID: {EmployeeId}). " +
+                  "Tạo tài khoản hoặc gửi email chào mừng thất bại cho nhân viên (ID: {EmployeeId}). " +
                   "Nhân viên đã được tạo nhưng chưa có tài khoản hệ thống.",
-                  employee.EmployeeCode, employee.Id);
+                  evt.EmployeeId);
                 }
             });
 
@@ -83,3 +84,4 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
         }
     }
 }
+

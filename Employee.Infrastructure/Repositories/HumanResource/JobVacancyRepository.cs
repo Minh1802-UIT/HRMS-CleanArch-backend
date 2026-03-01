@@ -1,4 +1,4 @@
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Domain.Entities.HumanResource;
 using Employee.Infrastructure.Persistence;
 using Employee.Infrastructure.Repositories.Common;

@@ -1,6 +1,7 @@
+using Employee.Application.Common.Models;
 using Employee.Application.Common.Exceptions;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
-using Employee.Application.Features.HumanResource.Events;
+using Employee.Domain.Interfaces.Repositories;
+using Employee.Domain.Events;
 using MediatR;
 
 namespace Employee.Application.Features.HumanResource.Commands.DeleteEmployee
@@ -42,3 +43,4 @@ namespace Employee.Application.Features.HumanResource.Commands.DeleteEmployee
     }
   }
 }
+

@@ -1,5 +1,5 @@
 using Employee.Application.Common.Interfaces;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Application.Features.Attendance.Logic;
 using Employee.Domain.Entities.Attendance;

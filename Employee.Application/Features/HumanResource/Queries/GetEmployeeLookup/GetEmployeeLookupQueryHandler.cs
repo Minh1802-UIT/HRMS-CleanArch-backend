@@ -1,5 +1,5 @@
-using Employee.Application.Common.Models;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Common.Models;
+using Employee.Domain.Interfaces.Repositories;
 using MediatR;
 using System.Collections.Generic;
 using System.Threading;

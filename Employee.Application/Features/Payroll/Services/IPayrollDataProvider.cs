@@ -1,4 +1,4 @@
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Employee.Domain.Entities.Payroll;
 
 namespace Employee.Application.Features.Payroll.Services

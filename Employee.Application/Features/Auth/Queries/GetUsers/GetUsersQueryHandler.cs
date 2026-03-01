@@ -1,4 +1,4 @@
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Employee.Application.Common.Interfaces;
 using Employee.Application.Features.Auth.Dtos;
 using MediatR;

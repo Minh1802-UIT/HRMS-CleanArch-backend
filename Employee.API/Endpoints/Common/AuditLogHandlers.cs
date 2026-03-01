@@ -22,7 +22,7 @@ namespace Employee.API.Endpoints.Common
         {
             var query = new GetAuditLogsQuery
             {
-                Pagination = new Employee.Application.Common.Models.PaginationParams
+                Pagination = new Employee.Domain.Common.Models.PaginationParams
                 {
                     PageNumber = pageNumber,
                     PageSize = pageSize,

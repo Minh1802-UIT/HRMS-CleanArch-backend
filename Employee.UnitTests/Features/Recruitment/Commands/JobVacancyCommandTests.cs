@@ -1,6 +1,6 @@
 using Xunit;
 using Moq;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Exceptions;
 using Employee.Application.Features.Recruitment.Commands.JobVacancy.CreateJobVacancy;
 using Employee.Application.Features.Recruitment.Commands.JobVacancy.DeleteJobVacancy;

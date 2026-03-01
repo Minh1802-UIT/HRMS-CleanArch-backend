@@ -1,5 +1,6 @@
-﻿using Carter;
+using Carter;
 using Employee.API.Common;
+using Employee.Domain.Common.Models;
 using Employee.Application.Features.HumanResource.Dtos;
 
 namespace Employee.API.Endpoints.HumanResource

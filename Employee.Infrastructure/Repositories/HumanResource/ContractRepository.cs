@@ -1,7 +1,7 @@
 using Employee.Application.Common.Interfaces;
 using Employee.Infrastructure.Persistence;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
-using Employee.Application.Common.Models;
+using Employee.Domain.Interfaces.Repositories;
+using Employee.Domain.Common.Models;
 using Employee.Domain.Entities.HumanResource;
 using MongoDB.Driver;
 using Employee.Domain.Enums;

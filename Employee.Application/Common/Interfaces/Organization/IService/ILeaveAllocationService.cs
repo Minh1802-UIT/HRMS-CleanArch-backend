@@ -1,25 +1,25 @@
-﻿using Employee.Application.Features.Leave.Dtos;
-using Employee.Application.Common.Models;
-// using Employee.Application.Common.Models; // Removed duplicate
+using Employee.Application.Features.Leave.Dtos;
+using Employee.Domain.Common.Models;
+// using Employee.Domain.Common.Models; // Removed duplicate
 
 namespace Employee.Application.Common.Interfaces.Organization.IService
 {
   public interface ILeaveAllocationService
   {
-    // Lấy danh sách số dư các loại phép của 1 nhân viên
+    // L?y danh s�ch s? du c�c lo?i ph�p c?a 1 nh�n vi�n
     Task<IEnumerable<LeaveAllocationDto>> GetBalanceByEmployeeIdAsync(string employeeId);
 
-    // Lấy chi tiết 1 loại phép (để check balance khi tạo đơn)
+    // L?y chi ti?t 1 lo?i ph�p (d? check balance khi t?o don)
     Task<LeaveAllocationDto?> GetByEmployeeAndTypeAsync(string employeeId, string leaveTypeId, string year);
     Task<PagedResult<LeaveAllocationDto>> GetAllAllocationsAsync(PaginationParams pagination, string? keyword = null);
 
-    // Cấp phép
+    // C?p ph�p
     Task AllocateDaysAsync(CreateAllocationDto dto);
 
-    // Cập nhật số ngày đã dùng (Deduct)
+    // C?p nh?t s? ng�y d� d�ng (Deduct)
     Task UpdateUsedDaysAsync(string employeeId, string leaveTypeId, string year, double days);
 
-    // Hoàn trả ngày phép (Refund - khi hủy đơn)
+    // Ho�n tr? ng�y ph�p (Refund - khi h?y don)
     Task RefundDaysAsync(string employeeId, string leaveTypeId, string year, double days);
 
     Task InitializeAllocationAsync(string employeeId, string year);

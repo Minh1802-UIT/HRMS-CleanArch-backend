@@ -1,8 +1,8 @@
-﻿using Employee.API.Common;
+using Employee.API.Common;
 using Employee.Domain.Constants;
 using Employee.Application.Features.Attendance.Dtos;
 using Employee.Application.Common.Interfaces.Attendance.IService;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Employee.API.Endpoints.Attendance

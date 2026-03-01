@@ -1,6 +1,7 @@
 using Employee.Application.Common.Exceptions;
 using Employee.Application.Common.Interfaces;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
+using Employee.Domain.Common.Models;
 using Employee.Application.Features.HumanResource.Dtos;
 using Employee.Application.Features.HumanResource.Mappers;
 using MediatR;

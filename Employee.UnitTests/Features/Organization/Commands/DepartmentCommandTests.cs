@@ -3,7 +3,7 @@ using Moq;
 using Employee.Application.Features.Organization.Commands.CreateDepartment;
 using Employee.Application.Features.Organization.Commands.UpdateDepartment;
 using Employee.Application.Features.Organization.Commands.DeleteDepartment;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces;
 using Employee.Domain.Entities.Organization;
 using Employee.Application.Features.Organization.Dtos;

@@ -1,6 +1,6 @@
 using Xunit;
 using Moq;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Features.Performance.Commands.CreatePerformanceGoal;
 using Employee.Application.Features.Performance.Commands.CreatePerformanceReview;
 using Employee.Application.Features.Performance.Commands.UpdatePerformanceGoalProgress;

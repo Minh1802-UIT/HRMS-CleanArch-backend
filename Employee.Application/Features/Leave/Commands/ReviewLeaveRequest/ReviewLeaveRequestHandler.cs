@@ -1,7 +1,8 @@
+using Employee.Application.Common.Models;
 using Employee.Application.Common.Exceptions;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
-using Employee.Application.Features.Leave.Events;
+using Employee.Domain.Events;
 using MediatR;
 
 namespace Employee.Application.Features.Leave.Commands.ReviewLeaveRequest
@@ -104,13 +105,16 @@ namespace Employee.Application.Features.Leave.Commands.ReviewLeaveRequest
       }
       else if (entity.Status == Employee.Domain.Enums.LeaveStatus.Rejected)
       {
-        await _publisher.Publish(new LeaveRequestRejectedEvent(
-            LeaveRequestId: request.Id,
-            EmployeeId: entity.EmployeeId,
-            RejectedBy: request.ApprovedBy,
-            RejectionReason: entity.ManagerComment ?? "Rejected"
-        ), cancellationToken);
+        await _publisher.Publish(
+            new DomainEventNotification<LeaveRequestRejectedEvent>(
+                new LeaveRequestRejectedEvent(
+                    LeaveRequestId: request.Id,
+                    EmployeeId: entity.EmployeeId,
+                    RejectedBy: request.ApprovedBy,
+                    ManagerComment: entity.ManagerComment ?? "Rejected")),
+            cancellationToken);
       }
     }
   }
 }
+

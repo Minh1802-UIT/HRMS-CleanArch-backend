@@ -1,8 +1,8 @@
 using Employee.Application.Common.Interfaces.Attendance.IService;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Features.Attendance.Dtos;
 using Employee.Application.Features.Attendance.Mappers;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Employee.Application.Common.Exceptions;
 using Employee.Domain.Entities.Attendance;
 

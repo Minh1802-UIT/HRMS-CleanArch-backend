@@ -1,7 +1,7 @@
 using Xunit;
 using Moq;
 using Employee.Application.Features.Recruitment.Commands.Candidate.UpdateCandidateStatus;
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Enums;
 using System.Threading;
@@ -27,7 +27,7 @@ namespace Employee.UnitTests.Features.Recruitment.Commands
     {
       // Arrange
       var id = "c1";
-      var candidate = new Candidate("John", "john@test.com", "123", "vac1");
+      var candidate = new Candidate("John", "john@test.com", "123", "vac1", System.DateTime.UtcNow);
       candidate.SetId(id);
       _mockRepo.Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(candidate);
 
@@ -46,7 +46,7 @@ namespace Employee.UnitTests.Features.Recruitment.Commands
     {
       // Arrange
       var id = "c1";
-      var candidate = new Candidate("John", "john@test.com", "123", "vac1");
+      var candidate = new Candidate("John", "john@test.com", "123", "vac1", System.DateTime.UtcNow);
       candidate.SetId(id);
       _mockRepo.Setup(x => x.GetByIdAsync(id, It.IsAny<CancellationToken>())).ReturnsAsync(candidate);
 
@@ -57,3 +57,4 @@ namespace Employee.UnitTests.Features.Recruitment.Commands
     }
   }
 }
+

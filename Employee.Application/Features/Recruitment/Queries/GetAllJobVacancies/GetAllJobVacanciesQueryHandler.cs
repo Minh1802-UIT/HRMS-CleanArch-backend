@@ -1,4 +1,4 @@
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Features.Recruitment.Dtos;
 using Employee.Application.Features.Recruitment.Mappers;
 using MediatR;

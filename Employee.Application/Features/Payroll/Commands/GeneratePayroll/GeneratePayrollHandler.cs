@@ -1,7 +1,7 @@
-using Employee.Application.Common.Interfaces.Organization.IRepository;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService; // Fix Namespace
 using MediatR;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 
 namespace Employee.Application.Features.Payroll.Commands.GeneratePayroll
 {

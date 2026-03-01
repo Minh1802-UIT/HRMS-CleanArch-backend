@@ -14,7 +14,7 @@ using Employee.Application.Features.HumanResource.Services;
 using Employee.Application.Features.Leave.Services;
 using Employee.Application.Features.Payroll.Services;
 using Employee.Application.Features.Notifications.Services;
-using Employee.Application.Common.Models;
+using Employee.Domain.Common.Models;
 using Microsoft.Extensions.Configuration;
 using System;
 

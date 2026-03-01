@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Employee.Domain.Entities.Common
@@ -9,7 +9,7 @@ namespace Employee.Domain.Entities.Common
     // MongoDbConfig in the Infrastructure layer handles the mapping to ObjectId.
     public string Id { get; private set; } = null!;
     public bool IsDeleted { get; private set; } = false;
-    public DateTime CreatedAt { get; private set; } = DateTime.UtcNow;
+    public DateTime CreatedAt { get; protected set; }
     public string CreatedBy { get; private set; } = "System";
     public DateTime? UpdatedAt { get; private set; }
     public string? UpdatedBy { get; private set; }
@@ -32,10 +32,10 @@ namespace Employee.Domain.Entities.Common
       CreatedBy = createdBy;
     }
 
-    public void MarkDeleted(string? deletedBy = null)
+    public void MarkDeleted(DateTime deletedAt, string? deletedBy = null)
     {
       IsDeleted = true;
-      UpdatedAt = DateTime.UtcNow;
+      UpdatedAt = deletedAt;
       UpdatedBy = deletedBy ?? UpdatedBy;
     }
 
