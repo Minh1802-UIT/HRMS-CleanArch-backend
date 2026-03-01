@@ -17,6 +17,7 @@ namespace Employee.Infrastructure.Services
         private readonly HttpClient _http;
         private readonly ILogger<SupabaseFileService> _logger;
         private readonly string _storageBaseUrl;
+        private readonly string _serviceKey;
 
         private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5 MB
         private static readonly string[] AllowedExtensions =
@@ -31,29 +32,37 @@ namespace Employee.Infrastructure.Services
             _logger = logger;
 
             // ── Validate configuration ─────────────────────────────
-            if (string.IsNullOrWhiteSpace(_options.ProjectUrl)
-                || _options.ProjectUrl.Contains("OVERRIDE", StringComparison.OrdinalIgnoreCase))
+            var projectUrl = _options.ProjectUrl?.Trim() ?? "";
+            var serviceKey = _options.ServiceKey?.Trim() ?? "";
+
+            if (string.IsNullOrWhiteSpace(projectUrl)
+                || projectUrl.Contains("OVERRIDE", StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogError("SupabaseStorage:ProjectUrl is not configured.");
                 throw new InvalidOperationException(
                     "Supabase Storage is not configured. Missing ProjectUrl.");
             }
 
-            if (string.IsNullOrWhiteSpace(_options.ServiceKey)
-                || _options.ServiceKey.Contains("OVERRIDE", StringComparison.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(serviceKey)
+                || serviceKey.Contains("OVERRIDE", StringComparison.OrdinalIgnoreCase))
             {
                 _logger.LogError("SupabaseStorage:ServiceKey is not configured.");
                 throw new InvalidOperationException(
                     "Supabase Storage is not configured. Missing ServiceKey.");
             }
 
-            _storageBaseUrl = $"{_options.ProjectUrl.TrimEnd('/')}/storage/v1";
+            // Strip quotes if env var was wrapped in them
+            serviceKey = serviceKey.Trim('"', '\'');
+
+            _serviceKey = serviceKey;
+            _storageBaseUrl = $"{projectUrl.TrimEnd('/')}/storage/v1";
+
             _logger.LogInformation("Supabase Storage base URL: {Url}", _storageBaseUrl);
+            _logger.LogInformation("Supabase ServiceKey: {First}...{Last} (len={Len})",
+                serviceKey[..10], serviceKey[^6..], serviceKey.Length);
 
             _http = httpClientFactory.CreateClient("SupabaseStorage");
-            _http.DefaultRequestHeaders.Authorization =
-                new AuthenticationHeaderValue("Bearer", _options.ServiceKey);
-            _http.DefaultRequestHeaders.Add("apikey", _options.ServiceKey);
+            // Do NOT set DefaultRequestHeaders — use per-request headers instead
         }
 
         public async Task<string> UploadFileAsync(FileUploadRequest file, string folderName)
@@ -97,7 +106,14 @@ namespace Employee.Infrastructure.Services
                 content.Headers.ContentType =
                     new MediaTypeHeaderValue(file.ContentType ?? "application/octet-stream");
 
-                var response = await _http.PostAsync(uploadUrl, content);
+                // Per-request headers — avoids DefaultRequestHeaders issues
+                using var request = new HttpRequestMessage(HttpMethod.Post, uploadUrl);
+                request.Headers.Authorization =
+                    new AuthenticationHeaderValue("Bearer", _serviceKey);
+                request.Headers.Add("apikey", _serviceKey);
+                request.Content = content;
+
+                var response = await _http.SendAsync(request);
                 var body = await response.Content.ReadAsStringAsync();
 
                 if (!response.IsSuccessStatusCode)
