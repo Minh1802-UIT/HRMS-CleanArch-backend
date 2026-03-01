@@ -116,6 +116,7 @@ namespace Employee.Infrastructure
             // 9. INFRASTRUCTURE SERVICES
             // ==========================================
             services.Configure<SupabaseStorageOptions>(configuration.GetSection(SupabaseStorageOptions.SectionName));
+            services.AddHttpClient("SupabaseStorage");
             services.AddScoped<IFileService, SupabaseFileService>();
             services.AddScoped<ICacheService, CacheService>();
 
