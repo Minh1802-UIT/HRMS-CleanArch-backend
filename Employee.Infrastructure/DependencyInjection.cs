@@ -51,6 +51,7 @@ namespace Employee.Infrastructure
             // ==========================================
             // 2. SYSTEM & AUTHENTICATION REPOSITORIES
             // ==========================================
+            services.AddSingleton<Employee.Domain.Interfaces.Common.IDateTimeProvider, Employee.Infrastructure.Services.DateTimeProvider>();
             services.AddScoped<IAuditLogRepository, AuditLogRepository>();
             services.AddScoped<ISystemSettingRepository, SystemSettingRepository>();
             services.AddScoped<IPasswordHasher, PasswordHasher>();
