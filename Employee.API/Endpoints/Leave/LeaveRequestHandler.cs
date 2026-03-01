@@ -38,6 +38,16 @@ namespace Employee.API.Endpoints.Leave
       var list = await sender.Send(new GetEmployeeLeaveRequestsQuery(currentUser.EmployeeId));
       return ResultUtils.Success(list);
     }
+    
+    // 1.5 GET BY EMPLOYEE ID
+    public static async Task<IResult> GetByEmployeeId(string employeeId, ISender sender, ICurrentUser currentUser)
+    {
+      if (!currentUser.IsInRole("Admin") && !currentUser.IsInRole("HR") && !currentUser.IsInRole("Manager"))
+        return ResultUtils.Fail("FORBIDDEN", "Only Admin, HR or Manager can view other employee leaves.", 403);
+        
+      var list = await sender.Send(new GetEmployeeLeaveRequestsQuery(employeeId));
+      return ResultUtils.Success(list);
+    }
 
     // 2. GET BY ID (Xem chi ti?t 1 don)
     public static async Task<IResult> GetById(string id, ISender sender, ICurrentUser currentUser)
