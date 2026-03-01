@@ -2,6 +2,7 @@ using Xunit;
 using Moq;
 using Employee.Application.Features.Leave.Services;
 using Employee.Domain.Interfaces.Repositories;
+using Employee.Application.Common.Interfaces;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Domain.Entities.Leave;
 using Employee.Domain.Entities.HumanResource;
@@ -21,6 +22,7 @@ namespace Employee.UnitTests.Features.Leave
     private readonly Mock<ILeaveAllocationRepository> _mockAllocationRepo;
     private readonly Mock<ILeaveTypeRepository> _mockLeaveTypeRepo;
     private readonly Mock<IEmployeeRepository> _mockEmployeeRepo;
+    private readonly Mock<IEmployeeQueryRepository> _mockEmployeeQueryRepo;
 
     private readonly LeaveAllocationService _service;
 
@@ -29,11 +31,13 @@ namespace Employee.UnitTests.Features.Leave
       _mockAllocationRepo = new Mock<ILeaveAllocationRepository>();
       _mockLeaveTypeRepo = new Mock<ILeaveTypeRepository>();
       _mockEmployeeRepo = new Mock<IEmployeeRepository>();
+      _mockEmployeeQueryRepo = new Mock<IEmployeeQueryRepository>();
 
       _service = new LeaveAllocationService(
           _mockAllocationRepo.Object,
           _mockLeaveTypeRepo.Object,
-          _mockEmployeeRepo.Object
+          _mockEmployeeRepo.Object,
+          _mockEmployeeQueryRepo.Object
       );
     }
 

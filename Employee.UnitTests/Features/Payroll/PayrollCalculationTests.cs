@@ -9,6 +9,7 @@ using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Entities.Attendance;
 using Employee.Domain.Entities.ValueObjects;
 using Employee.Domain.Common.Models;
+using Employee.Application.Common.Dtos;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
