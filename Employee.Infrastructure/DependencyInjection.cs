@@ -45,11 +45,34 @@ namespace Employee.Infrastructure
             var redisConnectionString = configuration.GetValue<string>("RedisSettings:ConnectionString");
             services.AddStackExchangeRedisCache(options =>
             {
-                // ConfigurationOptions.Parse() correctly handles both plain
-                // "host:port,password=..." strings AND Upstash-style
-                // "rediss://default:PASSWORD@host:port" URIs (SSL auto-enabled).
-                // Manually assigning to EndPoints does NOT support rediss:// URIs.
-                var cfg = ConfigurationOptions.Parse(redisConnectionString ?? "localhost:6379");
+                // ConfigurationOptions.Parse() does NOT understand "rediss://" URIs —
+                // it treats the entire URI as a hostname, resulting in a doubled port
+                // like "upstash.io:6379:6379" that can never resolve.
+                // Upstash always provides "rediss://default:PASSWORD@host:port" so we
+                // must parse the URI manually and set Ssl = true explicitly.
+                var rawCs = redisConnectionString ?? "localhost:6379";
+                ConfigurationOptions cfg;
+
+                if (rawCs.StartsWith("rediss://", StringComparison.OrdinalIgnoreCase) ||
+                    rawCs.StartsWith("redis://", StringComparison.OrdinalIgnoreCase))
+                {
+                    var uri = new Uri(rawCs);
+                    var password = Uri.UnescapeDataString(uri.UserInfo.Split(':', 2).LastOrDefault() ?? "");
+                    cfg = new ConfigurationOptions
+                    {
+                        EndPoints = { $"{uri.Host}:{uri.Port}" },
+                        Password = password,
+                        Ssl = uri.Scheme.Equals("rediss", StringComparison.OrdinalIgnoreCase),
+                        SslProtocols = System.Security.Authentication.SslProtocols.Tls12
+                                     | System.Security.Authentication.SslProtocols.Tls13,
+                    };
+                }
+                else
+                {
+                    // Plain StackExchange.Redis connection string — Parse() works fine
+                    cfg = ConfigurationOptions.Parse(rawCs);
+                }
+
                 cfg.ConnectTimeout = 1500;  // 1.5 s — abort connect attempt
                 cfg.SyncTimeout = 1000;  // 1 s   — abort sync op
                 cfg.AsyncTimeout = 1000;  // 1 s   — abort async op
