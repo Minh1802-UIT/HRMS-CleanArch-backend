@@ -36,7 +36,7 @@ namespace Employee.API.Endpoints.Auth
       return ResultUtils.Created("Account registered successfully.");
     }
 
-    // 2. LOGIN (Public) — sets refresh token as httpOnly cookie
+    // 2. LOGIN (Public) ï¿½ sets refresh token as httpOnly cookie
     public static async Task<IResult> Login([FromBody] LoginDto dto, ISender sender, HttpContext context)
     {
       var result = await sender.Send(new LoginCommand
@@ -45,17 +45,20 @@ namespace Employee.API.Endpoints.Auth
         Password = dto.Password
       });
 
-      // Secure refresh token in httpOnly cookie — never exposed to JavaScript
+      // Secure refresh token in httpOnly cookie â€” never exposed to JavaScript.
+      // SameSite=None is required because the frontend (Vercel) and backend (Render)
+      // are on different domains; Strict/Lax would silently drop the cookie on every
+      // cross-origin XHR (e.g. POST /auth/refresh-token after F5).
       context.Response.Cookies.Append("refreshToken", result.RefreshToken, new CookieOptions
       {
         HttpOnly = true,
-        Secure = true,
-        SameSite = SameSiteMode.Strict,
+        Secure = true,          // required when SameSite=None
+        SameSite = SameSiteMode.None,
         Expires = DateTimeOffset.UtcNow.AddDays(7),
         Path = "/"
       });
 
-      // Return a fixed typed contract — no anonymous objects, no guessing on the client.
+      // Return a fixed typed contract ï¿½ no anonymous objects, no guessing on the client.
       return ResultUtils.Success(new LoginSuccessDto
       {
         AccessToken = result.AccessToken,
@@ -130,7 +133,7 @@ namespace Employee.API.Endpoints.Auth
       return ResultUtils.Success(roles, "Retrieved all roles successfully.");
     }
 
-    // 8. REFRESH TOKEN (Public) — reads refresh token from httpOnly cookie
+    // 8. REFRESH TOKEN (Public) ï¿½ reads refresh token from httpOnly cookie
     public static async Task<IResult> RefreshToken([FromBody] RefreshAccessTokenDto dto, ISender sender, HttpContext context)
     {
       // Read refresh token from httpOnly cookie
@@ -144,12 +147,12 @@ namespace Employee.API.Endpoints.Auth
         RefreshToken = refreshToken
       });
 
-      // Rotate refresh token cookie
+      // Rotate refresh token cookie (same cross-origin policy as login)
       context.Response.Cookies.Append("refreshToken", result.RefreshToken, new CookieOptions
       {
         HttpOnly = true,
         Secure = true,
-        SameSite = SameSiteMode.Strict,
+        SameSite = SameSiteMode.None,
         Expires = DateTimeOffset.UtcNow.AddDays(7),
         Path = "/"
       });
@@ -162,7 +165,7 @@ namespace Employee.API.Endpoints.Auth
       }, "Token refreshed successfully.");
     }
 
-    // 11. LOGOUT — revokes server-side tokens then clears the httpOnly cookie
+    // 11. LOGOUT ï¿½ revokes server-side tokens then clears the httpOnly cookie
     public static async Task<IResult> Logout(
         HttpContext context,
         IIdentityService identityService,
@@ -176,7 +179,7 @@ namespace Employee.API.Endpoints.Auth
       {
         HttpOnly = true,
         Secure = true,
-        SameSite = SameSiteMode.Strict,
+        SameSite = SameSiteMode.None,
         Path = "/"
       });
       return ResultUtils.Success("Logged out successfully.");

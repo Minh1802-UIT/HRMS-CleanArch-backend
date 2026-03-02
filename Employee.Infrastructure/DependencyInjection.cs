@@ -15,6 +15,7 @@ using Employee.Infrastructure.BackgroundServices;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
+using StackExchange.Redis;
 
 namespace Employee.Infrastructure
 {
@@ -44,7 +45,17 @@ namespace Employee.Infrastructure
             var redisConnectionString = configuration.GetValue<string>("RedisSettings:ConnectionString");
             services.AddStackExchangeRedisCache(options =>
             {
-                options.Configuration = redisConnectionString ?? "localhost:6379";
+                // ConfigurationOptions.Parse() correctly handles both plain
+                // "host:port,password=..." strings AND Upstash-style
+                // "rediss://default:PASSWORD@host:port" URIs (SSL auto-enabled).
+                // Manually assigning to EndPoints does NOT support rediss:// URIs.
+                var cfg = ConfigurationOptions.Parse(redisConnectionString ?? "localhost:6379");
+                cfg.ConnectTimeout = 1500;  // 1.5 s — abort connect attempt
+                cfg.SyncTimeout = 1000;  // 1 s   — abort sync op
+                cfg.AsyncTimeout = 1000;  // 1 s   — abort async op
+                cfg.AbortOnConnectFail = false;  // stay up if Redis unreachable
+                cfg.ReconnectRetryPolicy = new LinearRetry(2000);
+                options.ConfigurationOptions = cfg;
                 options.InstanceName = "HRM_";
             });
 
