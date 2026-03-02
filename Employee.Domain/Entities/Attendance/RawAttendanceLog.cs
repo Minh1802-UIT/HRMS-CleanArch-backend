@@ -19,10 +19,24 @@ namespace Employee.Domain.Entities.Attendance
 
     public string? ProcessingError { get; private set; } // Error note if processing failed
 
+    // Optional: base64 selfie photo captured during check-in
+    public string? PhotoBase64 { get; private set; }
+
+    // GPS coordinates captured on device
+    public double? Latitude { get; private set; }
+    public double? Longitude { get; private set; }
+
     // Hidden constructor for MongoDB
     private RawAttendanceLog() { }
 
-    public RawAttendanceLog(string employeeId, DateTime timestamp, RawLogType type = RawLogType.Biometric, string deviceId = "")
+    public RawAttendanceLog(
+      string employeeId,
+      DateTime timestamp,
+      RawLogType type = RawLogType.Biometric,
+      string deviceId = "",
+      string? photoBase64 = null,
+      double? latitude = null,
+      double? longitude = null)
     {
       if (string.IsNullOrWhiteSpace(employeeId)) throw new ArgumentException("EmployeeId is required.");
 
@@ -30,6 +44,9 @@ namespace Employee.Domain.Entities.Attendance
       Timestamp = timestamp;
       Type = type;
       DeviceId = deviceId;
+      PhotoBase64 = photoBase64;
+      Latitude = latitude;
+      Longitude = longitude;
     }
 
     public void MarkAsProcessed()

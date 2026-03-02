@@ -6,19 +6,23 @@ namespace Employee.Application.Features.Attendance.Dtos
   // ==========================================
   public class CheckInRequestDto
   {
-    // "CheckIn" ho?c "CheckOut"
+    // "CheckIn" ho·∫∑c "CheckOut"
     public string Type { get; set; } = "CheckIn";
 
     public string? EmployeeId { get; set; }
-    public string DeviceId { get; set; } = "MobileApp";
+    public string DeviceId { get; set; } = "WebApp";
 
-    // T?a d? (n?u cÛ)
+    // T·ªça ƒë·ªô GPS (n·∫øu c√≥)
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
+
+    // ·∫¢nh selfie d·∫°ng base64 (ch·ª•p t·ª´ webcam l√∫c check-in)
+    // Format: "data:image/jpeg;base64,/9j/4AAQ..."
+    public string? PhotoBase64 { get; set; }
   }
 
   // ==========================================
-  // 2. OUTPUT: B?NG C‘NG TH¡NG (T? AttendanceBucket)
+  // 2. OUTPUT: B?NG CÔøΩNG THÔøΩNG (T? AttendanceBucket)
   // ==========================================
   public class MonthlyAttendanceDto
   {
@@ -28,13 +32,13 @@ namespace Employee.Application.Features.Attendance.Dtos
     // T?ng h?p nhanh
     public int TotalPresent { get; set; }
     public int TotalLate { get; set; }
-    public double TotalWorkingHours { get; set; } // C?ng d?n gi? l‡m
+    public double TotalWorkingHours { get; set; } // C?ng d?n gi? lÔøΩm
 
-    // Chi ti?t t?ng ng‡y
+    // Chi ti?t t?ng ngÔøΩy
     public List<DailyLogDto> Logs { get; set; } = new();
   }
 
-  // DTO chi ti?t cho t?ng ng‡y (Mapping t? ValueObject DailyLog)
+  // DTO chi ti?t cho t?ng ngÔøΩy (Mapping t? ValueObject DailyLog)
   public class DailyLogDto
   {
     public DateTime Date { get; set; }
@@ -60,7 +64,7 @@ namespace Employee.Application.Features.Attendance.Dtos
     public DateTime FromDate { get; set; }
     public DateTime ToDate { get; set; }
 
-    // T?ng h?p trong kho?ng th?i gian n‡y
+    // T?ng h?p trong kho?ng th?i gian nÔøΩy
     public double TotalWorkingHours { get; set; }
     public double TotalOvertimeHours { get; set; }
 
@@ -88,6 +92,6 @@ namespace Employee.Application.Features.Attendance.Dtos
     public double Overtime { get; set; }
     public string Status { get; set; } = "Pending"; // Approved, Rejected, Pending
 
-    public List<double> DailyHours { get; set; } = new(); // Gi? l‡m t?ng ng‡y d? v? chart/table
+    public List<double> DailyHours { get; set; } = new(); // Gi? lÔøΩm t?ng ngÔøΩy d? v? chart/table
   }
 }

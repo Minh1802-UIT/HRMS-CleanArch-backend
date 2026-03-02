@@ -18,7 +18,10 @@ namespace Employee.Application.Features.Attendance.Mappers
         employeeId,
         DateTime.UtcNow,
         type,
-        dto.DeviceId
+        dto.DeviceId,
+        dto.PhotoBase64,
+        dto.Latitude,
+        dto.Longitude
       );
     }
 
