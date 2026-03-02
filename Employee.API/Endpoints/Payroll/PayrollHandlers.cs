@@ -35,12 +35,12 @@ namespace Employee.API.Endpoints.Payroll
     public static async Task<IResult> GetById(string id, IPayrollService service, ICurrentUser currentUser)
     {
       var item = await service.GetByIdAsync(id);
-      // Employee ch? du?c xem phi?u luong c?a chính mình; Admin/HR du?c xem t?t c?
+      // Employee ch? du?c xem phi?u luong c?a chï¿½nh mï¿½nh; Admin/HR du?c xem t?t c?
       if (!currentUser.IsInRole("Admin") && !currentUser.IsInRole("HR"))
       {
         var employeeId = currentUser.EmployeeId ?? currentUser.UserId;
         if (item.EmployeeId != employeeId)
-          return ResultUtils.Fail("PAYROLL_FORBIDDEN", "B?n không có quy?n xem phi?u luong này.", 403);
+          return ResultUtils.Fail("PAYROLL_FORBIDDEN", "B?n khï¿½ng cï¿½ quy?n xem phi?u luong nï¿½y.", 403);
       }
       return ResultUtils.Success(item);
     }
@@ -51,14 +51,14 @@ namespace Employee.API.Endpoints.Payroll
         [AsParameters] PaginationParams pagination,
         IPayrollService service)
     {
-      // N?u không truy?n month, l?y tháng hi?n t?i
+      // N?u khï¿½ng truy?n month, l?y thï¿½ng hi?n t?i
       if (string.IsNullOrEmpty(month)) month = DateTime.UtcNow.ToString("MM-yyyy");
 
       var list = await service.GetByMonthPagedAsync(month, pagination);
       return ResultUtils.Success(list);
     }
 
-    // 4. GENERATE PAYROLL (Tính luong - CQRS)
+    // 4. GENERATE PAYROLL (Tï¿½nh luong - CQRS)
     public static async Task<IResult> Generate(
         [FromBody] GeneratePayrollDto dto,
         ISender sender)
@@ -74,7 +74,7 @@ namespace Employee.API.Endpoints.Payroll
       return ResultUtils.Success($"Payroll calculation completed. Processed {count} records via CQRS.");
     }
 
-    // 5. UPDATE STATUS (Duy?t/Thanh toán - CQRS)
+    // 5. UPDATE STATUS (Duy?t/Thanh toï¿½n - CQRS)
     public static async Task<IResult> UpdateStatus(
         string id,
         [FromBody] UpdatePayrollStatusDto dto,
@@ -94,13 +94,13 @@ namespace Employee.API.Endpoints.Payroll
 
     public static async Task<IResult> GetPdf(string id, IPayslipService service, IPayrollService payrollService, ICurrentUser currentUser)
     {
-      // Employee ch? du?c t?i payslip c?a chính mình; Admin/HR du?c t?i t?t c?
+      // Employee ch? du?c t?i payslip c?a chï¿½nh mï¿½nh; Admin/HR du?c t?i t?t c?
       if (!currentUser.IsInRole("Admin") && !currentUser.IsInRole("HR"))
       {
         var payroll = await payrollService.GetByIdAsync(id);
         var employeeId = currentUser.EmployeeId ?? currentUser.UserId;
         if (payroll.EmployeeId != employeeId)
-          return ResultUtils.Fail("PAYSLIP_FORBIDDEN", "B?n không có quy?n t?i payslip này.", 403);
+          return ResultUtils.Fail("PAYSLIP_FORBIDDEN", "B?n khï¿½ng cï¿½ quy?n t?i payslip nï¿½y.", 403);
       }
       var pdfBytes = await service.GeneratePayslipPdfAsync(id);
       if (pdfBytes == null) return ResultUtils.Fail("PAYSLIP_NOT_FOUND", $"Payslip PDF not found for payroll id '{id}'.", 404);
@@ -120,7 +120,7 @@ namespace Employee.API.Endpoints.Payroll
       );
     }
 
-    /// <summary>NEW-7: Annual PIT tax report — aggregates all payroll records for a given year.</summary>
+    /// <summary>NEW-7: Annual PIT tax report ï¿½ aggregates all payroll records for a given year.</summary>
     public static async Task<IResult> GetTaxReport(int year, IPayrollService service)
     {
       if (year < 2020 || year > DateTime.UtcNow.Year + 1)
@@ -128,6 +128,12 @@ namespace Employee.API.Endpoints.Payroll
 
       var report = await service.GetAnnualTaxReportAsync(year);
       return ResultUtils.Success(report, $"Annual PIT tax report for {year} generated successfully.");
+    }
+    /// <summary>GET /api/payrolls/employee/{employeeId} â€” Admin/HR xem l?ch s? luong c?a m?t nhï¿½n viï¿½n.</summary>
+    public static async Task<IResult> GetByEmployeeId(string employeeId, IPayrollService service)
+    {
+      var list = await service.GetByEmployeeIdAsync(employeeId);
+      return ResultUtils.Success(list);
     }
   }
 }
