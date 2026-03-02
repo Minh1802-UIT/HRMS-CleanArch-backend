@@ -20,14 +20,17 @@ namespace Employee.Application.Features.Organization.Dtos
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;
+    public string? ManagerId { get; set; }
     public string? ManagerName { get; set; }
+    public string? ManagerCode { get; set; }
+    public int EmployeeCount { get; set; }
     public List<DepartmentNodeDto> Children { get; set; } = new();
   }
 
   // 2. CREATE DTO (Input)
   public class CreateDepartmentDto
   {
-    // Regex: Ch? cho phép ch?, s?, g?ch ngang, g?ch du?i
+    // Regex: Ch? cho phï¿½p ch?, s?, g?ch ngang, g?ch du?i
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
@@ -42,7 +45,7 @@ namespace Employee.Application.Features.Organization.Dtos
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
 
-    // Code thu?ng không cho s?a, n?u s?a thì dùng validate tuong t? Create
+    // Code thu?ng khï¿½ng cho s?a, n?u s?a thï¿½ dï¿½ng validate tuong t? Create
     // public string Code { get; set; } = string.Empty; 
     public string? Description { get; set; }
 

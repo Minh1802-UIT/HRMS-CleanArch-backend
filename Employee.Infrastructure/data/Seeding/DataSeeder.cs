@@ -260,12 +260,17 @@ namespace Employee.Infrastructure.data.Seeding
       hrMgr.SetParent(chro.Id);
       hrMgr.UpdateSalaryRange(new SalaryRange { Min = 30000000, Max = 50000000 });
 
+      // Under CFO
+      var acctMgr = new Position("Accounting Manager", "ACCT-MGR", finId);
+      acctMgr.SetParent(cfo.Id);
+      acctMgr.UpdateSalaryRange(new SalaryRange { Min = 30000000, Max = 55000000 });
+
       // Under CCO
       var salesMgr = new Position("Sales Manager", "SALE-MGR", salesId);
       salesMgr.SetParent(cco.Id);
       salesMgr.UpdateSalaryRange(new SalaryRange { Min = 30000000, Max = 60000000 });
 
-      var supMgr = new Position("Support Manager", "SUP-MGR", supId);
+      var supMgr = new Position("Customer Support Manager", "CSUP-MGR", supId);
       supMgr.SetParent(cco.Id);
       supMgr.UpdateSalaryRange(new SalaryRange { Min = 25000000, Max = 45000000 });
 
@@ -278,6 +283,11 @@ namespace Employee.Infrastructure.data.Seeding
       prodMgr.SetParent(cpo.Id);
       prodMgr.UpdateSalaryRange(new SalaryRange { Min = 35000000, Max = 65000000 });
 
+      var designMgr = new Position("Design Manager", "DES-MGR", designId);
+      designMgr.SetParent(cpo.Id);
+      designMgr.UpdateSalaryRange(new SalaryRange { Min = 30000000, Max = 55000000 });
+
+      await posRepo.CreateAsync(acctMgr);
       await posRepo.CreateAsync(engMgr);
       await posRepo.CreateAsync(qaMgr);
       await posRepo.CreateAsync(hrMgr);
@@ -285,6 +295,7 @@ namespace Employee.Infrastructure.data.Seeding
       await posRepo.CreateAsync(supMgr);
       await posRepo.CreateAsync(logMgr);
       await posRepo.CreateAsync(prodMgr);
+      await posRepo.CreateAsync(designMgr);
 
       // ── Level 4: Team Leads ───────────────────────────────────────────────
       var techLead = new Position("Tech Lead", "TECH-LEAD", softId);
@@ -297,6 +308,11 @@ namespace Employee.Infrastructure.data.Seeding
       qaLead.UpdateSalaryRange(new SalaryRange { Min = 25000000, Max = 45000000 });
       await posRepo.CreateAsync(qaLead);
 
+      var salesLead = new Position("Sales Team Lead", "SALE-LEAD", salesId);
+      salesLead.SetParent(salesMgr.Id);
+      salesLead.UpdateSalaryRange(new SalaryRange { Min = 20000000, Max = 35000000 });
+      await posRepo.CreateAsync(salesLead);
+
       // ── Level 5: Individual Contributors ─────────────────────────────────
       var senDev = new Position("Senior Developer", "SEN-DEV", softId);
       senDev.SetParent(techLead.Id);
@@ -308,6 +324,11 @@ namespace Employee.Infrastructure.data.Seeding
       junDev.UpdateSalaryRange(new SalaryRange { Min = 10000000, Max = 20000000 });
       await posRepo.CreateAsync(junDev);
 
+      var intern = new Position("Intern", "INTERN", softId);
+      intern.SetParent(techLead.Id);
+      intern.UpdateSalaryRange(new SalaryRange { Min = 3000000, Max = 7000000 });
+      await posRepo.CreateAsync(intern);
+
       var qaEng = new Position("QA Engineer", "QA-ENG", qaId);
       qaEng.SetParent(qaLead.Id);
       qaEng.UpdateSalaryRange(new SalaryRange { Min = 15000000, Max = 25000000 });
@@ -318,21 +339,25 @@ namespace Employee.Infrastructure.data.Seeding
       hrSpec.UpdateSalaryRange(new SalaryRange { Min = 12000000, Max = 20000000 });
       await posRepo.CreateAsync(hrSpec);
 
+      // Sales Executive → Sales Team Lead (not directly to Sales Manager)
       var saleExec = new Position("Sales Executive", "SALE-EXEC", salesId);
-      saleExec.SetParent(salesMgr.Id);
+      saleExec.SetParent(salesLead.Id);
       saleExec.UpdateSalaryRange(new SalaryRange { Min = 10000000, Max = 30000000 });
       await posRepo.CreateAsync(saleExec);
 
+      // Accountant → Accounting Manager (not directly to CFO)
       var acc = new Position("Accountant", "ACC", finId);
-      acc.SetParent(cfo.Id);
+      acc.SetParent(acctMgr.Id);
       acc.UpdateSalaryRange(new SalaryRange { Min = 15000000, Max = 25000000 });
       await posRepo.CreateAsync(acc);
 
+      // UI/UX Designer → Design Manager (not directly to Product Manager)
       var uxDes = new Position("UI/UX Designer", "UX-DES", designId);
-      uxDes.SetParent(prodMgr.Id);
+      uxDes.SetParent(designMgr.Id);
       uxDes.UpdateSalaryRange(new SalaryRange { Min = 18000000, Max = 35000000 });
       await posRepo.CreateAsync(uxDes);
 
+      // Customer Service Agent → Customer Support Manager
       var csStaff = new Position("Customer Service Agent", "CS-STAFF", csId);
       csStaff.SetParent(supMgr.Id);
       csStaff.UpdateSalaryRange(new SalaryRange { Min = 8000000, Max = 15000000 });
@@ -449,16 +474,31 @@ namespace Employee.Infrastructure.data.Seeding
       // Map departments to their respective C-Level manager for proper hierarchy
       var deptManagerMap = new Dictionary<string, string>
       {
+        // Finance
         ["FIN"] = cfoEmp.Id,
         ["ACCT"] = cfoEmp.Id,
+        // HR
         ["HR"] = chroEmp.Id,
+        ["REC"] = chroEmp.Id,
+        ["OPS"] = chroEmp.Id,
+        // Technology
+        ["TECH"] = ctoEmp.Id,
+        ["SOFT"] = engMgrEmp.Id,
+        ["INFRA"] = ctoEmp.Id,
+        ["QA"] = qaMgrEmp.Id,
+        // Commercial / Sales
         ["SALES"] = ccoEmp.Id,
-        ["SUPP"] = ccoEmp.Id,
+        ["B2B"] = ccoEmp.Id,
+        ["MKT"] = ccoEmp.Id,
+        // Support
+        ["SUP"] = ccoEmp.Id,
+        ["CS"] = ccoEmp.Id,
+        // Logistics
         ["LOG"] = ccoEmp.Id,
+        ["WH"] = ccoEmp.Id,
+        // Product
         ["PROD"] = cpoEmp.Id,
         ["DESIGN"] = cpoEmp.Id,
-        ["QA"] = qaMgrEmp.Id,
-        ["MKT"] = ccoEmp.Id,
       };
 
       for (int i = 0; i < 75; i++)

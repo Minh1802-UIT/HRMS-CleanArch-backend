@@ -31,10 +31,13 @@ namespace Employee.Application.Features.Organization.Queries.GetDepartmentTree
       var managerIds = allDepts.Select(d => d.ManagerId).Where(id => !string.IsNullOrEmpty(id)).Cast<string>().Distinct().ToList();
       var managerNames = await employeeRepo.GetNamesByIdsAsync(managerIds, cancellationToken);
 
+      // Fetch employee counts per department
+      var empCounts = await employeeRepo.GetDepartmentDistributionAsync(cancellationToken);
+
       var result = new List<DepartmentNodeDto>();
       foreach (var root in rootDepts)
       {
-        result.Add(BuildNode(root, allDepts, managerNames));
+        result.Add(BuildNode(root, allDepts, managerNames, empCounts));
       }
 
       // 3. Save to Cache (1 hour)
@@ -43,20 +46,25 @@ namespace Employee.Application.Features.Organization.Queries.GetDepartmentTree
       return result;
     }
 
-    private DepartmentNodeDto BuildNode(Department dept, List<Department> allDepts, Dictionary<string, (string Name, string Code)> managerNames)
+    private DepartmentNodeDto BuildNode(Department dept, List<Department> allDepts, Dictionary<string, (string Name, string Code)> managerNames, Dictionary<string, int> empCounts)
     {
+      (string Name, string Code) mgrInfo = default;
+      var hasManager = !string.IsNullOrEmpty(dept.ManagerId) && managerNames.TryGetValue(dept.ManagerId, out mgrInfo);
       var node = new DepartmentNodeDto
       {
         Id = dept.Id,
         Name = dept.Name,
         Code = dept.Code,
-        ManagerName = !string.IsNullOrEmpty(dept.ManagerId) && managerNames.TryGetValue(dept.ManagerId, out var info) ? info.Name : null
+        ManagerId = dept.ManagerId,
+        ManagerName = hasManager ? mgrInfo.Name : null,
+        ManagerCode = hasManager ? mgrInfo.Code : null,
+        EmployeeCount = empCounts.TryGetValue(dept.Id, out var cnt) ? cnt : 0
       };
 
       var children = allDepts.Where(x => x.ParentId == dept.Id).ToList();
       foreach (var child in children)
       {
-        node.Children.Add(BuildNode(child, allDepts, managerNames));
+        node.Children.Add(BuildNode(child, allDepts, managerNames, empCounts));
       }
 
       return node;
