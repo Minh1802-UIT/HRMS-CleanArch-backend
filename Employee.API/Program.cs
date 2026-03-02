@@ -26,6 +26,7 @@ using System.Threading.RateLimiting;
 
 using System.Security.Claims;
 using Serilog;
+using Microsoft.AspNetCore.HttpOverrides;
 
 MongoClassMapConfig.Configure();
 
@@ -220,16 +221,31 @@ builder.Services.AddRateLimiter(options =>
   static string? UserId(HttpContext ctx) =>
       ctx.User?.FindFirstValue(ClaimTypes.NameIdentifier);
 
-  // ── 1. AUTH ─────────────────────────────────────────────────────────────
-  // Public endpoints (login, refresh-token): always partition by IP.
-  // 5 attempts / minute / IP  — blocks password-spray / credential-stuffing.
+  // ── 1a. AUTH — login / register ─────────────────────────────────────────
+  // Password-spray protection: 10 attempts / minute / real-client-IP.
+  // Raised from 5 → 10 because on Render.com the ForwardedHeaders middleware
+  // now supplies the genuine client IP so the bucket is per-user, not global.
   options.AddPolicy("auth", ctx =>
       RateLimitPartition.GetFixedWindowLimiter(
           partitionKey: $"auth:ip:{Ip(ctx)}",
           factory: _ => new FixedWindowRateLimiterOptions
           {
-            PermitLimit = isTesting ? 1000 : 5,
+            PermitLimit = isTesting ? 1000 : 10,
             Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0
+          }));
+
+  // ── 1b. REFRESH-TOKEN ────────────────────────────────────────────────────
+  // Silent refresh runs automatically in the background (e.g. after F5).
+  // It must NOT be throttled as aggressively as login — each page load may
+  // legitimately trigger one refresh call.  30 calls / 5 minutes / IP.
+  options.AddPolicy("refresh", ctx =>
+      RateLimitPartition.GetFixedWindowLimiter(
+          partitionKey: $"refresh:ip:{Ip(ctx)}",
+          factory: _ => new FixedWindowRateLimiterOptions
+          {
+            PermitLimit = isTesting ? 1000 : 30,
+            Window = TimeSpan.FromMinutes(5),
             QueueLimit = 0
           }));
 
@@ -361,11 +377,26 @@ builder.Services.Configure<GzipCompressionProviderOptions>(options =>
   options.Level = CompressionLevel.SmallestSize;
 });
 
+// Trust the reverse proxy headers on Render.com so RemoteIpAddress = real client IP
+// (without this, every request looks like it comes from the same load-balancer IP
+// and all users share ONE rate-limit bucket, causing false 429s)
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+  options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+  // Clear the default whitelist so we trust any upstream proxy Render.com may use
+  options.KnownNetworks.Clear();
+  options.KnownProxies.Clear();
+});
+
 var app = builder.Build();
 
 // =========================================================================
 // 2. MIDDLEWARE PIPELINE
 // =========================================================================
+
+// MUST be the very first middleware so RemoteIpAddress is already patched
+// before the rate limiter (and everything else) reads it.
+app.UseForwardedHeaders();
 
 app.UseExceptionHandler();
 

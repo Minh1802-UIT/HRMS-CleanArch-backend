@@ -218,7 +218,7 @@ namespace Employee.Infrastructure.data.Seeding
       ceo.UpdateSalaryRange(new SalaryRange { Min = 80000000, Max = 150000000 });
       await posRepo.CreateAsync(ceo);
 
-      // Directors
+      // ── Level 2: Direct reports to CEO ───────────────────────────────────
       var cto = new Position("Chief Technology Officer", "CTO", techId);
       cto.SetParent(ceo.Id);
       cto.UpdateSalaryRange(new SalaryRange { Min = 60000000, Max = 100000000 });
@@ -231,54 +231,73 @@ namespace Employee.Infrastructure.data.Seeding
       chro.SetParent(ceo.Id);
       chro.UpdateSalaryRange(new SalaryRange { Min = 50000000, Max = 90000000 });
 
+      var cco = new Position("Chief Commercial Officer", "CCO", salesId);
+      cco.SetParent(ceo.Id);
+      cco.UpdateSalaryRange(new SalaryRange { Min = 60000000, Max = 100000000 });
+
+      var cpo = new Position("Chief Product Officer", "CPO", prodId);
+      cpo.SetParent(ceo.Id);
+      cpo.UpdateSalaryRange(new SalaryRange { Min = 60000000, Max = 100000000 });
+
       await posRepo.CreateAsync(cto);
       await posRepo.CreateAsync(cfo);
       await posRepo.CreateAsync(chro);
+      await posRepo.CreateAsync(cco);
+      await posRepo.CreateAsync(cpo);
 
-      // Managers
+      // ── Level 3: Functional Managers ─────────────────────────────────────
+      // Under CTO
       var engMgr = new Position("Engineering Manager", "ENG-MGR", softId);
       engMgr.SetParent(cto.Id);
       engMgr.UpdateSalaryRange(new SalaryRange { Min = 40000000, Max = 70000000 });
 
+      var qaMgr = new Position("QA Manager", "QA-MGR", qaId);
+      qaMgr.SetParent(cto.Id);
+      qaMgr.UpdateSalaryRange(new SalaryRange { Min = 35000000, Max = 60000000 });
+
+      // Under CHRO
       var hrMgr = new Position("HR Manager", "HR-MGR", hrId);
       hrMgr.SetParent(chro.Id);
       hrMgr.UpdateSalaryRange(new SalaryRange { Min = 30000000, Max = 50000000 });
 
+      // Under CCO
       var salesMgr = new Position("Sales Manager", "SALE-MGR", salesId);
-      salesMgr.SetParent(ceo.Id);
+      salesMgr.SetParent(cco.Id);
       salesMgr.UpdateSalaryRange(new SalaryRange { Min = 30000000, Max = 60000000 });
 
-      var prodMgr = new Position("Product Manager", "PROD-MGR", prodId);
-      prodMgr.SetParent(ceo.Id);
-      prodMgr.UpdateSalaryRange(new SalaryRange { Min = 35000000, Max = 65000000 });
-
       var supMgr = new Position("Support Manager", "SUP-MGR", supId);
-      supMgr.SetParent(ceo.Id);
+      supMgr.SetParent(cco.Id);
       supMgr.UpdateSalaryRange(new SalaryRange { Min = 25000000, Max = 45000000 });
 
       var logMgr = new Position("Logistics Manager", "LOG-MGR", logId);
-      logMgr.SetParent(ceo.Id);
+      logMgr.SetParent(cco.Id);
       logMgr.UpdateSalaryRange(new SalaryRange { Min = 25000000, Max = 45000000 });
 
+      // Under CPO
+      var prodMgr = new Position("Product Manager", "PROD-MGR", prodId);
+      prodMgr.SetParent(cpo.Id);
+      prodMgr.UpdateSalaryRange(new SalaryRange { Min = 35000000, Max = 65000000 });
+
       await posRepo.CreateAsync(engMgr);
+      await posRepo.CreateAsync(qaMgr);
       await posRepo.CreateAsync(hrMgr);
       await posRepo.CreateAsync(salesMgr);
-      await posRepo.CreateAsync(prodMgr);
       await posRepo.CreateAsync(supMgr);
       await posRepo.CreateAsync(logMgr);
+      await posRepo.CreateAsync(prodMgr);
 
-      // Team Leads
+      // ── Level 4: Team Leads ───────────────────────────────────────────────
       var techLead = new Position("Tech Lead", "TECH-LEAD", softId);
       techLead.SetParent(engMgr.Id);
       techLead.UpdateSalaryRange(new SalaryRange { Min = 30000000, Max = 50000000 });
       await posRepo.CreateAsync(techLead);
 
       var qaLead = new Position("QA Lead", "QA-LEAD", qaId);
-      qaLead.SetParent(engMgr.Id);
+      qaLead.SetParent(qaMgr.Id);
       qaLead.UpdateSalaryRange(new SalaryRange { Min = 25000000, Max = 45000000 });
       await posRepo.CreateAsync(qaLead);
 
-      // Staff - Tech
+      // ── Level 5: Individual Contributors ─────────────────────────────────
       var senDev = new Position("Senior Developer", "SEN-DEV", softId);
       senDev.SetParent(techLead.Id);
       senDev.UpdateSalaryRange(new SalaryRange { Min = 25000000, Max = 45000000 });
@@ -294,7 +313,6 @@ namespace Employee.Infrastructure.data.Seeding
       qaEng.UpdateSalaryRange(new SalaryRange { Min = 15000000, Max = 25000000 });
       await posRepo.CreateAsync(qaEng);
 
-      // Staff - Other
       var hrSpec = new Position("HR Specialist", "HR-SPEC", hrId);
       hrSpec.SetParent(hrMgr.Id);
       hrSpec.UpdateSalaryRange(new SalaryRange { Min = 12000000, Max = 20000000 });
@@ -325,13 +343,18 @@ namespace Employee.Infrastructure.data.Seeding
       whWorker.UpdateSalaryRange(new SalaryRange { Min = 7000000, Max = 12000000 });
       await posRepo.CreateAsync(whWorker);
 
-      Console.WriteLine("? Created Hierarchical Positions.");
+      Console.WriteLine("✅ Created Hierarchical Positions.");
       var positions = await posRepo.GetAllAsync();
 
-      Console.WriteLine("?? Looking up specialized positions...");
+      Console.WriteLine("🔍 Looking up specialized positions...");
       var ceoPos = positions.First(p => p.Code == "CEO");
       var ctoPos = positions.First(p => p.Code == "CTO");
+      var cfoPos = positions.First(p => p.Code == "CFO");
+      var chroPos = positions.First(p => p.Code == "CHRO");
+      var ccoPos = positions.First(p => p.Code == "CCO");
+      var cpoPos = positions.First(p => p.Code == "CPO");
       var engMgrPos = positions.First(p => p.Code == "ENG-MGR");
+      var qaMgrPos = positions.First(p => p.Code == "QA-MGR");
       var techLeadPos = positions.First(p => p.Code == "TECH-LEAD");
       var senDevPos = positions.First(p => p.Code == "SEN-DEV");
       var junDevPos = positions.First(p => p.Code == "JUN-DEV");
@@ -358,17 +381,42 @@ namespace Employee.Infrastructure.data.Seeding
         await userManager.UpdateAsync(adminUserObj);
       }
 
-      // 5.2 Create CTO (Reports to CEO)
+      // 5.2 Create Level-2 C-Suite (report to CEO)
       var ctoEmp = CreateEmployee("CTO001", "Chief Technology Officer", "cto@hrm.com", depts.First(d => d.Code == "TECH").Id, ctoPos.Id, ceoEmp.Id, new DateTime(2020, 2, 1));
       await empRepo.CreateAsync(ctoEmp);
       generatedEmps.Add(ctoEmp);
       await CreateUserForEmployee(userManager, ctoEmp.Email, defaultPassword, "Manager", ctoEmp.Id);
 
-      // 5.3 Create Engineering Manager (Reports to CTO)
+      var cfoEmp = CreateEmployee("CFO001", "Chief Financial Officer", "cfo@hrm.com", depts.First(d => d.Code == "FIN").Id, cfoPos.Id, ceoEmp.Id, new DateTime(2020, 3, 1));
+      await empRepo.CreateAsync(cfoEmp);
+      generatedEmps.Add(cfoEmp);
+      await CreateUserForEmployee(userManager, cfoEmp.Email, defaultPassword, "Manager", cfoEmp.Id);
+
+      var chroEmp = CreateEmployee("CHRO001", "Chief HR Officer", "chro@hrm.com", depts.First(d => d.Code == "HR").Id, chroPos.Id, ceoEmp.Id, new DateTime(2020, 4, 1));
+      await empRepo.CreateAsync(chroEmp);
+      generatedEmps.Add(chroEmp);
+      await CreateUserForEmployee(userManager, chroEmp.Email, defaultPassword, "HR", chroEmp.Id);
+
+      var ccoEmp = CreateEmployee("CCO001", "Chief Commercial Officer", "cco@hrm.com", depts.First(d => d.Code == "SALES").Id, ccoPos.Id, ceoEmp.Id, new DateTime(2020, 5, 1));
+      await empRepo.CreateAsync(ccoEmp);
+      generatedEmps.Add(ccoEmp);
+      await CreateUserForEmployee(userManager, ccoEmp.Email, defaultPassword, "Manager", ccoEmp.Id);
+
+      var cpoEmp = CreateEmployee("CPO001", "Chief Product Officer", "cpo@hrm.com", depts.First(d => d.Code == "PROD").Id, cpoPos.Id, ceoEmp.Id, new DateTime(2020, 6, 1));
+      await empRepo.CreateAsync(cpoEmp);
+      generatedEmps.Add(cpoEmp);
+      await CreateUserForEmployee(userManager, cpoEmp.Email, defaultPassword, "Manager", cpoEmp.Id);
+
+      // 5.3 Create Level-3 Functional Managers
       var engMgrEmp = CreateEmployee("MGR001", "Engineering Manager", "eng.mgr@hrm.com", depts.First(d => d.Code == "SOFT").Id, engMgrPos.Id, ctoEmp.Id, new DateTime(2021, 1, 15));
       await empRepo.CreateAsync(engMgrEmp);
       generatedEmps.Add(engMgrEmp);
       await CreateUserForEmployee(userManager, engMgrEmp.Email, defaultPassword, "Manager", engMgrEmp.Id);
+
+      var qaMgrEmp = CreateEmployee("MGR002", "QA Manager", "qa.mgr@hrm.com", depts.First(d => d.Code == "QA").Id, qaMgrPos.Id, ctoEmp.Id, new DateTime(2021, 3, 1));
+      await empRepo.CreateAsync(qaMgrEmp);
+      generatedEmps.Add(qaMgrEmp);
+      await CreateUserForEmployee(userManager, qaMgrEmp.Email, defaultPassword, "Manager", qaMgrEmp.Id);
 
       // 5.4 Create Tech Leads (Report to Eng Mgr)
       for (int i = 1; i <= 5; i++)
@@ -398,14 +446,30 @@ namespace Employee.Infrastructure.data.Seeding
       var otherDepts = depts.Where(d => d.Code != "HQ" && d.Code != "TECH" && d.Code != "SOFT").ToList();
       var otherPositions = positions.Where(p => p.Code != "CEO" && p.Code != "CTO" && !p.Code.Contains("DEV")).ToList();
 
+      // Map departments to their respective C-Level manager for proper hierarchy
+      var deptManagerMap = new Dictionary<string, string>
+      {
+        ["FIN"] = cfoEmp.Id,
+        ["ACCT"] = cfoEmp.Id,
+        ["HR"] = chroEmp.Id,
+        ["SALES"] = ccoEmp.Id,
+        ["SUPP"] = ccoEmp.Id,
+        ["LOG"] = ccoEmp.Id,
+        ["PROD"] = cpoEmp.Id,
+        ["DESIGN"] = cpoEmp.Id,
+        ["QA"] = qaMgrEmp.Id,
+        ["MKT"] = ccoEmp.Id,
+      };
+
       for (int i = 0; i < 75; i++)
       {
         var dept = otherDepts[random.Next(otherDepts.Count)];
         var pos = otherPositions[random.Next(otherPositions.Count)];
         var code = $"STAFF{i:000}";
         var name = GetRandomName(firstNames, midNames, lastNames);
+        var mgr = deptManagerMap.TryGetValue(dept.Code, out var mgrId) ? mgrId : ceoEmp.Id;
 
-        var staff = CreateEmployee(code, name, $"staff{i}@hrm.com", dept.Id, pos.Id, ceoEmp.Id, DateTime.UtcNow.AddMonths(-random.Next(1, 48)));
+        var staff = CreateEmployee(code, name, $"staff{i}@hrm.com", dept.Id, pos.Id, mgr, DateTime.UtcNow.AddMonths(-random.Next(1, 48)));
 
         await empRepo.CreateAsync(staff);
         generatedEmps.Add(staff);

@@ -65,18 +65,24 @@ namespace Employee.API.Endpoints.Auth
                // ---------------------------
                // 3. NEW-2: REFRESH TOKEN (Public) — uses httpOnly cookie for refresh token
                // ---------------------------
+               // Override group-level "auth" limiter with the more generous "refresh" policy.
+               // Silent refresh is called automatically on page reload — blocking it causes
+               // false logouts when the same IP recently called login or other auth endpoints.
                group.MapPost("/refresh-token", AuthHandlers.RefreshToken)
            .AddEndpointFilter<ValidationFilter<RefreshAccessTokenDto>>()
-           .AllowAnonymous();
+           .AllowAnonymous()
+           .RequireRateLimiting("refresh");
 
-               // LOGOUT — clears the httpOnly refresh token cookie
+               // LOGOUT — clears the httpOnly refresh token cookie; use refresh policy
+               // so a rapid logout after forced-logout loop doesn't get double-429'd.
                group.MapPost("/logout", AuthHandlers.Logout)
-                    .AllowAnonymous();
+                    .AllowAnonymous()
+                    .RequireRateLimiting("refresh");
 
-      // ---------------------------
-      // 4. NEW-3: FORGOT / RESET PASSWORD (Public)
-      // ---------------------------
-      group.MapPost("/forgot-password", AuthHandlers.ForgotPassword)
+               // ---------------------------
+               // 4. NEW-3: FORGOT / RESET PASSWORD (Public)
+               // ---------------------------
+               group.MapPost("/forgot-password", AuthHandlers.ForgotPassword)
            .AddEndpointFilter<ValidationFilter<ForgotPasswordDto>>()
            .AllowAnonymous();
 
