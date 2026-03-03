@@ -1,0 +1,23 @@
+{
+  "inputs": [
+    {
+      "id": "mongo-password",
+      "type": "promptString",
+      "description": "MongoDB Atlas password for nguyenvanminh180220_db_user",
+      "password": true
+    }
+  ],
+  "servers": {
+    "MongoDB": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "mongodb-mcp-server",
+        "--connectionString",
+        "mongodb+srv://nguyenvanminh180220_db_user:${input:mongo-password}@cluster0.kfpckor.mongodb.net/",
+        "--readOnly"
+      ]
+    }
+  }
+}
