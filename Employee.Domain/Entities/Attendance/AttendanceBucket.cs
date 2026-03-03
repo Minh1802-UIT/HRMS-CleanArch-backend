@@ -22,8 +22,10 @@ namespace Employee.Domain.Entities.Attendance
     public int TotalLate { get; internal set; }
     public double TotalOvertime { get; internal set; }
 
-    // Private constructor for MongoDB
-    private AttendanceBucket() { }
+    // Parameterless constructor used by MongoDB deserialization.
+    // Must initialize _dailyLogs so that DailyLogs property never returns null
+    // even when MongoDB uses GetUninitializedObject() to create the instance.
+    private AttendanceBucket() { _dailyLogs = new List<DailyLog>(); }
 
     public AttendanceBucket(string employeeId, string month)
     {

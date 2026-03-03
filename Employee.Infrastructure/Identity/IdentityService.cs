@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Employee.Domain.Interfaces.Repositories;
@@ -347,11 +348,13 @@ namespace Employee.Infrastructure.Identity
                 if (principal == null)
                     throw new UnauthorizedAccessException("Access token không hợp lệ.");
 
-                var username = principal.Identity?.Name;
-                if (string.IsNullOrEmpty(username))
+                // ClaimTypes.Name stores the fullName, NOT the login username.
+                // Use NameIdentifier (userId) for a reliable lookup.
+                var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
+                if (string.IsNullOrEmpty(userId))
                     throw new UnauthorizedAccessException("Không tìm thấy thông tin user từ token.");
 
-                user = await _userManager.FindByNameAsync(username)
+                user = await _userManager.FindByIdAsync(userId)
                        ?? throw new NotFoundException("User không tồn tại.");
             }
 

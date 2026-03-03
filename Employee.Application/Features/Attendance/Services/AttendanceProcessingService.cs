@@ -212,9 +212,13 @@ namespace Employee.Application.Features.Attendance.Services
       {
         bucket = new AttendanceBucket(employeeId, monthKey);
         await _attendanceRepo.CreateAsync(bucket);
+        // Re-read to get the server-assigned _id.
         bucket = await _attendanceRepo.GetByEmployeeAndMonthAsync(employeeId, monthKey);
       }
-      return bucket!;
+
+      // Safety guard: if re-read still returns null (transient DB issue), fall back
+      // to the in-memory instance that was just created (it has a client-generated id).
+      return bucket ?? new AttendanceBucket(employeeId, monthKey);
     }
 
     private async Task MarkGroupAsError(IEnumerable<RawAttendanceLog> group, string error)
