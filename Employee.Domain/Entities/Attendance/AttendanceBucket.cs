@@ -14,8 +14,8 @@ namespace Employee.Domain.Entities.Attendance
     public string Month { get; private set; } = string.Empty;
 
     // List of daily logs for the month
-    private readonly List<DailyLog> _dailyLogs = new();
-    public IReadOnlyCollection<DailyLog> DailyLogs => _dailyLogs.AsReadOnly();
+    private List<DailyLog> _dailyLogs = new();
+    public IReadOnlyCollection<DailyLog> DailyLogs => (_dailyLogs ??= new List<DailyLog>()).AsReadOnly();
 
     // Summary totals
     public int TotalPresent { get; private set; }
@@ -36,6 +36,7 @@ namespace Employee.Domain.Entities.Attendance
 
     public void AddOrUpdateDailyLog(DailyLog log)
     {
+      _dailyLogs ??= new List<DailyLog>();
       var existing = _dailyLogs.FirstOrDefault(x => x.Date.Date == log.Date.Date);
       if (existing != null)
       {
@@ -47,13 +48,14 @@ namespace Employee.Domain.Entities.Attendance
 
     public void RecalculateTotals()
     {
-      TotalPresent = _dailyLogs.Count(x =>
+      var logs = _dailyLogs ?? Enumerable.Empty<DailyLog>();
+      TotalPresent = logs.Count(x =>
         x.Status == AttendanceStatus.Present ||
         x.Status == AttendanceStatus.Late ||
         x.Status == AttendanceStatus.EarlyLeave);
 
-      TotalLate = _dailyLogs.Count(x => x.Status == AttendanceStatus.Late);
-      TotalOvertime = _dailyLogs.Sum(x => x.OvertimeHours);
+      TotalLate = logs.Count(x => x.Status == AttendanceStatus.Late);
+      TotalOvertime = logs.Sum(x => x.OvertimeHours);
     }
   }
 }
