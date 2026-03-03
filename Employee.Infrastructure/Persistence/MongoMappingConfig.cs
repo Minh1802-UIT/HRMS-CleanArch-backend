@@ -111,6 +111,8 @@ namespace Employee.Infrastructure.Persistence
         cm.MapCreator(b => new AttendanceBucket(b.EmployeeId, b.Month));
       });
 
+      // RawAttendanceLog: internal setters allow MongoDB AutoMap to set all
+      // fields correctly during deserialization (including IsProcessed, ProcessingError).
       BsonClassMap.RegisterClassMap<RawAttendanceLog>(cm => cm.AutoMap());
 
       // Common

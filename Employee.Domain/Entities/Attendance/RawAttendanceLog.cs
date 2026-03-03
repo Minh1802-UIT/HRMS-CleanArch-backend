@@ -6,25 +6,25 @@ namespace Employee.Domain.Entities.Attendance
 {
     public class RawAttendanceLog : BaseEntity
     {
-    public string EmployeeId { get; private set; } = string.Empty;
-    public DateTime Timestamp { get; private set; }
+    public string EmployeeId { get; internal set; } = string.Empty;
+    public DateTime Timestamp { get; internal set; }
 
     // Type: CheckIn, CheckOut, Biometric
-    public RawLogType Type { get; private set; } = RawLogType.Biometric;
+    public RawLogType Type { get; internal set; } = RawLogType.Biometric;
 
-    public string DeviceId { get; private set; } = string.Empty;
+    public string DeviceId { get; internal set; } = string.Empty;
 
     // Processing status: True if processed by background job and added to AttendanceBucket
-    public bool IsProcessed { get; private set; } = false;
+    public bool IsProcessed { get; internal set; } = false;
 
-    public string? ProcessingError { get; private set; } // Error note if processing failed
+    public string? ProcessingError { get; internal set; } // Error note if processing failed
 
     // Optional: base64 selfie photo captured during check-in
-    public string? PhotoBase64 { get; private set; }
+    public string? PhotoBase64 { get; internal set; }
 
     // GPS coordinates captured on device
-    public double? Latitude { get; private set; }
-    public double? Longitude { get; private set; }
+    public double? Latitude { get; internal set; }
+    public double? Longitude { get; internal set; }
 
     // Hidden constructor for MongoDB
     private RawAttendanceLog() { }

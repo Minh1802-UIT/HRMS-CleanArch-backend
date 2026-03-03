@@ -141,18 +141,33 @@ namespace Employee.Infrastructure.Repositories.Attendance
         DateTime startUtc, DateTime endUtc,
         CancellationToken cancellationToken = default)
     {
-      var filter = Builders<RawAttendanceLog>.Filter.And(
-          Builders<RawAttendanceLog>.Filter.Gte(x => x.Timestamp, startUtc),
-          Builders<RawAttendanceLog>.Filter.Lt(x => x.Timestamp, endUtc),
-          Builders<RawAttendanceLog>.Filter.Eq(x => x.IsProcessed, true));
+      // Reset ALL logs in window regardless of current state.
+      // Use raw BSON filter to guarantee correct field name regardless of class-map conventions.
+      var filter = new MongoDB.Bson.BsonDocument {
+        { "Timestamp", new MongoDB.Bson.BsonDocument {
+            { "$gte", new MongoDB.Bson.BsonDateTime(startUtc) },
+            { "$lt",  new MongoDB.Bson.BsonDateTime(endUtc) }
+        }}
+      };
 
       var update = Builders<RawAttendanceLog>.Update
           .Set(x => x.IsProcessed, false)
           .Set(x => x.ProcessingError, (string?)null)
-          .Set(x => x.UpdatedAt, DateTime.UtcNow);
+          .CurrentDate("UpdatedAt");
 
       var result = await _collection.UpdateManyAsync(filter, update, cancellationToken: cancellationToken);
       return result.ModifiedCount;
+    }
+
+    public async Task<long> CountInWindowAsync(DateTime startUtc, DateTime endUtc, CancellationToken cancellationToken = default)
+    {
+      var filter = new MongoDB.Bson.BsonDocument {
+        { "Timestamp", new MongoDB.Bson.BsonDocument {
+            { "$gte", new MongoDB.Bson.BsonDateTime(startUtc) },
+            { "$lt",  new MongoDB.Bson.BsonDateTime(endUtc) }
+        }}
+      };
+      return await _collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
     }
   }
 }

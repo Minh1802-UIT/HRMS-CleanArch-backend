@@ -8,19 +8,19 @@ namespace Employee.Domain.Entities.Attendance
 {
   public class AttendanceBucket : BaseEntity
   {
-    public string EmployeeId { get; private set; } = string.Empty;
+    public string EmployeeId { get; internal set; } = string.Empty;
 
     // Month identifier: "01-2026", "02-2026"...
-    public string Month { get; private set; } = string.Empty;
+    public string Month { get; internal set; } = string.Empty;
 
     // List of daily logs for the month
     private List<DailyLog> _dailyLogs = new();
     public IReadOnlyCollection<DailyLog> DailyLogs => (_dailyLogs ??= new List<DailyLog>()).AsReadOnly();
 
     // Summary totals
-    public int TotalPresent { get; private set; }
-    public int TotalLate { get; private set; }
-    public double TotalOvertime { get; private set; }
+    public int TotalPresent { get; internal set; }
+    public int TotalLate { get; internal set; }
+    public double TotalOvertime { get; internal set; }
 
     // Private constructor for MongoDB
     private AttendanceBucket() { }

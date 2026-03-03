@@ -34,5 +34,8 @@ namespace Employee.Domain.Interfaces.Repositories
     /// for a UTC time window. Used by the admin force-reprocess endpoint to fix corrupted buckets.
     /// </summary>
     Task<long> ResetProcessingStatusAsync(DateTime startUtc, DateTime endUtc, CancellationToken cancellationToken = default);
+
+    /// <summary>Counts all documents in a UTC time window (no soft-delete filter).</summary>
+    Task<long> CountInWindowAsync(DateTime startUtc, DateTime endUtc, CancellationToken cancellationToken = default);
   }
 }

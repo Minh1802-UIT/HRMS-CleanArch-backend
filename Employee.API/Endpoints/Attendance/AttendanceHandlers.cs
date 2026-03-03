@@ -280,11 +280,11 @@ namespace Employee.API.Endpoints.Attendance
           ? DateTime.UtcNow + utcOffset
           : DateTime.ParseExact(month, "MM-yyyy", null);
 
-      // First day of the target month (local time midnight) -> UTC
+      // First day of the target month (local time midnight) -> UTC, Kind=Utc required for MongoDB filter
       var firstLocal = new DateTime(target.Year, target.Month, 1);
       var lastLocal = firstLocal.AddMonths(1);
-      var startUtc = firstLocal - utcOffset;
-      var endUtc = lastLocal - utcOffset;
+      var startUtc = DateTime.SpecifyKind(firstLocal - utcOffset, DateTimeKind.Utc);
+      var endUtc = DateTime.SpecifyKind(lastLocal - utcOffset, DateTimeKind.Utc);
 
       // 1. Reset all processed logs in this window back to unprocessed
       var resetCount = await rawRepo.ResetProcessingStatusAsync(startUtc, endUtc);
