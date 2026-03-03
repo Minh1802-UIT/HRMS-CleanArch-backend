@@ -12,13 +12,19 @@ namespace Employee.Domain.Interfaces.Repositories
     Task MarkAsProcessedAsync(string id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Batch update — replaces N individual UpdateOneAsync round-trips with a
+    /// Batch update ï¿½ replaces N individual UpdateOneAsync round-trips with a
     /// single BulkWriteAsync, reducing DB round-trips from N to 1.
     /// </summary>
     Task MarkManyAsProcessedAsync(IEnumerable<string> ids, CancellationToken cancellationToken = default);
 
     Task MarkAsErrorAsync(string id, string error, CancellationToken cancellationToken = default);
     Task<RawAttendanceLog?> GetLatestLogAsync(string employeeId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns all raw logs for a given employee within a UTC time window (inclusive start, exclusive end).
+    /// Used to determine today's check-in/check-out status.
+    /// </summary>
+    Task<List<RawAttendanceLog>> GetByDateRangeAsync(string employeeId, DateTime startUtc, DateTime endUtc, CancellationToken cancellationToken = default);
 
     /// <summary>Soft-deletes all raw logs for an employee (used during employee deletion cleanup).</summary>
     Task DeleteByEmployeeIdAsync(string employeeId, CancellationToken cancellationToken = default);

@@ -22,6 +22,7 @@ namespace Employee.API.Endpoints.Attendance
                     .RequireRateLimiting("checkin");   // shared bucket with check-in
 
                // 2. Xem công của mình
+               group.MapGet("/me/today-status", AttendanceHandlers.GetTodayStatus);
                group.MapGet("/me/range", AttendanceHandlers.GetMyRange);
                group.MapGet("/me/report", AttendanceHandlers.GetMyReport);
 

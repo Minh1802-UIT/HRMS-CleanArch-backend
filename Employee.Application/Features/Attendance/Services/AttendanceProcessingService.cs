@@ -7,6 +7,7 @@ using Employee.Domain.Entities.ValueObjects;
 using Employee.Domain.Enums;
 using System.Collections.Generic;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace Employee.Application.Features.Attendance.Services
 {
@@ -18,6 +19,7 @@ namespace Employee.Application.Features.Attendance.Services
     private readonly IShiftRepository _shiftRepo;
     private readonly AttendanceCalculator _calculator;
     private readonly IUnitOfWork _unitOfWork;
+    private readonly ILogger<AttendanceProcessingService> _logger;
 
     // Cấu hình Timezone: UTC+7
     private readonly TimeSpan _systemOffset = TimeSpan.FromHours(7);
@@ -28,7 +30,8 @@ namespace Employee.Application.Features.Attendance.Services
         IEmployeeRepository employeeRepo,
         IShiftRepository shiftRepo,
         AttendanceCalculator calculator,
-        IUnitOfWork unitOfWork)
+        IUnitOfWork unitOfWork,
+        ILogger<AttendanceProcessingService> logger)
     {
       _rawRepo = rawRepo;
       _attendanceRepo = attendanceRepo;
@@ -36,6 +39,7 @@ namespace Employee.Application.Features.Attendance.Services
       _shiftRepo = shiftRepo;
       _calculator = calculator;
       _unitOfWork = unitOfWork;
+      _logger = logger;
     }
 
     public async Task<string> ProcessRawLogsAsync()
@@ -44,7 +48,13 @@ namespace Employee.Application.Features.Attendance.Services
       {
         // 1. CONCURRENCY: Lấy và Lock dữ liệu để tránh race condition
         var logs = await _rawRepo.GetAndLockUnprocessedLogsAsync(50);
-        if (!logs.Any()) return "Found 0 unprocessed logs in DB. Please check if raw_attendance_logs collection has any record with IsProcessed: false.";
+        if (!logs.Any())
+        {
+          _logger.LogDebug("ProcessRawLogsAsync: No unprocessed logs found.");
+          return "Found 0 unprocessed logs in DB. Please check if raw_attendance_logs collection has any record with IsProcessed: false.";
+        }
+
+        _logger.LogInformation("ProcessRawLogsAsync: Found {Count} unprocessed logs. Processing...", logs.Count);
 
         int processedCount = 0;
         int failedCount = 0;
@@ -62,18 +72,23 @@ namespace Employee.Application.Features.Attendance.Services
           {
             await ProcessSingleGroupAsync(group.Key.EmployeeId, group.Key.Date, group.ToList());
             processedCount += group.Count();
+            _logger.LogInformation("ProcessRawLogsAsync: Processed {Count} logs for EmployeeId={EmployeeId} Date={Date}", group.Count(), group.Key.EmployeeId, group.Key.Date.ToString("yyyy-MM-dd"));
           }
           catch (Exception ex)
           {
             failedCount += group.Count();
+            _logger.LogError(ex, "ProcessRawLogsAsync: FAILED processing group EmployeeId={EmployeeId} Date={Date}. Error: {Error}", group.Key.EmployeeId, group.Key.Date.ToString("yyyy-MM-dd"), ex.Message);
             await MarkGroupAsError(group, ex.Message);
           }
         }
 
-        return $"Processed {processedCount} logs successfully. {failedCount} logs failed. Check bucket collection.";
+        var result = $"Processed {processedCount} logs successfully. {failedCount} logs failed. Check bucket collection.";
+        _logger.LogInformation("ProcessRawLogsAsync: {Result}", result);
+        return result;
       }
       catch (Exception ex)
       {
+        _logger.LogError(ex, "ProcessRawLogsAsync: CRITICAL ERROR. {Error}", ex.Message);
         return $"CRITICAL ERROR in Processing Service: {ex.Message}";
       }
     }

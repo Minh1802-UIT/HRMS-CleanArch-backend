@@ -120,5 +120,21 @@ namespace Employee.Infrastructure.Repositories.Attendance
           .SortByDescending(x => x.Timestamp)
           .FirstOrDefaultAsync(cancellationToken);
     }
+
+    public async Task<List<RawAttendanceLog>> GetByDateRangeAsync(
+        string employeeId,
+        DateTime startUtc,
+        DateTime endUtc,
+        CancellationToken cancellationToken = default)
+    {
+      var filter = Builders<RawAttendanceLog>.Filter.And(
+          Builders<RawAttendanceLog>.Filter.Eq(x => x.EmployeeId, employeeId),
+          Builders<RawAttendanceLog>.Filter.Gte(x => x.Timestamp, startUtc),
+          Builders<RawAttendanceLog>.Filter.Lt(x => x.Timestamp, endUtc)
+      );
+      return await _collection.Find(filter)
+          .SortBy(x => x.Timestamp)
+          .ToListAsync(cancellationToken);
+    }
   }
 }

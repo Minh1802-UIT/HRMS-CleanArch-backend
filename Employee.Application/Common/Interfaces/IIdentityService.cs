@@ -34,6 +34,12 @@ namespace Employee.Application.Common.Interfaces
     /// Call on logout and whenever token reuse (theft) is detected.
     /// </summary>
     Task RevokeAllRefreshTokensAsync(string userId);
+
+    /// <summary>
+    /// Returns the EmployeeId linked to the given ASP.NET Identity UserId,
+    /// or null if the account has no linked employee profile.
+    /// </summary>
+    Task<string?> GetEmployeeIdByUserIdAsync(string userId);
   }
 
   public class Result

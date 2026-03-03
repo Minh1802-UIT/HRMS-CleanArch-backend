@@ -420,6 +420,12 @@ namespace Employee.Infrastructure.Identity
             await _userManager.UpdateAsync(user);
         }
 
+        public async Task<string?> GetEmployeeIdByUserIdAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            return user?.EmployeeId;
+        }
+
         // Keep the embedded token list bounded.
         // Drop entries revoked > 24 h ago and expired entries > 30 d old.
         private static void PruneRefreshTokens(

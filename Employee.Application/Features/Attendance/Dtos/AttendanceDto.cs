@@ -78,6 +78,24 @@ namespace Employee.Application.Features.Attendance.Dtos
     public List<TeamMemberAttendanceDto> Members { get; set; } = new();
   }
 
+  // ==========================================
+  // TODAY STATUS (Check-in / Check-out gating)
+  // ==========================================
+  public class TodayAttendanceStatusDto
+  {
+    /// <summary>True if the employee has at least one CheckIn raw log today (local time UTC+7).</summary>
+    public bool HasCheckedIn { get; set; }
+
+    /// <summary>True if the employee has at least one CheckOut raw log today (local time UTC+7).</summary>
+    public bool HasCheckedOut { get; set; }
+
+    /// <summary>Time of the earliest CheckIn today, expressed in local time (UTC+7).</summary>
+    public DateTime? CheckInTime { get; set; }
+
+    /// <summary>Time of the latest CheckOut today, expressed in local time (UTC+7).</summary>
+    public DateTime? CheckOutTime { get; set; }
+  }
+
   public class TeamMemberAttendanceDto
   {
     public string EmployeeId { get; set; } = string.Empty;
