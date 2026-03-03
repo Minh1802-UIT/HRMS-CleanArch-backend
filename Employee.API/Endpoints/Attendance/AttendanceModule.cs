@@ -41,6 +41,11 @@ namespace Employee.API.Endpoints.Attendance
                // 5. Kích hoạt xử lý (Admin/HR dùng để tổng hợp dữ liệu nháp vào báo cáo)
                group.MapPost("/process-logs", AttendanceHandlers.ProcessLogs)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
+
+               // 6. Force-reprocess a month (Admin repair — fixes corrupted buckets)
+               //    POST /api/attendance/admin/force-reprocess?month=03-2026
+               group.MapPost("/admin/force-reprocess", AttendanceHandlers.ForceReprocessMonth)
+                    .RequireAuthorization(p => p.RequireRole("Admin"));
           }
      }
 }

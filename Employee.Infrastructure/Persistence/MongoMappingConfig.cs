@@ -4,6 +4,7 @@ using Employee.Domain.Entities.Leave;
 using Employee.Domain.Entities.Payroll;
 using Employee.Domain.Entities.Attendance;
 using Employee.Domain.Entities.Common;
+using Employee.Domain.Entities.ValueObjects;
 using Employee.Domain.Enums;
 using Employee.Infrastructure.Identity.Models;
 using MongoDB.Bson.Serialization;
@@ -86,7 +87,27 @@ namespace Employee.Infrastructure.Persistence
 
       // Attendance
       BsonClassMap.RegisterClassMap<Shift>(cm => cm.AutoMap());
-      BsonClassMap.RegisterClassMap<AttendanceBucket>(cm => cm.AutoMap());
+
+      // DailyLog: value object embedded in AttendanceBucket.
+      // Must register before AttendanceBucket so the driver knows how to
+      // (de)serialize the nested documents.
+      // - MapCreator: DailyLog has no parameterless ctor; map the 2-arg ctor.
+      // - AutoMap picks up all { get; private set; } properties via reflection.
+      BsonClassMap.RegisterClassMap<DailyLog>(cm =>
+      {
+        cm.AutoMap();
+        cm.MapCreator(d => new DailyLog(d.Date, d.Status));
+      });
+
+      // AttendanceBucket: explicitly expose the private _dailyLogs backing
+      // field so that MongoDB persists and restores the collection.
+      // AutoMap() alone skips IReadOnlyCollection-only properties.
+      BsonClassMap.RegisterClassMap<AttendanceBucket>(cm =>
+      {
+        cm.AutoMap();
+        cm.MapField("_dailyLogs").SetElementName("DailyLogs");
+      });
+
       BsonClassMap.RegisterClassMap<RawAttendanceLog>(cm => cm.AutoMap());
 
       // Common

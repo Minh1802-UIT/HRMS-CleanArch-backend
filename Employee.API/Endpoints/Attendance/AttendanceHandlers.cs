@@ -251,9 +251,9 @@ namespace Employee.API.Endpoints.Attendance
       {
         HasCheckedIn = checkIns.Any(),
         HasCheckedOut = checkOuts.Any(),
-        // Return local time so the UI can display it without offset math
-        CheckInTime = checkIns.Any() ? (checkIns.Min(l => l.Timestamp) + utcOffset) : null,
-        CheckOutTime = checkOuts.Any() ? (checkOuts.Max(l => l.Timestamp) + utcOffset) : null,
+        // Return raw UTC — Angular date pipe handles the UTC→local (UTC+7) conversion
+        CheckInTime = checkIns.Any() ? checkIns.Min(l => l.Timestamp) : null,
+        CheckOutTime = checkOuts.Any() ? checkOuts.Max(l => l.Timestamp) : null,
       };
 
       return ResultUtils.Success(status);
@@ -263,6 +263,41 @@ namespace Employee.API.Endpoints.Attendance
     {
       string result = await processingService.ProcessRawLogsAsync();
       return ResultUtils.Success(result);
+    }
+    // 8. FORCE REPROCESS MONTH
+    //    Admin fix: resets already-processed raw logs for the given UTC month
+    //    window back to unprocessed, then triggers ProcessRawLogsAsync.
+    //    Used to repair corrupted AttendanceBuckets (e.g. after a BSON-mapping bug
+    //    caused DailyLogs to not be persisted).
+    public static async Task<IResult> ForceReprocessMonth(
+        IRawAttendanceLogRepository rawRepo,
+        IAttendanceProcessingService processingService,
+        [FromQuery] string? month = null)
+    {
+      // Default: current month in UTC+7
+      var utcOffset = TimeSpan.FromHours(7);
+      var target = string.IsNullOrEmpty(month)
+          ? DateTime.UtcNow + utcOffset
+          : DateTime.ParseExact(month, "MM-yyyy", null);
+
+      // First day of the target month (local time midnight) -> UTC
+      var firstLocal = new DateTime(target.Year, target.Month, 1);
+      var lastLocal = firstLocal.AddMonths(1);
+      var startUtc = firstLocal - utcOffset;
+      var endUtc = lastLocal - utcOffset;
+
+      // 1. Reset all processed logs in this window back to unprocessed
+      var resetCount = await rawRepo.ResetProcessingStatusAsync(startUtc, endUtc);
+
+      // 2. Reprocess
+      var processResult = await processingService.ProcessRawLogsAsync();
+
+      return ResultUtils.Success(new
+      {
+        ResetCount = resetCount,
+        ProcessResult = processResult,
+        Window = new { StartUtc = startUtc, EndUtc = endUtc }
+      });
     }
   }
 }

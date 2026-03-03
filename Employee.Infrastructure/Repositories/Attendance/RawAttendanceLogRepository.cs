@@ -136,5 +136,23 @@ namespace Employee.Infrastructure.Repositories.Attendance
           .SortBy(x => x.Timestamp)
           .ToListAsync(cancellationToken);
     }
+
+    public async Task<long> ResetProcessingStatusAsync(
+        DateTime startUtc, DateTime endUtc,
+        CancellationToken cancellationToken = default)
+    {
+      var filter = Builders<RawAttendanceLog>.Filter.And(
+          Builders<RawAttendanceLog>.Filter.Gte(x => x.Timestamp, startUtc),
+          Builders<RawAttendanceLog>.Filter.Lt(x => x.Timestamp, endUtc),
+          Builders<RawAttendanceLog>.Filter.Eq(x => x.IsProcessed, true));
+
+      var update = Builders<RawAttendanceLog>.Update
+          .Set(x => x.IsProcessed, false)
+          .Set(x => x.ProcessingError, (string?)null)
+          .Set(x => x.UpdatedAt, DateTime.UtcNow);
+
+      var result = await _collection.UpdateManyAsync(filter, update, cancellationToken: cancellationToken);
+      return result.ModifiedCount;
+    }
   }
 }

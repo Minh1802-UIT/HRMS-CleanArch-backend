@@ -89,10 +89,10 @@ namespace Employee.Application.Features.Attendance.Dtos
     /// <summary>True if the employee has at least one CheckOut raw log today (local time UTC+7).</summary>
     public bool HasCheckedOut { get; set; }
 
-    /// <summary>Time of the earliest CheckIn today, expressed in local time (UTC+7).</summary>
+    /// <summary>Time of the earliest CheckIn today, as UTC (frontend converts to local).</summary>
     public DateTime? CheckInTime { get; set; }
 
-    /// <summary>Time of the latest CheckOut today, expressed in local time (UTC+7).</summary>
+    /// <summary>Time of the latest CheckOut today, as UTC (frontend converts to local).</summary>
     public DateTime? CheckOutTime { get; set; }
   }
 

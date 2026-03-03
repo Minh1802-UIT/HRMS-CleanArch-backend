@@ -28,5 +28,11 @@ namespace Employee.Domain.Interfaces.Repositories
 
     /// <summary>Soft-deletes all raw logs for an employee (used during employee deletion cleanup).</summary>
     Task DeleteByEmployeeIdAsync(string employeeId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Resets IsProcessed=true logs back to unprocessed (IsProcessed=false, ProcessingError=null)
+    /// for a UTC time window. Used by the admin force-reprocess endpoint to fix corrupted buckets.
+    /// </summary>
+    Task<long> ResetProcessingStatusAsync(DateTime startUtc, DateTime endUtc, CancellationToken cancellationToken = default);
   }
 }
