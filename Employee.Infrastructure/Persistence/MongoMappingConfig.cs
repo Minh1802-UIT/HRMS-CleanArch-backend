@@ -88,12 +88,17 @@ namespace Employee.Infrastructure.Persistence
       // Attendance
       BsonClassMap.RegisterClassMap<Shift>(cm => cm.AutoMap());
 
-      // DailyLog: all properties are public set → AutoMap() handles everything.
-      // No MapCreator needed (and MapCreator conflicts with AutoMap when both present).
+      // DailyLog: explicitly specify the parameterless ctor via MapCreator so MongoDB
+      // does NOT fall back to the 2-param DailyLog(date, status) constructor.
+      // When 2-param ctor is chosen, Date+Status become "creator-supplied" and their
+      // setter calls are skipped, which causes subtle issues.
+      // With parameterless ctor + no creator params → ALL properties are set via
+      // public setters after construction → CheckIn/CheckOut deserialize correctly.
       BsonClassMap.RegisterClassMap<DailyLog>(cm =>
       {
         cm.AutoMap();
         cm.SetIgnoreExtraElements(true);
+        cm.MapCreator(d => new DailyLog());
       });
 
       // AttendanceBucket: AutoMap is sufficient now that DailyLogs is a public
