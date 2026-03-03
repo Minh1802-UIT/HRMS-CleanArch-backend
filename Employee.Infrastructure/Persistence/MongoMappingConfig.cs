@@ -89,13 +89,16 @@ namespace Employee.Infrastructure.Persistence
       BsonClassMap.RegisterClassMap<Shift>(cm => cm.AutoMap());
 
       // DailyLog: value object embedded in AttendanceBucket.
-      // Must register before AttendanceBucket so the driver knows how to
-      // (de)serialize the nested documents.
-      // Private parameterless ctor lets MongoDB use the normal AutoMap path
-      // (no MapCreator needed; internal setters are set via reflection).
+      // MapCreator covers ALL properties → MongoDB analyses the expression tree,
+      // marks every member as "creator-supplied", and never calls internal setters.
+      // This bypasses the cross-assembly internal-set access restriction entirely.
       BsonClassMap.RegisterClassMap<DailyLog>(cm =>
       {
         cm.AutoMap();
+        cm.MapCreator(d => new DailyLog(
+            d.Date, d.CheckIn, d.CheckOut, d.ShiftCode,
+            d.WorkingHours, d.LateMinutes, d.EarlyLeaveMinutes, d.OvertimeHours,
+            d.Status, d.Note, d.IsHoliday, d.IsWeekend));
       });
 
       // AttendanceBucket: explicitly expose the private _dailyLogs backing

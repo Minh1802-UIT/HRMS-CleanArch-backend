@@ -27,14 +27,35 @@ namespace Employee.Domain.Entities.ValueObjects
     public bool IsHoliday { get; internal set; }
     public bool IsWeekend { get; internal set; }
 
-    // Parameterless constructor for MongoDB deserialization.
-    // Initializes all fields so GetUninitializedObject() is never needed.
-    // internal (not private) so MongoDB.Bson can call it via InternalsVisibleTo.
+    // Parameterless constructor for MongoDB deserialization fallback.
     internal DailyLog()
     {
       ShiftCode = string.Empty;
       Note = string.Empty;
       Status = AttendanceStatus.Absent;
+    }
+
+    // Full-parameter constructor used by MongoMappingConfig MapCreator.
+    // By passing every property through the constructor, MongoDB's MapCreator
+    // marks all members as "creator-supplied" and SKIPS calling internal setters
+    // entirely — eliminating cross-assembly access issues once and for all.
+    public DailyLog(
+        DateTime date, DateTime? checkIn, DateTime? checkOut, string shiftCode,
+        double workingHours, int lateMinutes, int earlyLeaveMinutes, double overtimeHours,
+        AttendanceStatus status, string note, bool isHoliday, bool isWeekend)
+    {
+      Date = date;
+      CheckIn = checkIn;
+      CheckOut = checkOut;
+      ShiftCode = shiftCode ?? string.Empty;
+      WorkingHours = workingHours;
+      LateMinutes = lateMinutes;
+      EarlyLeaveMinutes = earlyLeaveMinutes;
+      OvertimeHours = overtimeHours;
+      Status = status;
+      Note = note ?? string.Empty;
+      IsHoliday = isHoliday;
+      IsWeekend = isWeekend;
     }
 
     // Constructor for creation and MongoDB
