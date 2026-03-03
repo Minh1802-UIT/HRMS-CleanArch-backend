@@ -27,6 +27,15 @@ namespace Employee.Domain.Entities.ValueObjects
     public bool IsHoliday { get; internal set; }
     public bool IsWeekend { get; internal set; }
 
+    // Parameterless constructor for MongoDB deserialization.
+    // Initializes all fields so GetUninitializedObject() is never needed.
+    private DailyLog()
+    {
+      ShiftCode = string.Empty;
+      Note = string.Empty;
+      Status = AttendanceStatus.Absent;
+    }
+
     // Constructor for creation and MongoDB
     public DailyLog(DateTime date, AttendanceStatus status = AttendanceStatus.Absent)
     {
