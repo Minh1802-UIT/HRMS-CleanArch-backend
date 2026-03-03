@@ -1,4 +1,5 @@
 ﻿using Employee.Domain.Enums;
+using MongoDB.Bson.Serialization.Attributes;
 using System;
 
 namespace Employee.Domain.Entities.ValueObjects
@@ -29,9 +30,11 @@ namespace Employee.Domain.Entities.ValueObjects
     public bool IsHoliday { get; set; }
     public bool IsWeekend { get; set; }
 
-    // Parameterless constructor for MongoDB deserialization.
-    // PUBLIC so MongoDB.Bson (different assembly) can call it directly,
-    // then sets each property via the public setters — no cross-assembly issues.
+    // [BsonConstructor] tells MongoDB Driver 3.x to ALWAYS use this constructor
+    // on ALL platforms (Linux/Windows/Docker). Without this, Driver 3.x picks
+    // the constructor with the most parameters, marks those properties as
+    // "creator-supplied", then skips their setters — leaving CheckIn = null.
+    [BsonConstructor]
     public DailyLog()
     {
       ShiftCode = string.Empty;

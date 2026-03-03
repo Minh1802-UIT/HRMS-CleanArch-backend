@@ -6,9 +6,13 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
-  <!-- Grant MongoDB.Bson access to internal members so that BsonClassMap's
-       Expression.Compile()-based setter delegates can write internal set
-       properties (CheckIn, CheckOut, etc.) during deserialization. -->
+  <!-- MongoDB.Bson needed only for [BsonConstructor] attribute on DailyLog.
+       This ensures MongoDB Driver 3.x uses the parameterless ctor on all
+       platforms (Linux/Windows) without relying on MapCreator tricks. -->
+  <ItemGroup>
+    <PackageReference Include="MongoDB.Bson" Version="3.6.0" />
+  </ItemGroup>
+
   <ItemGroup>
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
       <_Parameter1>MongoDB.Bson</_Parameter1>
