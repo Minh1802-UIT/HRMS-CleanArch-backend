@@ -6,4 +6,19 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <!-- Grant MongoDB.Bson access to internal members so that BsonClassMap's
+       Expression.Compile()-based setter delegates can write internal set
+       properties (CheckIn, CheckOut, etc.) during deserialization. -->
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>MongoDB.Bson</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>MongoDB.Driver</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>MongoDB.Driver.Core</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
 </Project>

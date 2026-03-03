@@ -29,7 +29,8 @@ namespace Employee.Domain.Entities.ValueObjects
 
     // Parameterless constructor for MongoDB deserialization.
     // Initializes all fields so GetUninitializedObject() is never needed.
-    private DailyLog()
+    // internal (not private) so MongoDB.Bson can call it via InternalsVisibleTo.
+    internal DailyLog()
     {
       ShiftCode = string.Empty;
       Note = string.Empty;
