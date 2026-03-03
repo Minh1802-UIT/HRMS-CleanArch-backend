@@ -5,27 +5,29 @@ namespace Employee.Domain.Entities.ValueObjects
 {
   public class DailyLog
   {
-    public DateTime Date { get; internal set; } // Working date
+    // Properties use public set so MongoDB C# driver can deserialize them
+    // across assembly boundaries (internal set breaks Expression.Compile).
+    // Domain mutation is still controlled through the Update* methods below.
+    public DateTime Date { get; set; }
 
     // Actual times from RawLog
-    public DateTime? CheckIn { get; internal set; }
-    public DateTime? CheckOut { get; internal set; }
+    public DateTime? CheckIn { get; set; }
+    public DateTime? CheckOut { get; set; }
 
-    public string ShiftCode { get; internal set; } = string.Empty; // Shift assigned for the day
+    public string ShiftCode { get; set; } = string.Empty;
 
     // Calculated results
-    public double WorkingHours { get; internal set; }
-    public int LateMinutes { get; internal set; } // Minutes late
-    public int EarlyLeaveMinutes { get; internal set; } // Minutes early
-    public double OvertimeHours { get; internal set; } // Overtime hours
+    public double WorkingHours { get; set; }
+    public int LateMinutes { get; set; }
+    public int EarlyLeaveMinutes { get; set; }
+    public double OvertimeHours { get; set; }
 
-    // Status: Present, Absent, Late, EarlyLeave, Leave, Holiday
-    public AttendanceStatus Status { get; internal set; } = AttendanceStatus.Absent;
+    public AttendanceStatus Status { get; set; } = AttendanceStatus.Absent;
 
-    public string Note { get; internal set; } = string.Empty;
+    public string Note { get; set; } = string.Empty;
 
-    public bool IsHoliday { get; internal set; }
-    public bool IsWeekend { get; internal set; }
+    public bool IsHoliday { get; set; }
+    public bool IsWeekend { get; set; }
 
     // Parameterless constructor for MongoDB deserialization fallback.
     internal DailyLog()
