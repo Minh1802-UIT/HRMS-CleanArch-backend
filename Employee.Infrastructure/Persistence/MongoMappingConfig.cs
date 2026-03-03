@@ -101,16 +101,12 @@ namespace Employee.Infrastructure.Persistence
             d.Status, d.Note, d.IsHoliday, d.IsWeekend));
       });
 
-      // AttendanceBucket: explicitly expose the private _dailyLogs backing
-      // field so that MongoDB persists and restores the collection.
-      // AutoMap() alone skips IReadOnlyCollection-only properties.
-      // NOTE: No MapCreator — internal setters + private ctor that initializes
-      // _dailyLogs = new() is sufficient. MapCreator(b => new Bucket(b.EmployeeId, b.Month))
-      // was broken because b.EmployeeId/Month are empty at creator-call time.
+      // AttendanceBucket: AutoMap is sufficient now that DailyLogs is a public
+      // List<DailyLog> with public setter. No private-field mapping needed.
       BsonClassMap.RegisterClassMap<AttendanceBucket>(cm =>
       {
         cm.AutoMap();
-        cm.MapField("_dailyLogs").SetElementName("DailyLogs");
+        cm.SetIgnoreExtraElements(true);
       });
 
       // RawAttendanceLog: internal setters allow MongoDB AutoMap to set all

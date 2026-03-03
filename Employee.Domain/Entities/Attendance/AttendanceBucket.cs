@@ -8,25 +8,25 @@ namespace Employee.Domain.Entities.Attendance
 {
   public class AttendanceBucket : BaseEntity
   {
-    public string EmployeeId { get; internal set; } = string.Empty;
+    // public set on all properties so MongoDB AutoMap can deserialize across assemblies
+    public string EmployeeId { get; set; } = string.Empty;
 
     // Month identifier: "01-2026", "02-2026"...
-    public string Month { get; internal set; } = string.Empty;
+    public string Month { get; set; } = string.Empty;
 
-    // List of daily logs for the month
-    private List<DailyLog> _dailyLogs = new();
-    public IReadOnlyCollection<DailyLog> DailyLogs => (_dailyLogs ??= new List<DailyLog>()).AsReadOnly();
+    // Public List with setter so MongoDB AutoMap deserializes the array directly.
+    // Previously private _dailyLogs + IReadOnlyCollection — the private-field mapping
+    // via MapField() is unreliable on Linux (Render) because reflection-based field
+    // access behaves differently from Windows in some .NET versions.
+    public List<DailyLog> DailyLogs { get; set; } = new();
 
     // Summary totals
-    public int TotalPresent { get; internal set; }
-    public int TotalLate { get; internal set; }
-    public double TotalOvertime { get; internal set; }
+    public int TotalPresent { get; set; }
+    public int TotalLate { get; set; }
+    public double TotalOvertime { get; set; }
 
-    // Parameterless constructor used by MongoDB deserialization.
-    // Must initialize _dailyLogs so that DailyLogs property never returns null
-    // even when MongoDB uses GetUninitializedObject() to create the instance.
-    // internal (not private) so MongoDB.Bson can call it via InternalsVisibleTo.
-    internal AttendanceBucket() { _dailyLogs = new List<DailyLog>(); }
+    // Parameterless constructor for MongoDB deserialization
+    public AttendanceBucket() { DailyLogs = new List<DailyLog>(); }
 
     public AttendanceBucket(string employeeId, string month)
     {
@@ -35,23 +35,24 @@ namespace Employee.Domain.Entities.Attendance
 
       EmployeeId = employeeId;
       Month = month;
+      DailyLogs = new List<DailyLog>();
     }
 
     public void AddOrUpdateDailyLog(DailyLog log)
     {
-      _dailyLogs ??= new List<DailyLog>();
-      var existing = _dailyLogs.FirstOrDefault(x => x.Date.Date == log.Date.Date);
+      DailyLogs ??= new List<DailyLog>();
+      var existing = DailyLogs.FirstOrDefault(x => x.Date.Date == log.Date.Date);
       if (existing != null)
       {
-        _dailyLogs.Remove(existing);
+        DailyLogs.Remove(existing);
       }
-      _dailyLogs.Add(log);
+      DailyLogs.Add(log);
       RecalculateTotals();
     }
 
     public void RecalculateTotals()
     {
-      var logs = _dailyLogs ?? Enumerable.Empty<DailyLog>();
+      var logs = DailyLogs ?? Enumerable.Empty<DailyLog>();
       TotalPresent = logs.Count(x =>
         x.Status == AttendanceStatus.Present ||
         x.Status == AttendanceStatus.Late ||
