@@ -97,13 +97,15 @@ namespace Employee.Application.Features.Leave.Commands.ReviewLeaveRequest
       // Publish Domain Event — decoupled side-effects (notifications, monitoring)
       if (entity.Status == Employee.Domain.Enums.LeaveStatus.Approved)
       {
-        await _publisher.Publish(new LeaveRequestApprovedEvent(
-            LeaveRequestId: request.Id,
-            EmployeeId: entity.EmployeeId,
-            ApprovedBy: request.ApprovedBy,
-            ManagerComment: entity.ManagerComment,
-            WorkingDaysDeducted: workingDays
-        ), cancellationToken);
+        await _publisher.Publish(
+            new DomainEventNotification<LeaveRequestApprovedEvent>(
+                new LeaveRequestApprovedEvent(
+                    LeaveRequestId: request.Id,
+                    EmployeeId: entity.EmployeeId,
+                    ApprovedBy: request.ApprovedBy,
+                    ManagerComment: entity.ManagerComment,
+                    WorkingDaysDeducted: workingDays)),
+            cancellationToken);
       }
       else if (entity.Status == Employee.Domain.Enums.LeaveStatus.Rejected)
       {
