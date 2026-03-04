@@ -141,6 +141,32 @@ namespace Employee.Application.Features.Attendance.Services
           checkOut = allTimes.Last();
         }
 
+        // --- DEFENSIVE RECOVERY ---
+        // If checkIn is still null (may happen due to deserialization issue on a previous
+        // batch, or when only CheckOut arrives in this batch), query the raw_attendance_logs
+        // history (including already-processed logs) and recover the earliest CheckIn for
+        // this employee/day. This ensures a checkout batch can never wipe out a previous
+        // check-in.
+        if (!checkIn.HasValue)
+        {
+          // workDate is local time (UTC+7); convert back to UTC window for the query
+          var dayStartUtc = workDate.AddHours(-_systemOffset.Hours);      // local 00:00 → UTC
+          var dayEndUtc   = dayStartUtc.AddDays(1);
+          var allDayLogs  = await _rawRepo.GetByDateRangeAsync(employeeId, dayStartUtc, dayEndUtc);
+          var recoveredCheckIn = allDayLogs
+              .Where(x => x.Type == RawLogType.CheckIn)
+              .Select(x => (DateTime?)x.Timestamp)
+              .DefaultIfEmpty(null)
+              .Min();
+          if (recoveredCheckIn.HasValue)
+          {
+            checkIn = recoveredCheckIn;
+            _logger.LogWarning(
+              "ProcessSingleGroupAsync: Recovered CheckIn={CheckIn} from raw_attendance_logs for EmployeeId={EmployeeId} Date={Date}. Possible prior deserialization issue.",
+              checkIn, employeeId, workDate.ToString("yyyy-MM-dd"));
+          }
+        }
+
         dailyLog.UpdateCheckTimes(checkIn, checkOut, shift?.Code ?? "Unknown");
 
         // --- BƯỚC D: TÍNH TOÁN ---
