@@ -22,16 +22,18 @@ namespace Employee.Application.Features.HumanResource.Queries.GetEmployeeLookup
 
     public async Task<List<LookupDto>> Handle(GetEmployeeLookupQuery request, CancellationToken cancellationToken)
     {
-      // Only cache when no keyword filter (full lookup list used by dropdowns)
-      if (string.IsNullOrEmpty(request.Keyword))
+      // Chỉ dùng cache khi không có keyword và limit mặc định (20) — tránh cache sai dữ liệu cho payroll
+      var useCache = string.IsNullOrEmpty(request.Keyword) && request.Limit == 20;
+
+      if (useCache)
       {
         var cached = await _cache.GetAsync<List<LookupDto>>(CacheKeys.EmployeeLookup);
         if (cached != null) return cached;
       }
 
-      var result = await _repo.GetLookupAsync(request.Keyword, limit: 20, cancellationToken: cancellationToken);
+      var result = await _repo.GetLookupAsync(request.Keyword, limit: request.Limit, cancellationToken: cancellationToken);
 
-      if (string.IsNullOrEmpty(request.Keyword))
+      if (useCache)
       {
         await _cache.SetAsync(CacheKeys.EmployeeLookup, result, TimeSpan.FromMinutes(15));
       }
