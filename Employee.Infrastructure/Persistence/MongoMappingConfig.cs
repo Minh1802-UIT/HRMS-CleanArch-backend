@@ -32,6 +32,7 @@ namespace Employee.Infrastructure.Persistence
       BsonSerializer.RegisterSerializer(new EnumSerializer<LeaveStatus>(BsonType.String));
       BsonSerializer.RegisterSerializer(new EnumSerializer<LeaveCategory>(BsonType.String));
       BsonSerializer.RegisterSerializer(new EnumSerializer<PayrollStatus>(BsonType.String));
+      BsonSerializer.RegisterSerializer(new EnumSerializer<PayrollCycleStatus>(BsonType.String));
       BsonSerializer.RegisterSerializer(new EnumSerializer<RawLogType>(BsonType.String));
 
       // BaseEntity mapping
@@ -84,6 +85,12 @@ namespace Employee.Infrastructure.Persistence
 
       // Payroll
       BsonClassMap.RegisterClassMap<PayrollEntity>(cm => cm.AutoMap());
+
+      BsonClassMap.RegisterClassMap<PayrollCycle>(cm =>
+      {
+        cm.AutoMap();
+        cm.SetIgnoreExtraElements(true);
+      });
 
       BsonClassMap.RegisterClassMap<PublicHoliday>(cm =>
       {

@@ -74,6 +74,7 @@ namespace Employee.Application
       services.AddScoped<IPayrollService, PayrollService>();
       services.AddScoped<IPayrollProcessingService, PayrollProcessingService>();
       services.AddScoped<IPayrollDataProvider, PayrollDataProvider>();
+      services.AddScoped<IPayrollCycleService, PayrollCycleService>();
       services.AddScoped<IPayslipService, PayslipService>();
       services.AddScoped<IExcelExportService, ExcelExportService>();
       services.AddScoped<Employee.Domain.Services.Payroll.ITaxCalculator, Employee.Domain.Services.Payroll.VietnameseTaxCalculator>();

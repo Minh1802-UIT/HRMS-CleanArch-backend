@@ -58,14 +58,27 @@ namespace Employee.Application.Features.Payroll.Services
           decimal baseSalary = salaryInfo.BasicSalary;
           decimal allowances = salaryInfo.TransportAllowance + salaryInfo.LunchAllowance + salaryInfo.OtherAllowance;
           decimal overtimeHours = (decimal)(bucket?.TotalOvertime ?? 0);
-          // StandardWorkingDays đã được tính động trong PayrollDataProvider (ngày công chuẩn của chu kỳ này)
-          decimal standardWorkingDays = (decimal)data.Settings.StandardWorkingDays;
-          if (standardWorkingDays <= 0) standardWorkingDays = 22; // Safe fallback (không bao giờ xảy ra)
+
+          // ============================================================
+          // MẪU SỐ = data.Cycle.StandardWorkingDays (BẤT BIẾN)
+          // Được tính một lần khi GeneratePayrollCycle và lưu vào DB.
+          // Dù quy tắc thay đổi sau này, con số này không đổi.
+          // VD: Chu kỳ 03/2026 (26/02→25/03) = 19 ngày làm việc.
+          // ============================================================
+          decimal standardWorkingDays = data.Cycle.StandardWorkingDays;
+          if (standardWorkingDays <= 0) standardWorkingDays = 22; // Guard, không bao giờ xảy ra
+
+          // Công thức OT dựa trên daily rate của chu kỳ này
           decimal hourlyRate = baseSalary / standardWorkingDays / 8;
           decimal overtimePay = overtimeHours * hourlyRate * data.Settings.OvertimeRateNormal;
 
           double actualPayableDays = bucket?.TotalPresent ?? 0;
-          // Công thức: Lương_1_ngày × Số_ngày_chấm_công = (BaseSalary / stdDays) × actualDays
+
+          // ============================================================
+          // CÔNG THỨC LƯƠNG CỐT LÕI
+          //   DailyWage   = (BaseSalary + Allowances) / StandardWorkingDays
+          //   FinalSalary = DailyWage × ActualWorkingDays + OvertimePay
+          // ============================================================
           decimal grossIncome = ((baseSalary + allowances) / standardWorkingDays * (decimal)actualPayableDays) + overtimePay;
 
           // 2. Insurance & Tax
@@ -99,7 +112,7 @@ namespace Employee.Application.Features.Payroll.Services
             continue;
           }
 
-          payroll.UpdateAttendance(data.Settings.StandardWorkingDays, actualPayableDays, 0, actualPayableDays);
+          payroll.UpdateAttendance((double)data.Cycle.StandardWorkingDays, actualPayableDays, 0, actualPayableDays);
           payroll.UpdateIncome(baseSalary, allowances, 0, overtimePay, (double)overtimeHours, grossIncome);
           payroll.UpdateDeductions(bhxh, bhyt, bhtn, tax, debtPaid);
           payroll.FinalizeCalculation(netSalary, newDebt);
