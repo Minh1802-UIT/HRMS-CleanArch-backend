@@ -82,7 +82,7 @@ namespace Employee.UnitTests.Features.Payroll
       var fullAttendance = new AttendanceBucket(employeeId, monthKey);
       for (int i = 0; i < 26; i++)
       {
-        fullAttendance.AddOrUpdateDailyLog(new DailyLog(DateTime.UtcNow.AddSeconds(i), AttendanceStatus.Present));
+        fullAttendance.AddOrUpdateDailyLog(DailyLog.Create(DateTime.UtcNow.AddSeconds(i), AttendanceStatus.Present));
       }
       container.AttendanceMap[employeeId] = fullAttendance;
 

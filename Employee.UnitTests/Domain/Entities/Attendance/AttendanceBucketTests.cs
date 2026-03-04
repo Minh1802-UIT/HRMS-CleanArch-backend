@@ -28,7 +28,7 @@ namespace Employee.UnitTests.Domain.Entities.Attendance
       // Arrange
       var bucket = new AttendanceBucket("emp1", "02-2026");
       var date = new DateTime(2026, 2, 1);
-      var log = new DailyLog(date, AttendanceStatus.Present);
+      var log = DailyLog.Create(date, AttendanceStatus.Present);
       // double workingHours, int lateMinutes, int earlyLeaveMinutes, double overtimeHours, AttendanceStatus status
       log.UpdateCalculationResults(8.0, 0, 0, 1.5, AttendanceStatus.Present);
 
@@ -49,10 +49,10 @@ namespace Employee.UnitTests.Domain.Entities.Attendance
       var bucket = new AttendanceBucket("emp1", "02-2026");
       var date = new DateTime(2026, 2, 1);
 
-      var log1 = new DailyLog(date, AttendanceStatus.Late);
+      var log1 = DailyLog.Create(date, AttendanceStatus.Late);
       log1.UpdateCalculationResults(7.5, 30, 0, 0, AttendanceStatus.Late); // 30 mins late
 
-      var log2 = new DailyLog(date, AttendanceStatus.Present); // Corrected log
+      var log2 = DailyLog.Create(date, AttendanceStatus.Present); // Corrected log
       log2.UpdateCalculationResults(8.0, 0, 0, 2.0, AttendanceStatus.Present);
 
       // Act
@@ -73,15 +73,15 @@ namespace Employee.UnitTests.Domain.Entities.Attendance
       var bucket = new AttendanceBucket("emp1", "02-2026");
 
       // Present
-      var log1 = new DailyLog(new DateTime(2026, 2, 1), AttendanceStatus.Present);
+      var log1 = DailyLog.Create(new DateTime(2026, 2, 1), AttendanceStatus.Present);
       log1.UpdateCalculationResults(8.0, 0, 0, 1.0, AttendanceStatus.Present);
 
       // Late (Counts as present)
-      var log2 = new DailyLog(new DateTime(2026, 2, 2), AttendanceStatus.Late);
+      var log2 = DailyLog.Create(new DateTime(2026, 2, 2), AttendanceStatus.Late);
       log2.UpdateCalculationResults(7.5, 30, 0, 0.5, AttendanceStatus.Late);
 
       // Absent
-      var log3 = new DailyLog(new DateTime(2026, 2, 3), AttendanceStatus.Absent);
+      var log3 = DailyLog.Create(new DateTime(2026, 2, 3), AttendanceStatus.Absent);
       log3.UpdateCalculationResults(0, 0, 0, 0, AttendanceStatus.Absent);
 
       // Act

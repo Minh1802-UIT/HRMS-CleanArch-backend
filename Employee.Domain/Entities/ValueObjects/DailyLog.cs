@@ -30,10 +30,12 @@ namespace Employee.Domain.Entities.ValueObjects
     public bool IsHoliday { get; set; }
     public bool IsWeekend { get; set; }
 
-    // [BsonConstructor] tells MongoDB Driver 3.x to ALWAYS use this constructor
-    // on ALL platforms (Linux/Windows/Docker). Without this, Driver 3.x picks
-    // the constructor with the most parameters, marks those properties as
-    // "creator-supplied", then skips their setters — leaving CheckIn = null.
+    // Only ONE public constructor: parameterless.
+    // MongoDB Driver 3.x selects the constructor with the MOST parameters when
+    // multiple public ctors exist. With only ONE ctor, there is no ambiguity —
+    // the driver MUST use this and then populate all properties via public setters.
+    // [BsonConstructor] kept as explicit documentation, but the single-ctor rule
+    // is the true guarantee.
     [BsonConstructor]
     public DailyLog()
     {
@@ -42,12 +44,16 @@ namespace Employee.Domain.Entities.ValueObjects
       Status = AttendanceStatus.Absent;
     }
 
-    // Constructor for application use
-    public DailyLog(DateTime date, AttendanceStatus status = AttendanceStatus.Absent)
+    // Static factory — replaces the removed 2-param public constructor so that
+    // application code remains readable while MongoDB deserialization is unambiguous.
+    public static DailyLog Create(DateTime date, AttendanceStatus status = AttendanceStatus.Absent)
     {
-      Date = date;
-      Status = status;
-      IsWeekend = (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday);
+      return new DailyLog
+      {
+        Date = date,
+        Status = status,
+        IsWeekend = (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
+      };
     }
 
     public void UpdateCheckTimes(DateTime? checkIn, DateTime? checkOut, string shiftCode)

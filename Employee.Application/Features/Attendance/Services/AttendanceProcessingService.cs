@@ -110,7 +110,7 @@ namespace Employee.Application.Features.Attendance.Services
         var dailyLog = bucket.DailyLogs.FirstOrDefault(x => x.Date.Date == workDate.Date);
         if (dailyLog == null)
         {
-          dailyLog = new DailyLog(workDate, AttendanceStatus.Absent);
+          dailyLog = DailyLog.Create(workDate, AttendanceStatus.Absent);
           bucket.AddOrUpdateDailyLog(dailyLog);
         }
 

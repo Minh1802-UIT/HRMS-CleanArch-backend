@@ -636,7 +636,7 @@ namespace Employee.Infrastructure.data.Seeding
         {
           var date = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, d);
           if (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday) continue;
-          var log = new DailyLog(date, r.NextDouble() > 0.05 ? AttendanceStatus.Present : AttendanceStatus.Absent);
+          var log = DailyLog.Create(date, r.NextDouble() > 0.05 ? AttendanceStatus.Present : AttendanceStatus.Absent);
           if (log.Status == AttendanceStatus.Present)
           {
             log.UpdateCheckTimes(date.AddHours(8), date.AddHours(17), "S01");
