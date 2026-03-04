@@ -38,7 +38,8 @@ namespace Employee.UnitTests.Domain.Entities.Payroll
       decimal otPay = 1000;
 
       // Act
-      payroll.UpdateIncome(baseSalary, allowances, bonus, otPay, 5);
+      decimal expectedGross = baseSalary + allowances + bonus + otPay;
+      payroll.UpdateIncome(baseSalary, allowances, bonus, otPay, 5, expectedGross);
 
       // Assert
       Assert.Equal(13500, payroll.GrossIncome);

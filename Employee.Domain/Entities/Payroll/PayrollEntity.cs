@@ -71,7 +71,7 @@ namespace Employee.Domain.Entities.Payroll
       PayableDays = payable;
     }
 
-    public void UpdateIncome(decimal baseSalary, decimal allowances, decimal bonus, decimal otPay, double otHours)
+    public void UpdateIncome(decimal baseSalary, decimal allowances, decimal bonus, decimal otPay, double otHours, decimal grossIncome)
     {
       BaseSalary = baseSalary;
       Allowances = allowances;
@@ -79,7 +79,7 @@ namespace Employee.Domain.Entities.Payroll
       OvertimePay = otPay;
       OvertimeHours = otHours;
 
-      GrossIncome = baseSalary + allowances + bonus + otPay;
+      GrossIncome = grossIncome;
     }
 
     public void UpdateDeductions(decimal si, decimal hi, decimal ui, decimal pit, decimal debtPaid)

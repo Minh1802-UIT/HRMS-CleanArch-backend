@@ -98,7 +98,7 @@ namespace Employee.Application.Features.Payroll.Services
           }
 
           payroll.UpdateAttendance(data.Settings.StandardWorkingDays, actualPayableDays, 0, actualPayableDays);
-          payroll.UpdateIncome(baseSalary, allowances, 0, overtimePay, (double)overtimeHours);
+          payroll.UpdateIncome(baseSalary, allowances, 0, overtimePay, (double)overtimeHours, grossIncome);
           payroll.UpdateDeductions(bhxh, bhyt, bhtn, tax, debtPaid);
           payroll.FinalizeCalculation(netSalary, newDebt);
 

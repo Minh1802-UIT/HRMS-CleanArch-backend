@@ -654,7 +654,7 @@ namespace Employee.Infrastructure.data.Seeding
       {
         var month = DateTime.UtcNow.AddMonths(-1).ToString("MM-yyyy");
         var payroll = new PayrollEntity(emp.Id, month);
-        payroll.UpdateIncome(20000000, 2000000, 0, 0, 0);
+        payroll.UpdateIncome(20000000, 2000000, 0, 0, 0, 22000000);
         payroll.FinalizeCalculation(18000000, 500000);
         payroll.Approve();
         payroll.MarkAsPaid(DateTime.UtcNow.AddDays(-5));
