@@ -41,9 +41,15 @@ namespace Employee.Application.Features.Payroll.Services
       await _unitOfWork.BeginTransactionAsync();
       try
       {
+        var skipped = new List<string>();
+
         foreach (var emp in data.Employees)
         {
-          if (!data.SalaryMap.TryGetValue(emp.Id, out var salaryInfo)) continue;
+          if (!data.SalaryMap.TryGetValue(emp.Id, out var salaryInfo))
+          {
+            skipped.Add($"{emp.EmployeeCode} ({emp.FullName})");
+            continue;
+          }
 
           var bucket = data.AttendanceMap.GetValueOrDefault(emp.Id);
           var prevPayroll = data.PrevPayrollMap.GetValueOrDefault(emp.Id);
@@ -82,6 +88,15 @@ namespace Employee.Application.Features.Payroll.Services
               ? existing
               : new PayrollEntity(emp.Id, data.MonthKey);
 
+          // Không tính đè lên bảng lương đã được thanh toán
+          if (existing != null && existing.Status == PayrollStatus.Paid)
+          {
+            _logger.LogWarning("Skipping payroll recalculation for {Code} ({Id}) in {Month}-{Year}: already Paid.",
+                emp.EmployeeCode, emp.Id, month, year);
+            count++;
+            continue;
+          }
+
           payroll.UpdateAttendance(data.Settings.StandardWorkingDays, actualPayableDays, 0, actualPayableDays);
           payroll.UpdateIncome(baseSalary, allowances, 0, overtimePay, (double)overtimeHours);
           payroll.UpdateDeductions(bhxh, bhyt, bhtn, tax, debtPaid);
@@ -105,6 +120,10 @@ namespace Employee.Application.Features.Payroll.Services
           }
           count++;
         }
+
+        if (skipped.Count > 0)
+          _logger.LogWarning("Payroll {Month}-{Year}: {Count} employee(s) skipped (no salary contract): {Names}",
+              month, year, skipped.Count, string.Join(", ", skipped));
 
         await _unitOfWork.CommitTransactionAsync();
         return count;
