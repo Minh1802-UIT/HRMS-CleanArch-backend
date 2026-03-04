@@ -2,6 +2,7 @@ using Employee.Application.Common.Interfaces;
 using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Domain.Common.Models;
+using Employee.Domain.Entities.Attendance;
 using Employee.Domain.Entities.Payroll;
 using System.Globalization;
 
@@ -96,11 +97,13 @@ namespace Employee.Application.Features.Payroll.Services
       container.DeptNames = await _deptRepo.GetNamesByIdsAsync(deptIds!);
       container.PositionNames = await _positionRepo.GetNamesByIdsAsync(positionIds!);
 
-      // 5. Chấm công (dùng monthKey gốc để match với attendance_buckets)
-      var attendanceBuckets = await _attendanceRepo.GetByMonthAsync(monthKey);
-      container.AttendanceMap = attendanceBuckets
-          .GroupBy(b => b.EmployeeId)
-          .ToDictionary(g => g.Key, g => g.First());
+      // 5. Chấm công theo cửa sổ chu kỳ lương (hỗ trợ chu kỳ lệch)
+      //    VD: Chu kỳ 02/2026 = 26/01/2026–25/02/2026  → cần lấy cả tháng 01-2026 lẫn 02-2026
+      //    rồi lọc chỉ giữ DailyLogs nằm trong [StartDate, EndDate] và recalculate totals.
+      var cycleMonthKeys = GetCycleMonthKeys(container.Cycle.StartDate, container.Cycle.EndDate);
+      var allAttendanceBuckets = await _attendanceRepo.GetByMonthsAsync(cycleMonthKeys);
+      container.AttendanceMap = BuildCycleAttendanceMap(
+          allAttendanceBuckets, container.Cycle.StartDate, container.Cycle.EndDate, monthKey);
 
       // 6. Bảng lương hiện tại & tháng trước (dùng cho khoản nợ carry-forward)
       var allPayrolls = await _payrollRepo.GetByMonthsAsync(new[] { monthKey, prevMonthKey });
@@ -110,6 +113,58 @@ namespace Employee.Application.Features.Payroll.Services
           .GroupBy(p => p.EmployeeId).ToDictionary(g => g.Key, g => g.First());
 
       return container;
+    }
+
+    // ─── Private Helpers ─────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Trả về danh sách monthKey ("MM-YYYY") mà cửa sổ chu kỳ [start, end] trải qua.
+    /// VD: start=26/01/2026, end=25/02/2026 → ["01-2026", "02-2026"]
+    /// </summary>
+    private static List<string> GetCycleMonthKeys(DateTime start, DateTime end)
+    {
+      var keys = new List<string>();
+      var cur = new DateTime(start.Year, start.Month, 1);
+      var last = new DateTime(end.Year, end.Month, 1);
+      while (cur <= last)
+      {
+        keys.Add($"{cur.Month:D2}-{cur.Year}");
+        cur = cur.AddMonths(1);
+      }
+      return keys;
+    }
+
+    /// <summary>
+    /// Ghép và lọc DailyLogs từ nhiều tháng theo cửa sổ chu kỳ [startDate, endDate].
+    /// Trả về map EmployeeId → AttendanceBucket với totals đã recalculate chính xác.
+    /// </summary>
+    private static Dictionary<string, AttendanceBucket> BuildCycleAttendanceMap(
+        IEnumerable<AttendanceBucket> buckets,
+        DateTime startDate,
+        DateTime endDate,
+        string payrollMonthKey)
+    {
+      var result = new Dictionary<string, AttendanceBucket>();
+
+      foreach (var grp in buckets.GroupBy(b => b.EmployeeId))
+      {
+        // Gộp tất cả DailyLogs của nhân viên từ mọi bucket liên quan
+        // sau đó lọc chỉ giữ lại những ngày nằm trong [startDate, endDate]
+        var filteredLogs = grp
+            .SelectMany(b => b.DailyLogs)
+            .Where(l => l.Date.Date >= startDate.Date && l.Date.Date <= endDate.Date)
+            .OrderBy(l => l.Date)
+            .ToList();
+
+        // Tạo bucket tổng hợp với monthKey của kỳ lương (VD: "02-2026")
+        var merged = new AttendanceBucket(grp.Key, payrollMonthKey);
+        merged.DailyLogs = filteredLogs;   // gán thẳng để tránh O(n²) qua AddOrUpdateDailyLog
+        merged.RecalculateTotals();        // tính lại TotalPresent / TotalLate / TotalOvertime
+
+        result[grp.Key] = merged;
+      }
+
+      return result;
     }
   }
 }

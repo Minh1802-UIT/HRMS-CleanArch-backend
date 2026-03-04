@@ -77,8 +77,10 @@ namespace Employee.Domain.Entities.Payroll
       Month = month;
       Year = year;
       MonthKey = $"{month:D2}-{year}";
-      StartDate = startDate.Date;
-      EndDate = endDate.Date;
+      // Đảm bảo lưu dạng DateTimeKind.Utc để MongoDB không áp dụng timezone offset.
+      // Nếu để Unspecified, driver C# coi là Local → chuyển sang UTC → bị lệch ngày ở UTC+7.
+      StartDate = DateTime.SpecifyKind(startDate.Date, DateTimeKind.Utc);
+      EndDate = DateTime.SpecifyKind(endDate.Date, DateTimeKind.Utc);
       StandardWorkingDays = standardWorkingDays;
       WeeklyDaysOffSnapshot = weeklyDaysOffSnapshot;
       PublicHolidaysExcluded = publicHolidaysExcluded;

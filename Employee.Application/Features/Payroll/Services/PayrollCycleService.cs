@@ -135,6 +135,19 @@ namespace Employee.Application.Features.Payroll.Services
       return await _cycleRepo.GetByYearAsync(year, cancellationToken);
     }
 
+    /// <inheritdoc/>
+    public async Task<IEnumerable<PayrollCycle>> GenerateBulkAsync(
+        int year, CancellationToken cancellationToken = default)
+    {
+      var cycles = new List<PayrollCycle>();
+      for (int m = 1; m <= 12; m++)
+        cycles.Add(await GeneratePayrollCycleAsync(m, year, cancellationToken));
+
+      _logger.LogInformation("BulkGenerate {Year}: {Count} payroll cycles created/confirmed.",
+          year, cycles.Count);
+      return cycles;
+    }
+
     // ─── Private Helpers ──────────────────────────────────────────────────────
 
     /// <summary>

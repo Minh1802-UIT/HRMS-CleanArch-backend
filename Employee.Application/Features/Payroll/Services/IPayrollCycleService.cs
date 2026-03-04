@@ -24,5 +24,11 @@ namespace Employee.Application.Features.Payroll.Services
 
     /// <summary>Lấy tất cả chu kỳ trong một năm.</summary>
     Task<IEnumerable<PayrollCycle>> GetCyclesByYearAsync(int year, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Tạo chu kỳ lương cho tất cả 12 tháng của một năm (idempotent).
+    /// Các tháng đã tồn tại sẽ không bị tạo lại.
+    /// </summary>
+    Task<IEnumerable<PayrollCycle>> GenerateBulkAsync(int year, CancellationToken cancellationToken = default);
   }
 }

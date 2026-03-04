@@ -19,6 +19,9 @@ namespace Employee.API.Endpoints.Payroll
       // Tạo / lấy chu kỳ lương của một tháng (idempotent)
       group.MapPost("/generate", PayrollCycleHandlers.Generate);
 
+      // Tạo hàng loạt chu kỳ cho tất cả tháng trong một năm (idempotent)
+      group.MapPost("/bulk-generate", PayrollCycleHandlers.BulkGenerate);
+
       // Danh sách chu kỳ theo năm
       group.MapGet("/year/{year:int}", PayrollCycleHandlers.GetByYear);
 
@@ -159,5 +162,32 @@ namespace Employee.API.Endpoints.Payroll
       await repo.UpdateAsync(cycle.Id, cycle);
       return ResultUtils.Success($"Chu kỳ lương {monthKey} đã bị hủy.");
     }
+
+    /// <summary>
+    /// POST /api/payroll-cycles/bulk-generate  { "year": 2026 }
+    /// Tạo chu kỳ lương cho tất cả 12 tháng của năm (idempotent).
+    /// </summary>
+    public static async Task<IResult> BulkGenerate(
+        [FromBody] BulkGenerateRequest request,
+        IPayrollCycleService cycleService)
+    {
+      if (request.Year < 2000 || request.Year > 2100)
+        return ResultUtils.Fail("VALIDATION_ERROR", "Year không hợp lệ.", 400);
+
+      var cycles = (await cycleService.GenerateBulkAsync(request.Year)).ToList();
+      return ResultUtils.Success(
+          cycles.Select(c => new
+          {
+            c.MonthKey,
+            StartDate = c.StartDate.ToString("dd/MM/yyyy"),
+            EndDate = c.EndDate.ToString("dd/MM/yyyy"),
+            c.StandardWorkingDays,
+            c.PublicHolidaysExcluded,
+            Status = c.Status.ToString()
+          }),
+          $"Đã tạo/xác nhận {cycles.Count} chu kỳ lương cho năm {request.Year}.");
+    }
+
+    public record BulkGenerateRequest(int Year);
   }
 }
