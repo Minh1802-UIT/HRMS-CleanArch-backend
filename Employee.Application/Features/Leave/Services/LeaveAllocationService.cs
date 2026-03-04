@@ -135,18 +135,24 @@ namespace Employee.Application.Features.Leave.Services
             {
                 if (!existingAllocations.TryGetValue(type.Id, out var existing))
                 {
-                    var days = type.IsAccrual ? 0 : type.DefaultDaysPerYear;
+                    // Khởi tạo với 1 ngày tại thời điểm tạo hợp đồng
+                    // Accrual types (Annual Leave): NumberOfDays=0, AccruedDays=1 via UpdateAccrual
+                    // Non-accrual types (Sick Leave): NumberOfDays=1
+                    var days = type.IsAccrual ? 0 : 1;
                     var allocation = new LeaveAllocation(employeeId, type.Id, year, days);
 
                     if (type.IsAccrual)
                     {
+                        // Ghi nhận tháng đầu tiên khi nhân viên gia nhập
                         allocation.UpdateAccrual(type.AccrualRatePerMonth, DateTime.UtcNow.ToString("yyyy-MM"));
                     }
                     allocationsToUpsert.Add(allocation);
                 }
-                else if (existing.NumberOfDays == 0 && type.DefaultDaysPerYear > 0)
+                else if (!type.IsAccrual && existing.NumberOfDays == 0)
                 {
-                    existing.UpdateAllocation(type.DefaultDaysPerYear);
+                    // Chỉ cập nhật non-accrual types khi NumberOfDays=0
+                    // (Accrual types được phép có NumberOfDays=0 vì số dư tích lũy qua AccruedDays)
+                    existing.UpdateAllocation(1);
                     allocationsToUpsert.Add(existing);
                 }
             }
