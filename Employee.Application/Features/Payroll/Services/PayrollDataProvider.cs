@@ -19,6 +19,8 @@ namespace Employee.Application.Features.Payroll.Services
     private readonly IDepartmentRepository _deptRepo;
     private readonly IPositionRepository _positionRepo;
     private readonly ISystemSettingService _settingService;
+    private readonly IPublicHolidayRepository _holidayRepo;
+    private readonly IWorkingDayCalculator _workingDayCalculator;
 
     public PayrollDataProvider(
         IEmployeeRepository employeeRepo,
@@ -28,7 +30,9 @@ namespace Employee.Application.Features.Payroll.Services
         IPayrollRepository payrollRepo,
         IDepartmentRepository deptRepo,
         IPositionRepository positionRepo,
-        ISystemSettingService settingService)
+        ISystemSettingService settingService,
+        IPublicHolidayRepository holidayRepo,
+        IWorkingDayCalculator workingDayCalculator)
     {
       _employeeRepo = employeeRepo;
       _contractRepo = contractRepo;
@@ -38,6 +42,8 @@ namespace Employee.Application.Features.Payroll.Services
       _deptRepo = deptRepo;
       _positionRepo = positionRepo;
       _settingService = settingService;
+      _holidayRepo = holidayRepo;
+      _workingDayCalculator = workingDayCalculator;
     }
 
     public async Task<PayrollDataContainer> FetchCalculationDataAsync(string month, string year)
@@ -54,23 +60,68 @@ namespace Employee.Application.Features.Payroll.Services
       };
 
       // 1. Settings
-      var settingKeys = new[] { "BHXH_RATE", "BHYT_RATE", "BHTN_RATE", "INSURANCE_SALARY_CAP",
-                "PERSONAL_DEDUCTION", "DEPENDENT_DEDUCTION", "STANDARD_WORKING_DAYS", "OT_RATE_NORMAL" };
+      var settingKeys = new[] {
+        "BHXH_RATE", "BHYT_RATE", "BHTN_RATE", "INSURANCE_SALARY_CAP",
+        "PERSONAL_DEDUCTION", "DEPENDENT_DEDUCTION", "OT_RATE_NORMAL",
+        "PAYROLL_START_DAY", "PAYROLL_END_DAY", "WEEKLY_DAYS_OFF"
+      };
       var settings = await _settingService.GetMultipleAsync(settingKeys);
 
-      decimal ParseSetting(string key, decimal fallback) =>
+      decimal ParseDecimal(string key, decimal fallback) =>
           settings.TryGetValue(key, out var val) && decimal.TryParse(val, NumberStyles.Any, CultureInfo.InvariantCulture, out var r) ? r : fallback;
+
+      int ParseInt(string key, int fallback) =>
+          settings.TryGetValue(key, out var val) && int.TryParse(val, out var r) ? r : fallback;
+
+      // Parse weekly days off: stored as "6,0" (DayOfWeek int values: Saturday=6, Sunday=0)
+      List<DayOfWeek> ParseWeeklyDaysOff(string key)
+      {
+        if (!settings.TryGetValue(key, out var raw) || string.IsNullOrWhiteSpace(raw))
+          return new List<DayOfWeek> { DayOfWeek.Saturday, DayOfWeek.Sunday };
+
+        return raw.Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(s => s.Trim())
+            .Where(s => int.TryParse(s, out _))
+            .Select(s => (DayOfWeek)int.Parse(s))
+            .Distinct()
+            .ToList();
+      }
+
+      int payrollStartDay = ParseInt("PAYROLL_START_DAY", 1);
+      int payrollEndDay = ParseInt("PAYROLL_END_DAY", 0);
+      var weeklyDaysOff = ParseWeeklyDaysOff("WEEKLY_DAYS_OFF");
+
+      // 2. Tính chu kỳ lương (Payroll Cycle Period)
+      var (cycleStart, cycleEnd) = CalculateCyclePeriod(
+          int.Parse(month), int.Parse(year), payrollStartDay, payrollEndDay);
+
+      // 3. Lấy ngày lễ trong chu kỳ và tính mẫu số ngày công chuẩn
+      var holidays = await _holidayRepo.GetByDateRangeAsync(cycleStart, cycleEnd);
+      var holidayDates = holidays.Select(h => h.Date).ToList();
+
+      int standardWorkingDays = _workingDayCalculator.Calculate(
+          cycleStart, cycleEnd, weeklyDaysOff, holidayDates);
+
+      // Đảm bảo luôn có mẫu số hợp lệ (không chia cho 0)
+      if (standardWorkingDays <= 0) standardWorkingDays = 22;
 
       container.Settings = new PayrollSettings
       {
-        SocialInsuranceRate = ParseSetting("BHXH_RATE", 0.08m),
-        HealthInsuranceRate = ParseSetting("BHYT_RATE", 0.015m),
-        UnemploymentInsuranceRate = ParseSetting("BHTN_RATE", 0.01m),
-        InsuranceSalaryCap = ParseSetting("INSURANCE_SALARY_CAP", 36000000m),
-        PersonalDeduction = ParseSetting("PERSONAL_DEDUCTION", 11000000m),
-        DependentDeduction = ParseSetting("DEPENDENT_DEDUCTION", 4400000m),
-        StandardWorkingDays = (double)ParseSetting("STANDARD_WORKING_DAYS", 26m),
-        OvertimeRateNormal = ParseSetting("OT_RATE_NORMAL", 1.5m)
+        SocialInsuranceRate = ParseDecimal("BHXH_RATE", 0.08m),
+        HealthInsuranceRate = ParseDecimal("BHYT_RATE", 0.015m),
+        UnemploymentInsuranceRate = ParseDecimal("BHTN_RATE", 0.01m),
+        InsuranceSalaryCap = ParseDecimal("INSURANCE_SALARY_CAP", 36000000m),
+        PersonalDeduction = ParseDecimal("PERSONAL_DEDUCTION", 11000000m),
+        DependentDeduction = ParseDecimal("DEPENDENT_DEDUCTION", 4400000m),
+        OvertimeRateNormal = ParseDecimal("OT_RATE_NORMAL", 1.5m),
+        // Chu kỳ lương
+        PayrollStartDay = payrollStartDay,
+        PayrollEndDay = payrollEndDay,
+        WeeklyDaysOff = weeklyDaysOff,
+        CycleStartDate = cycleStart,
+        CycleEndDate = cycleEnd,
+        // Mẫu số được tính động — cốt lõi của logic nghiệp vụ mới
+        StandardWorkingDays = standardWorkingDays
       };
 
       // 2. Employees & Contracts
@@ -101,6 +152,48 @@ namespace Employee.Application.Features.Payroll.Services
           .ToDictionary(g => g.Key, g => g.First());
 
       return container;
+    }
+
+    /// <summary>
+    /// Tính ngày bắt đầu và kết thúc thực tế của chu kỳ lương dựa trên cấu hình.
+    /// </summary>
+    /// <param name="month">Tháng thanh toán lương (1-12).</param>
+    /// <param name="year">Năm thanh toán lương.</param>
+    /// <param name="startDay">PAYROLL_START_DAY: ngày bắt đầu chấm công (1..28).</param>
+    /// <param name="endDay">PAYROLL_END_DAY: ngày kết thúc (0 = cuối tháng, 1..28 = ngày cụ thể).</param>
+    private static (DateTime StartDate, DateTime EndDate) CalculateCyclePeriod(
+        int month, int year, int startDay, int endDay)
+    {
+      var currentMonthFirst = new DateTime(year, month, 1);
+      DateTime startDate;
+      DateTime endDate;
+
+      if (startDay <= 1)
+      {
+        // Chu kỳ chuẩn: từ ngày 1 của tháng
+        startDate = currentMonthFirst;
+      }
+      else
+      {
+        // Chu kỳ lệch (cutoff): từ ngày <startDay> của tháng TRƯỚC
+        var prevMonthFirst = currentMonthFirst.AddMonths(-1);
+        int daysInPrevMonth = DateTime.DaysInMonth(prevMonthFirst.Year, prevMonthFirst.Month);
+        int actualStartDay = Math.Min(startDay, daysInPrevMonth);
+        startDate = new DateTime(prevMonthFirst.Year, prevMonthFirst.Month, actualStartDay);
+      }
+
+      if (endDay <= 0)
+      {
+        // Ngày cuối tháng hiện tại
+        endDate = currentMonthFirst.AddMonths(1).AddDays(-1);
+      }
+      else
+      {
+        int daysInCurrentMonth = DateTime.DaysInMonth(year, month);
+        endDate = new DateTime(year, month, Math.Min(endDay, daysInCurrentMonth));
+      }
+
+      return (startDate, endDate);
     }
   }
 }

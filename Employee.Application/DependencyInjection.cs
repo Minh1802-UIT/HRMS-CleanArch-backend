@@ -77,6 +77,7 @@ namespace Employee.Application
       services.AddScoped<IPayslipService, PayslipService>();
       services.AddScoped<IExcelExportService, ExcelExportService>();
       services.AddScoped<Employee.Domain.Services.Payroll.ITaxCalculator, Employee.Domain.Services.Payroll.VietnameseTaxCalculator>();
+      services.AddScoped<IWorkingDayCalculator, WorkingDayCalculator>();
 
       return services;
     }

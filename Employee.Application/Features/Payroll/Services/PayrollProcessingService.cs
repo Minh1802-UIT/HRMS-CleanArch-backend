@@ -58,13 +58,15 @@ namespace Employee.Application.Features.Payroll.Services
           decimal baseSalary = salaryInfo.BasicSalary;
           decimal allowances = salaryInfo.TransportAllowance + salaryInfo.LunchAllowance + salaryInfo.OtherAllowance;
           decimal overtimeHours = (decimal)(bucket?.TotalOvertime ?? 0);
+          // StandardWorkingDays đã được tính động trong PayrollDataProvider (ngày công chuẩn của chu kỳ này)
           decimal standardWorkingDays = (decimal)data.Settings.StandardWorkingDays;
-          if (standardWorkingDays <= 0) standardWorkingDays = 22; // Safe fallback
+          if (standardWorkingDays <= 0) standardWorkingDays = 22; // Safe fallback (không bao giờ xảy ra)
           decimal hourlyRate = baseSalary / standardWorkingDays / 8;
           decimal overtimePay = overtimeHours * hourlyRate * data.Settings.OvertimeRateNormal;
 
           double actualPayableDays = bucket?.TotalPresent ?? 0;
-          decimal grossIncome = ((baseSalary + allowances) / (decimal)data.Settings.StandardWorkingDays * (decimal)actualPayableDays) + overtimePay;
+          // Công thức: Lương_1_ngày × Số_ngày_chấm_công = (BaseSalary / stdDays) × actualDays
+          decimal grossIncome = ((baseSalary + allowances) / standardWorkingDays * (decimal)actualPayableDays) + overtimePay;
 
           // 2. Insurance & Tax
           decimal insuranceSalary = Math.Min(baseSalary, data.Settings.InsuranceSalaryCap);

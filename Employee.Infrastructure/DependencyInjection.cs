@@ -132,6 +132,7 @@ namespace Employee.Infrastructure
             // 7. PAYROLL REPOSITORIES
             // ==========================================
             services.AddScoped<IPayrollRepository, PayrollRepository>();
+            services.AddScoped<IPublicHolidayRepository, PublicHolidayRepository>();
 
             // ==========================================
             // 8. PERFORMANCE REPOSITORIES

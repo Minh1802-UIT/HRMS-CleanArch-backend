@@ -85,6 +85,12 @@ namespace Employee.Infrastructure.Persistence
       // Payroll
       BsonClassMap.RegisterClassMap<PayrollEntity>(cm => cm.AutoMap());
 
+      BsonClassMap.RegisterClassMap<PublicHoliday>(cm =>
+      {
+        cm.AutoMap();
+        cm.SetIgnoreExtraElements(true);
+      });
+
       // Attendance
       BsonClassMap.RegisterClassMap<Shift>(cm => cm.AutoMap());
 
