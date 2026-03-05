@@ -43,7 +43,18 @@ namespace Employee.Application.Features.HumanResource.Queries.GetEmployeeById
 
       if (!isOwner && !isAdminOrHR)
       {
+        // SECURITY: BankDetails (account number, tax code, insurance code) — Admin/HR/owner only
         cachedDto.BankDetails = null;
+
+        // SECURITY: Sensitive PII — IdentityCard (CCCD), phone, address, DoB are private data.
+        // Non-owners and non-HR/Admin must not access another employee's PII (GDPR / IDOR).
+        if (cachedDto.PersonalInfo != null)
+        {
+          cachedDto.PersonalInfo.IdentityCard = string.Empty;
+          cachedDto.PersonalInfo.PhoneNumber = string.Empty;
+          cachedDto.PersonalInfo.Address = string.Empty;
+          cachedDto.PersonalInfo.DateOfBirth = default;
+        }
       }
 
       return cachedDto;

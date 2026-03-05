@@ -3,28 +3,31 @@ using Employee.Application.Common.Wrappers;
 
 namespace Employee.API.Common;
 
-// Filter này nhận vào 1 Type T (ví dụ CreateDepartmentDto)
+/// <summary>
+/// Endpoint filter that validates the request body DTO of type <typeparamref name="T"/>
+/// using MiniValidator. Returns a 400 ApiResponse with field-level errors on failure.
+/// </summary>
 public class ValidationFilter<T> : IEndpointFilter
 {
     public async ValueTask<object?> InvokeAsync(EndpointFilterInvocationContext context, EndpointFilterDelegate next)
     {
-        // 1. Tìm object T trong danh sách tham số gửi lên
+        // Locate the DTO of type T in the handler's parameter list
         var arg = context.Arguments.FirstOrDefault(x => x?.GetType() == typeof(T));
 
         if (arg is null) return Results.BadRequest("Invalid arguments");
 
-        // 2. Validate bằng MiniValidator
+        // Validate with MiniValidator
         if (!MiniValidator.TryValidate(arg, out var validationErrors))
         {
-            // Trả về 400 với cùng định dạng ApiResponse<T> để nhất quán với toàn bộ API
+            // Return 400 using the standard ApiResponse envelope for consistency
             var errorMessages = validationErrors
                 .SelectMany(kvp => kvp.Value.Select(msg => $"{kvp.Key}: {msg}"))
                 .ToList();
-            var response = ApiResponse<object?>.FailResult("VALIDATION_ERROR", "Dữ liệu không hợp lệ.", errorMessages);
+            var response = ApiResponse<object?>.FailResult("VALIDATION_ERROR", "One or more validation errors occurred.", errorMessages);
             return Results.Json(response, statusCode: 400);
         }
 
-        // 3. Nếu OK thì cho đi tiếp vào Handler
+        // Validation passed; proceed to handler
         return await next(context);
     }
 }

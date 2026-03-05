@@ -27,7 +27,7 @@ namespace Employee.Infrastructure.Repositories.HumanResource
         {
             var filter = SoftDeleteFilter.GetActiveOnlyFilter<EmployeeEntity>();
 
-            // OPT-6: Use MongoDB $text search to leverage idx_employees_text index
+            // Use MongoDB $text search to leverage idx_employees_text index
             // instead of $regex which causes a full collection scan.
             if (!string.IsNullOrEmpty(pagination.SearchTerm))
             {
@@ -130,7 +130,7 @@ namespace Employee.Infrastructure.Repositories.HumanResource
         public async Task<List<LookupDto>> GetLookupAsync(string? keyword = null, int limit = 20, CancellationToken cancellationToken = default)
         {
             var filter = SoftDeleteFilter.GetActiveOnlyFilter<EmployeeEntity>();
-            // OPT-6: Use $text search instead of $regex to leverage idx_employees_text index
+            // Use $text search instead of $regex to leverage idx_employees_text index
             if (!string.IsNullOrEmpty(keyword))
             {
                 var textFilter = Builders<EmployeeEntity>.Filter.Text(keyword);

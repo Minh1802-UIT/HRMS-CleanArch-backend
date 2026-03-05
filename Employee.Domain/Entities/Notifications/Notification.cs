@@ -4,7 +4,7 @@ using System;
 namespace Employee.Domain.Entities.Notifications
 {
   /// <summary>
-  /// NEW-9: In-app notification for a specific user.
+  /// In-app notification for a specific user.
   /// Created by domain event handlers (leave approved/rejected, payroll generated, etc.)
   /// </summary>
   public class Notification : BaseEntity

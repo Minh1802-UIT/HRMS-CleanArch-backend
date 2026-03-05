@@ -1,4 +1,4 @@
-using Carter;
+﻿using Carter;
 using Employee.API.Common;
 using Employee.Application.Features.Payroll.Dtos;
 
@@ -12,44 +12,44 @@ namespace Employee.API.Endpoints.Payroll
                               .WithTags("Payroll Management")
                               .RequireAuthorization();
 
-               // === D�NH CHO NH�N VI�N (EMPLOYEE) ===
-               // Xem l?ch s? luong c?a m�nh
+               // === EMPLOYEE ROUTES ===
+               // View own payroll history
                group.MapGet("/me", PayrollHandlers.GetMyHistory);
 
-               // Xem chi ti?t 1 phi?u luong (ch? Admin/HR ho?c ch�nh ch? � handler s? ki?m tra ownership)
+               // View a single payslip (Admin/HR or the payslip owner — ownership enforced in handler)
                group.MapGet("/{id}", PayrollHandlers.GetById)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Employee"));
 
-               // Xu?t PDF phi?u luong (ch? Admin/HR ho?c ch�nh ch?)
+               // Download payslip PDF (Admin/HR or own payslip)
                group.MapGet("/{id}/pdf", PayrollHandlers.GetPdf)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Employee"));
 
-               // Xu?t Excel b?ng luong th�ng
+               // Export monthly payroll as Excel
                group.MapGet("/export", PayrollHandlers.ExportExcel)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
 
-               // === D�NH CHO QU?N L� (ADMIN / HR) ===
+               // === ADMIN / HR ROUTES ===
 
-               // Xem b?ng luong to�n c�ng ty theo th�ng
+               // Company-wide payroll list for a given month
                group.MapGet("/", PayrollHandlers.GetByMonth)
                           .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-               // Ch?y t�nh luong (Generate)
+               // Run payroll calculation
                group.MapPost("/generate", PayrollHandlers.Generate)
                     .AddEndpointFilter<ValidationFilter<GeneratePayrollDto>>()
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-               // Duy?t luong / X�c nh?n d� tr?
+               // Approve / confirm payroll payment
                group.MapPut("/{id}/status", PayrollHandlers.UpdateStatus)
                     .AddEndpointFilter<ValidationFilter<UpdatePayrollStatusDto>>()
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-               // NEW-7: Annual PIT tax report
+               // Annual PIT tax report
                group.MapGet("/tax-report/{year:int}", PayrollHandlers.GetTaxReport)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-               // Xem l?ch s? luong c?a m?t nh�n vi�n c? th? (Admin/HR)
+               // Payroll history for a specific employee (Admin/HR/Manager)
                group.MapGet("/employee/{employeeId}", PayrollHandlers.GetByEmployeeId)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
           }

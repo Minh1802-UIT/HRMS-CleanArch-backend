@@ -11,7 +11,7 @@ namespace Employee.Application.Common.Interfaces.Attendance.IService
     Task UpdateAsync(string id, UpdateShiftDto dto);
     Task DeleteAsync(string id);
 
-    // New: Lookup for Dropdowns
+    // Lookup list for dropdowns
     Task<IEnumerable<ShiftLookupDto>> GetLookupAsync();
   }
 }

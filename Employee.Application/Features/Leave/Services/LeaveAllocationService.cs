@@ -233,7 +233,7 @@ namespace Employee.Application.Features.Leave.Services
         }
 
         /// <summary>
-        /// NEW-5: Year-end carry forward.
+        /// Year-end carry forward.
         /// For each active/probation employee and each leave type with AllowCarryForward=true,
         /// carry min(unusedBalance, MaxCarryForwardDays) into next year's allocation.
         /// Returns the number of allocation records created/updated.

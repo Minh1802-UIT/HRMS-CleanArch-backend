@@ -176,7 +176,7 @@ namespace Employee.UnitTests.Features.Leave
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // NEW-5: RunYearEndCarryForwardAsync tests
+    // RunYearEndCarryForwardAsync tests
     // ─────────────────────────────────────────────────────────────────────────
 
     [Fact]

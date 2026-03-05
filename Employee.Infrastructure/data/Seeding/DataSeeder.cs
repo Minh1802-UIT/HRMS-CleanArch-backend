@@ -1,4 +1,4 @@
-using Employee.Domain.Interfaces.Repositories;
+﻿using Employee.Domain.Interfaces.Repositories;
 using Employee.Domain.Common.Models;
 using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Entities.Leave;
@@ -49,7 +49,7 @@ namespace Employee.Infrastructure.data.Seeding
       // -- PRODUCTION: Only ensure roles & admin exist, never wipe data --
       if (env.IsProduction())
       {
-        Console.WriteLine("?? PRODUCTION SEEDER: Checking essential data...");
+        Console.WriteLine("[SEEDER] PRODUCTION SEEDER: Checking essential data...");
 
         // Always ensure roles exist
         var prodRoles = new[] { "Admin", "HR", "Manager", "Employee" };
@@ -58,17 +58,17 @@ namespace Employee.Infrastructure.data.Seeding
           if (!await roleManager.RoleExistsAsync(role))
             await roleManager.CreateAsync(new ApplicationRole(role));
         }
-        Console.WriteLine("? Roles verified.");
+        Console.WriteLine("[OK] Roles verified.");
 
         // Always ensure system settings exist (idempotent upsert)
         await EnsureSystemSettingsAsync(settingRepo);
-        Console.WriteLine("? System settings verified.");
+        Console.WriteLine("[OK] System settings verified.");
 
-        // Efficient existence check � only count, don't load all documents
+        // Efficient existence check — only count, don't load all documents
         var employeeCount = await empRepo.CountActiveAsync();
         if (employeeCount > 0)
         {
-          Console.WriteLine($"? Database already has {employeeCount} employees. Skipping seeder.");
+          Console.WriteLine($"[OK] Database already has {employeeCount} employees. Skipping seeder.");
 
           // Ensure admin account exists even if data is present
           var prodAdminEmail = "admin@hrm.com";
@@ -87,23 +87,23 @@ namespace Employee.Infrastructure.data.Seeding
             {
               await userManager.AddToRoleAsync(prodAdminUser, "Admin");
               await userManager.AddToRoleAsync(prodAdminUser, "HR");
-              Console.WriteLine("? Created missing Admin User.");
+              Console.WriteLine("[OK] Created missing Admin User.");
             }
           }
 
-          Console.WriteLine("?? PRODUCTION SEEDER FINISHED (no data modified).");
+          Console.WriteLine("[SEEDER] PRODUCTION SEEDER FINISHED (no data modified).");
           return;
         }
 
-        Console.WriteLine("?? Database is empty in Production � running initial seed...");
+        Console.WriteLine("[SEEDER] Database is empty in Production — running initial seed...");
         // Fall through to the full seeding logic below
       }
       else
       {
-        Console.WriteLine($"?? STARTING DATABASE SEEDER (Development/Staging)...");
+        Console.WriteLine($"[SEEDER] STARTING DATABASE SEEDER (Development/Staging)...");
 
         // DEVELOPMENT ONLY: Wipe data for a fresh start
-        Console.WriteLine("?? WIPING EXISTING DATA FOR OVERWRITE...");
+        Console.WriteLine("[SEEDER] WIPING EXISTING DATA FOR OVERWRITE...");
         await auditRepo.ClearAllAsync();
         await attendanceRepo.ClearAllAsync();
         await payrollRepo.ClearAllAsync();
@@ -127,7 +127,7 @@ namespace Employee.Infrastructure.data.Seeding
         {
           await userManager.DeleteAsync(user);
         }
-        Console.WriteLine("? Database wiped successfully.");
+        Console.WriteLine("[OK] Database wiped successfully.");
       }
 
       // 2. ROLES
@@ -154,7 +154,7 @@ namespace Employee.Infrastructure.data.Seeding
         {
           await userManager.AddToRoleAsync(adminUser, "Admin");
           await userManager.AddToRoleAsync(adminUser, "HR");
-          Console.WriteLine("? Created Admin User.");
+          Console.WriteLine("[OK] Created Admin User.");
         }
       }
 
@@ -194,7 +194,7 @@ namespace Employee.Infrastructure.data.Seeding
       var cs = new Department("Customer Service", "CS"); cs.SetParent(sup.Id); await deptRepo.CreateAsync(cs);
       var wh = new Department("Warehouse", "WH"); wh.SetParent(log.Id); await deptRepo.CreateAsync(wh);
 
-      Console.WriteLine("? Created Hierarchical Departments.");
+      Console.WriteLine("[OK] Created Hierarchical Departments.");
       var depts = await deptRepo.GetAllAsync();
 
       // 4. POSITIONS (HIERARCHICAL)
@@ -368,10 +368,10 @@ namespace Employee.Infrastructure.data.Seeding
       whWorker.UpdateSalaryRange(new SalaryRange { Min = 7000000, Max = 12000000 });
       await posRepo.CreateAsync(whWorker);
 
-      Console.WriteLine("✅ Created Hierarchical Positions.");
+      Console.WriteLine("[OK] Created Hierarchical Positions.");
       var positions = await posRepo.GetAllAsync();
 
-      Console.WriteLine("🔍 Looking up specialized positions...");
+      Console.WriteLine("[SEED] Looking up specialized positions...");
       var ceoPos = positions.First(p => p.Code == "CEO");
       var ctoPos = positions.First(p => p.Code == "CTO");
       var cfoPos = positions.First(p => p.Code == "CFO");
@@ -392,7 +392,7 @@ namespace Employee.Infrastructure.data.Seeding
 
       var generatedEmps = new List<EmployeeEntity>();
 
-      Console.WriteLine("?? Generating CEO...");
+      Console.WriteLine("[SEED] Generating CEO...");
       var ceoEmp = CreateEmployee("CEO001", "Chief Executive Officer", "ceo@hrm.com", depts.First(d => d.Code == "HQ").Id, ceoPos.Id, null, new DateTime(2020, 1, 1));
       await empRepo.CreateAsync(ceoEmp);
       generatedEmps.Add(ceoEmp);
@@ -516,23 +516,23 @@ namespace Employee.Infrastructure.data.Seeding
         await CreateUserForEmployee(userManager, staff.Email, defaultPassword, "Employee", staff.Id);
       }
 
-      Console.WriteLine($"? Generated {generatedEmps.Count} Employees with Hierarchy.");
+      Console.WriteLine($"[OK] Generated {generatedEmps.Count} Employees with Hierarchy.");
       var allEmps = await empRepo.GetAllAsync();
 
       // 6-12. SUBSYSTEM SEEDING
-      try { await GenerateContracts(contractRepo, allEmps); } catch (Exception ex) { Console.WriteLine($"? Error seeding contracts: {ex.Message}"); }
-      try { await GenerateLeaves(leaveTypeRepo, leaveRepo, allEmps); } catch (Exception ex) { Console.WriteLine($"? Error seeding leaves: {ex.Message}"); }
-      try { await GenerateLeaveAllocations(leaveAllocRepo, leaveTypeRepo, allEmps); } catch (Exception ex) { Console.WriteLine($"? Error seeding leave allocations: {ex.Message}"); }
-      try { await GenerateShifts(shiftRepo); } catch (Exception ex) { Console.WriteLine($"? Error seeding shifts: {ex.Message}"); }
-      try { await GenerateAttendance(attendanceRepo, allEmps); } catch (Exception ex) { Console.WriteLine($"? Error seeding attendance: {ex.Message}"); }
-      try { await GeneratePayroll(payrollRepo, allEmps); } catch (Exception ex) { Console.WriteLine($"? Error seeding payroll: {ex.Message}"); }
-      try { await GenerateSystemSettings(settingRepo); } catch (Exception ex) { Console.WriteLine($"? Error seeding settings: {ex.Message}"); }
-      try { await GenerateRecruitment(jobRepo, candidateRepo, interviewRepo, allEmps); } catch (Exception ex) { Console.WriteLine($"? Error seeding recruitment: {ex.Message}"); }
+      try { await GenerateContracts(contractRepo, allEmps); } catch (Exception ex) { Console.WriteLine($"[ERROR] Error seeding contracts: {ex.Message}"); }
+      try { await GenerateLeaves(leaveTypeRepo, leaveRepo, allEmps); } catch (Exception ex) { Console.WriteLine($"[ERROR] Error seeding leaves: {ex.Message}"); }
+      try { await GenerateLeaveAllocations(leaveAllocRepo, leaveTypeRepo, allEmps); } catch (Exception ex) { Console.WriteLine($"[ERROR] Error seeding leave allocations: {ex.Message}"); }
+      try { await GenerateShifts(shiftRepo); } catch (Exception ex) { Console.WriteLine($"[ERROR] Error seeding shifts: {ex.Message}"); }
+      try { await GenerateAttendance(attendanceRepo, allEmps); } catch (Exception ex) { Console.WriteLine($"[ERROR] Error seeding attendance: {ex.Message}"); }
+      try { await GeneratePayroll(payrollRepo, allEmps); } catch (Exception ex) { Console.WriteLine($"[ERROR] Error seeding payroll: {ex.Message}"); }
+      try { await GenerateSystemSettings(settingRepo); } catch (Exception ex) { Console.WriteLine($"[ERROR] Error seeding settings: {ex.Message}"); }
+      try { await GenerateRecruitment(jobRepo, candidateRepo, interviewRepo, allEmps); } catch (Exception ex) { Console.WriteLine($"[ERROR] Error seeding recruitment: {ex.Message}"); }
 
       // 10. AUDIT LOGS
       await auditRepo.CreateAsync(new AuditLog(adminUser.Id.ToString(), adminUser.FullName, "System Setup", "Internal", "SYS-001", null, "Initial database seeding completed successfully."));
-      Console.WriteLine("? Created initial Audit Logs.");
-      Console.WriteLine("?? DATABASE SEEDER FINISHED SUCCESSFULLY!");
+      Console.WriteLine("[OK] Created initial Audit Logs.");
+      Console.WriteLine("[SEEDER] DATABASE SEEDER FINISHED SUCCESSFULLY!");
     }
 
     // --- HELPER METHODS ---
@@ -710,7 +710,7 @@ namespace Employee.Infrastructure.data.Seeding
     /// </summary>
     private static async Task EnsureSystemSettingsAsync(ISystemSettingRepository repo)
     {
-      // Only insert if key doesn't exist � won't overwrite admin-modified values
+      // Only insert if key doesn't exist — won't overwrite admin-modified values
       var requiredSettings = new List<SystemSetting>
       {
           new("BHXH_RATE", "Payroll", "0.08", "Social Insurance Rate (Employee)"),
@@ -725,12 +725,12 @@ namespace Employee.Infrastructure.data.Seeding
 
       foreach (var setting in requiredSettings)
       {
-        // Only create if not already present � preserves existing values
+        // Only create if not already present — preserves existing values
         var existing = await repo.GetByKeyAsync(setting.Key);
         if (existing == null)
         {
           await repo.CreateAsync(setting);
-          Console.WriteLine($"  ? Created missing setting: {setting.Key}");
+          Console.WriteLine($"  [OK] Created missing setting: {setting.Key}");
         }
       }
 

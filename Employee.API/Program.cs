@@ -33,7 +33,6 @@ MongoClassMapConfig.Configure();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// NEW: Configure Serilog
 builder.Host.UseSerilog((context, parser, configuration) =>
 {
   configuration.ReadFrom.Configuration(context.Configuration);
@@ -54,7 +53,7 @@ builder.Services.ConfigureHttpJsonOptions(options =>
   options.SerializerOptions.DictionaryKeyPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
 });
 
-// NEW: API Versioning
+// API Versioning
 builder.Services.AddApiVersioning(options =>
 {
   options.DefaultApiVersion = new Asp.Versioning.ApiVersion(1);
@@ -74,7 +73,7 @@ builder.Services.AddApiVersioning(options =>
 var mongoDbSettings = builder.Configuration.GetSection("EmployeeDatabaseSettings").Get<MongoDbSettings>();
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 
-// C1-FIX: Validate JWT Key at startup — fail fast if using placeholder
+// Validate JWT Key at startup — fail fast if missing or still using a placeholder.
 var jwtKey = jwtSettings["Key"];
 if (string.IsNullOrEmpty(jwtKey) || jwtKey.Contains("PLACEHOLDER"))
 {
@@ -92,7 +91,7 @@ var mongoConfig = new MongoDbIdentityConfiguration
   },
   IdentityOptionsAction = options =>
   {
-    // C3-FIX: Strengthened password policy for HR system
+    // Password policy for the HR system
     options.Password.RequireDigit = true;
     options.Password.RequiredLength = 8;
     options.Password.RequireNonAlphanumeric = false;
@@ -166,7 +165,7 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// 1.8. CORS Policy — M3-FIX: Read from config
+// 1.8. CORS Policy — allowed origins are read from configuration
 var corsOrigins = builder.Configuration.GetSection("CorsSettings:AllowedOrigins").Get<string[]>()
     ?? new[] { "http://localhost:4200" };
 
@@ -181,13 +180,8 @@ builder.Services.AddCors(options =>
   });
 });
 
-// N1-FIX (v2): Real per-IP / per-user rate limiting via PartitionedRateLimiter
-// ─────────────────────────────────────────────────────────────────────────────
-// Previous implementation used AddFixedWindowLimiter which creates a SINGLE global
-// counter shared by all traffic.  PartitionedRateLimiter partitions by user-ID
-// (authenticated) or remote-IP (anonymous/public) so each principal gets their own
-// independent bucket — true per-user AND per-IP enforcement.
-// ─────────────────────────────────────────────────────────────────────────────
+// Per-IP (anonymous) and per-user (authenticated) rate limiting via PartitionedRateLimiter.
+// Each principal gets its own independent bucket.
 builder.Services.AddRateLimiter(options =>
 {
   options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
@@ -352,14 +346,14 @@ builder.Services.AddRateLimiter(options =>
   });
 });
 
-// N2-FIX: Health Checks — MongoDB + self
+// Health Checks — MongoDB + self
 builder.Services.AddHealthChecks()
     .AddMongoDb(
         name: "mongodb",
         failureStatus: HealthStatus.Unhealthy,
         tags: ["db", "mongodb"]);
 
-// N3-FIX: Response Compression & Caching
+// Response Compression & Caching
 builder.Services.AddResponseCaching();
 builder.Services.AddResponseCompression(options =>
 {
@@ -401,18 +395,16 @@ app.UseForwardedHeaders();
 
 app.UseExceptionHandler();
 
-// C5-FIX: HTTPS Redirect — upgrades HTTP requests to HTTPS in production
-// HSTS: tell browsers to always use HTTPS for this domain (production only)
+// HSTS + HTTPS Redirect — production only
 if (!app.Environment.IsDevelopment())
 {
   app.UseHsts();
 }
 app.UseHttpsRedirection();
 
-// C5-FIX: Security Headers — CSP, X-Frame-Options, X-Content-Type-Options, etc.
+// Security headers — CSP, X-Frame-Options, X-Content-Type-Options, etc.
 app.UseSecurityHeaders();
 
-// NEW: Structured Request Logging
 app.UseSerilogRequestLogging();
 
 // 2.1. Data Seeding (Consolidated)
@@ -422,12 +414,11 @@ using (var scope = app.Services.CreateScope())
   var seedLogger = services.GetRequiredService<ILoggerFactory>().CreateLogger("DataSeeding");
   try
   {
-    // OPT-5: Initialize MongoDB Indexes
+    // Initialize MongoDB indexes on startup
     var context = services.GetRequiredService<Employee.Infrastructure.Persistence.IMongoContext>();
     await Employee.Infrastructure.Data.MongoIndexInitializer.CreateIndexesAsync(context);
 
-    // await DbSeeder.SeedUsersAndRolesAsync(services); // TEMPORARILY DISABLED
-    seedLogger.LogInformation("Data Seeding Completed Successfully!");
+    seedLogger.LogInformation("Startup initialization completed.");
   }
   catch (Exception ex)
   {
@@ -444,9 +435,9 @@ if (app.Environment.IsDevelopment() || app.Environment.IsEnvironment("Testing"))
 
 // 2.3. Core Middleware
 app.UseCors("AllowAngularApp");
-app.UseResponseCompression(); // N3-FIX
-app.UseResponseCaching(); // N3-FIX
-app.UseRateLimiter(); // N1-FIX
+app.UseResponseCompression();
+app.UseResponseCaching();
+app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -488,11 +479,10 @@ var versionSet = app.NewApiVersionSet()
 // This enables "api-supported-versions" headers and swagger grouping
 app.MapGroup("")
    .WithApiVersionSet(versionSet)
-   .RequireRateLimiting("general")   // N1-FIX: apply rate limiter to all API routes
+   .RequireRateLimiting("general")
    .MapCarter();
 
-// N2-FIX: Health Check endpoints
-// Public liveness probe — safe for load balancers and Docker HEALTHCHECK (no internal info leaked)
+// Public liveness probe — safe for load balancers and Docker HEALTHCHECK
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
   ResponseWriter = async (context, report) =>

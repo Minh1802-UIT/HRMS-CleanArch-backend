@@ -11,6 +11,26 @@ namespace Employee.Infrastructure.Services
         private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5MB limit
         private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".pdf", ".docx" };
 
+        // SECURITY: Magic bytes (file signatures) prevent attackers from renaming
+        // malicious files to an allowed extension (e.g. shell.php → shell.jpg).
+        private static readonly Dictionary<string, byte[][]> MagicBytes = new()
+        {
+            { ".jpg",  [ [0xFF, 0xD8, 0xFF] ] },
+            { ".jpeg", [ [0xFF, 0xD8, 0xFF] ] },
+            { ".png",  [ [0x89, 0x50, 0x4E, 0x47] ] },
+            { ".pdf",  [ [0x25, 0x50, 0x44, 0x46] ] },
+            { ".docx", [ [0x50, 0x4B, 0x03, 0x04], [0x50, 0x4B, 0x05, 0x06] ] },
+        };
+
+        private static bool HasValidMagicBytes(byte[] fileBytes, string extension)
+        {
+            if (!MagicBytes.TryGetValue(extension, out var signatures))
+                return false;
+            return signatures.Any(sig =>
+                fileBytes.Length >= sig.Length &&
+                fileBytes.Take(sig.Length).SequenceEqual(sig));
+        }
+
         public FileService(IOptions<FileStorageOptions> options)
         {
             _options = options.Value;
@@ -31,7 +51,14 @@ namespace Employee.Infrastructure.Services
             if (!AllowedExtensions.Contains(extension))
                 throw new InvalidOperationException("Invalid file extension. Only images, PDFs, and DOCX are allowed.");
 
-            // 1.3 Path Traversal Guard (Sanitize folderName)
+            // 1.3 Magic bytes check — validate file content matches the declared extension
+            using var peekStream = new MemoryStream();
+            await file.Content.CopyToAsync(peekStream);
+            var fileBytes = peekStream.ToArray();
+            if (!HasValidMagicBytes(fileBytes, extension))
+                throw new InvalidOperationException("File content does not match the declared file type.");
+
+            // 1.4 Path Traversal Guard (Sanitize folderName)
             folderName = Regex.Replace(folderName, @"[^a-zA-Z0-9_\-]", ""); // Only allow safe characters
 
             // 2. PATH SETUP
@@ -55,11 +82,8 @@ namespace Employee.Infrastructure.Services
             if (!Path.GetFullPath(filePath).StartsWith(Path.GetFullPath(uploadsBase)))
                 throw new InvalidOperationException("Invalid upload path detected.");
 
-            // 4. SAVE
-            using (var stream = new FileStream(filePath, FileMode.Create))
-            {
-                await file.Content.CopyToAsync(stream);
-            }
+            // 4. SAVE (use already-read fileBytes to avoid re-reading the stream)
+            await System.IO.File.WriteAllBytesAsync(filePath, fileBytes);
 
             // 5. RETURN RELATIVE PATH
             return $"/uploads/{folderName}/{fileName}";

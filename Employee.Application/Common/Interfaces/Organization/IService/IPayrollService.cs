@@ -12,11 +12,11 @@ namespace Employee.Application.Common.Interfaces.Organization.IService
     Task<IEnumerable<PayrollDto>> GetByEmployeeIdAsync(string userId);
     Task<IEnumerable<PayrollDto>> GetMyHistoryAsync(string userId);
 
-    // New: Pagination support
+    // Pagination support
     Task<PagedResult<PayrollListDto>> GetPagedListAsync(PaginationParams pagination);
     Task<PagedResult<PayrollListDto>> GetByMonthPagedAsync(string month, PaginationParams pagination);
 
-    /// <summary>NEW-7: Generate annual PIT report for all employees.</summary>
+    /// <summary>Generate annual PIT report for all employees.</summary>
     Task<AnnualTaxReportDto> GetAnnualTaxReportAsync(int year);
   }
 }

@@ -7,10 +7,10 @@ namespace Employee.Domain.Interfaces.Repositories
 {
   public interface IDepartmentRepository : IBaseRepository<Department>
   {
-    // New: For optimized joins
+    // For optimized joins: resolve names from IDs without loading full documents
     Task<Dictionary<string, string>> GetNamesByIdsAsync(List<string> ids, CancellationToken cancellationToken = default);
 
-    // New: Check if employee is a manager
+    // Returns true if any department lists the given employee as its manager
     Task<bool> ExistsByManagerIdAsync(string managerId, CancellationToken cancellationToken = default);
 
     // Hierarchy

@@ -17,13 +17,13 @@ namespace Employee.Domain.Interfaces.Repositories
         // Optimized join - Get only names for specific IDs
         Task<Dictionary<string, (string Name, string Code)>> GetNamesByIdsAsync(List<string> ids, CancellationToken cancellationToken = default);
 
-        // New: Projection for PayrollProcessing - Get only active employee IDs
+        // Projection for payroll processing — fetches only active employee IDs
         Task<List<string>> GetActiveEmployeeIdsAsync(CancellationToken cancellationToken = default);
 
-        // OPT-3: Direct filter by ManagerId (avoids loading all employees)
+        // Direct filter by ManagerId (avoids loading all employees into memory)
         Task<List<EmployeeEntity>> GetByManagerIdAsync(string managerId, CancellationToken cancellationToken = default);
 
-        // IMP-1: Check references before delete
+        // Check references before delete to prevent orphaned records
         Task<long> CountActiveAsync(CancellationToken cancellationToken = default);
         Task<List<EmployeeEntity>> GetRecentHiresAsync(int count, CancellationToken cancellationToken = default);
         Task<List<EmployeeEntity>> GetAllActiveAsync(CancellationToken cancellationToken = default);

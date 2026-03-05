@@ -1,4 +1,4 @@
-using System.Threading;
+﻿using System.Threading;
 using Employee.Domain.Entities.Attendance;
 using Employee.Domain.Interfaces.Repositories;
 
@@ -12,7 +12,7 @@ namespace Employee.Domain.Interfaces.Repositories
     Task MarkAsProcessedAsync(string id, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Batch update � replaces N individual UpdateOneAsync round-trips with a
+    /// Batch update — replaces N individual UpdateOneAsync round-trips with a
     /// single BulkWriteAsync, reducing DB round-trips from N to 1.
     /// </summary>
     Task MarkManyAsProcessedAsync(IEnumerable<string> ids, CancellationToken cancellationToken = default);

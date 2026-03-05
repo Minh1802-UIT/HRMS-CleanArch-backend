@@ -7,25 +7,25 @@ namespace Employee.Application.Common.Wrappers
     [JsonPropertyName("succeeded")]
     public bool Succeeded { get; set; }
 
-    // Dành cho Frontend: Dùng mã này để map ra tiếng Việt/Anh (VD: "EMP_NOT_FOUND")
+    // Machine-readable error code for client-side i18n (e.g. "EMP_NOT_FOUND")
     [JsonPropertyName("errorCode")]
     public string ErrorCode { get; set; } = string.Empty;
 
-    // Dành cho Developer/Log: Mô tả chi tiết lỗi tiếng Anh
+    // Human-readable description for logs and debug output
     [JsonPropertyName("message")]
     public string Message { get; set; } = string.Empty;
 
     [JsonPropertyName("data")]
     public T? Data { get; set; }
 
-    // Dành cho Validation: List các lỗi chi tiết
+    // Validation error details, if any
     [JsonPropertyName("errors")]
     public List<string>? Errors { get; set; }
 
-    // Constructor mặc định (bắt buộc để Serialization hoạt động)
+    // Required for deserialization
     public ApiResponse() { }
 
-    // ✅ Constructor 1: THÀNH CÔNG (Success)
+    // Success constructor
     public ApiResponse(T data, string message = "Success")
     {
       Succeeded = true;
@@ -35,7 +35,7 @@ namespace Employee.Application.Common.Wrappers
       Errors = null;
     }
 
-    // ❌ Constructor 2: THẤT BẠI (Failure)
+    // Failure constructor
     public ApiResponse(string errorCode, string devMessage, List<string>? errors = null)
     {
       Succeeded = false;
@@ -45,7 +45,7 @@ namespace Employee.Application.Common.Wrappers
       Data = default;
     }
 
-    // 🌟 STATIC FACTORY METHODS
+    // Static factory helpers
     public static ApiResponse<T> SuccessResult(T data, string message = "Success")
     {
       return new ApiResponse<T>(data, message);

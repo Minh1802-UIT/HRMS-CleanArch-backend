@@ -48,8 +48,7 @@ namespace Employee.Application.Features.Leave.EventHandlers
           }
       );
 
-      // TODO: Notify manager via email/push notification
-      // await _notificationService.NotifyManagerAsync(notificationWrapper.DomainEvent.EmployeeId, notificationWrapper.DomainEvent.LeaveRequestId);
+      // Extension point: notify manager via email/push notification when implemented
     }
   }
 }

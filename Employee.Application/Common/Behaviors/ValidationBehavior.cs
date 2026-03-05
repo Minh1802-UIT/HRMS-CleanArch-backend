@@ -4,7 +4,7 @@ using MediatR;
 namespace Employee.Application.Common.Behaviors
 {
   /// <summary>
-  /// M2-FIX: MediatR Pipeline Behavior that runs FluentValidation validators
+  /// MediatR Pipeline Behavior that runs FluentValidation validators
   /// before the command/query handler executes.
   /// This ensures ALL requests sent via ISender are validated,
   /// not just those going through endpoint filters.

@@ -7,7 +7,7 @@ namespace Employee.Domain.Interfaces.Repositories;
 
 public interface IPositionRepository : IBaseRepository<Position>
 {
-  // New: For optimized joins
+  // For optimized joins: resolve names from IDs without loading full documents
   Task<Dictionary<string, string>> GetNamesByIdsAsync(List<string> ids, CancellationToken cancellationToken = default);
 
   // Hierarchy

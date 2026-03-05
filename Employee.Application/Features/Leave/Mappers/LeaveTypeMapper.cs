@@ -27,11 +27,8 @@ namespace Employee.Application.Features.Leave.Mappers
 
     public static void UpdateFromDto(this LeaveType entity, UpdateLeaveTypeDto dto)
     {
-      // Use Domain Method
-      // We might need to add UpdateInfo to LeaveType if missing, 
-      // but for now we have UpdateSettings and SetActive.
-      // Let's assume UpdateInfo exists or we use what we have.
-      // entity.UpdateSettings(...)
+      // UpdateSettings and SetActive are the available domain methods;
+      // add UpdateInfo to LeaveType if richer updates are needed.
     }
   }
 }

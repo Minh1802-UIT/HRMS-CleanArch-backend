@@ -21,7 +21,7 @@ namespace Employee.Application.Features.Payroll.Services
       var payroll = await _payrollRepo.GetByEmployeeAndMonthAsync(employeeId, month);
       if (payroll == null)
       {
-        throw new NotFoundException("B?ng luong chua du?c tính cho nhân viên này. Vui lòng ch?y tính luong tru?c.");
+        throw new NotFoundException("B?ng luong chua du?c tï¿½nh cho nhï¿½n viï¿½n nï¿½y. Vui lï¿½ng ch?y tï¿½nh luong tru?c.");
       }
 
       return payroll.ToDto();
@@ -121,7 +121,7 @@ namespace Employee.Application.Features.Payroll.Services
     }
 
     /// <summary>
-    /// NEW-7: Aggregate all payroll records for a calendar year into an annual PIT report.
+    /// Aggregate all payroll records for a calendar year into an annual PIT report.
     /// Uses GetByMonthsAsync to fetch all 12 months in one batch.
     /// </summary>
     public async Task<AnnualTaxReportDto> GetAnnualTaxReportAsync(int year)

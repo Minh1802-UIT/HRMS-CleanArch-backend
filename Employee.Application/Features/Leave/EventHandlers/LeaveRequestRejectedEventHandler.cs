@@ -9,7 +9,7 @@ namespace Employee.Application.Features.Leave.EventHandlers
   /// <summary>
   /// Handles LeaveRequestRejectedEvent:
   /// - Logs structured info for monitoring dashboards
-  /// - NEW-9: Sends in-app notification to the employee with rejection reason
+  /// - Sends in-app notification to the employee with rejection reason
   /// </summary>
   public class LeaveRequestRejectedEventHandler : INotificationHandler<DomainEventNotification<LeaveRequestRejectedEvent>>
   {
@@ -31,7 +31,7 @@ namespace Employee.Application.Features.Leave.EventHandlers
           "[LeaveEvent] Rejected — LeaveRequestId: {LeaveRequestId}, EmployeeId: {EmployeeId}, RejectedBy: {RejectedBy}, Comment: {Comment}",
           evt.LeaveRequestId, evt.EmployeeId, evt.RejectedBy, evt.ManagerComment);
 
-      // NEW-9: Create in-app notification for the employee
+      // Create in-app notification for the employee
       var body = string.IsNullOrWhiteSpace(evt.ManagerComment)
           ? "Your leave request has been rejected."
           : $"Your leave request has been rejected. Reason: {evt.ManagerComment}";

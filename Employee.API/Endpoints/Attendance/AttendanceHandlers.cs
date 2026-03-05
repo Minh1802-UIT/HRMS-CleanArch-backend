@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using Employee.API.Common;
 using Employee.Application.Features.Attendance.Dtos;
 using Employee.Application.Common.Interfaces; // ICurrentUser
@@ -118,7 +118,7 @@ namespace Employee.API.Endpoints.Attendance
       return ResultUtils.Success(report);
     }
 
-    // 3. GET EMPLOYEE REPORT (Manager/HR xem c?a nh�n vi�n)
+    // 3. GET EMPLOYEE REPORT (Manager/HR views an employee's attendance)
     public static async Task<IResult> GetEmployeeReport(
         string employeeId,
         [FromQuery] string month,
@@ -213,7 +213,7 @@ namespace Employee.API.Endpoints.Attendance
         return ResultUtils.Fail(ErrorCodes.UnlinkedAccount, "Account not linked to employee profile.");
       }
 
-      // M3-FIX: Explicit role check for security & cleanup
+      // Explicit role check
       if (!currentUser.IsInRole("Manager") && !currentUser.IsInRole("Admin") && !currentUser.IsInRole("HR"))
       {
         return ResultUtils.Fail("AUTH_FORBIDDEN", "You do not have permission to view team summary.");
@@ -258,7 +258,7 @@ namespace Employee.API.Endpoints.Attendance
 
       return ResultUtils.Success(status);
     }
-    // 7. TRIGGER PROCESSING (K�ch ho?t t?ng h?p d? li?u)
+    // 7. TRIGGER PROCESSING (Manually trigger raw attendance aggregation)
     public static async Task<IResult> ProcessLogs(IAttendanceProcessingService processingService)
     {
       string result = await processingService.ProcessRawLogsAsync();

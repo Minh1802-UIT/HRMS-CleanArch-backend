@@ -8,29 +8,28 @@ namespace Employee.API.Endpoints.Auth
   {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-      // N1-FIX: Apply rate limiter to auth endpoints
       var group = app.MapGroup("/api/auth")
                      .WithTags("Authentication")
                      .RequireRateLimiting("auth");
 
       // ---------------------------
-      // 1. PUBLIC ROUTES (Ai cũng dùng được)
+      // 1. PUBLIC ROUTES
       // ---------------------------
 
       group.MapPost("/login", AuthHandlers.Login)
-           .AddEndpointFilter<ValidationFilter<LoginDto>>() // 👈 Validate LoginDto
-           .AllowAnonymous(); // Mở công khai
+           .AddEndpointFilter<ValidationFilter<LoginDto>>()
+           .AllowAnonymous();
 
       // ---------------------------
       // 2. PROTECTED ROUTES (Cần đăng nhập)
       // ---------------------------
 
-      // 2.1 Register (Chỉ Admin tạo user mới)
+      // 2.1 Register (Admin only — creates new user accounts)
       group.MapPost("/register", AuthHandlers.Register)
-           .AddEndpointFilter<ValidationFilter<RegisterDto>>() // 👈 Validate RegisterDto
+           .AddEndpointFilter<ValidationFilter<RegisterDto>>()
            .RequireAuthorization(p => p.RequireRole("Admin"));
 
-      // 2.2 Quản lý Role (Chỉ Admin)
+      // 2.2 Manage Roles (Admin only)
       group.MapPost("/role", AuthHandlers.CreateRole)
            .AddEndpointFilter<ValidationFilter<CreateRoleDto>>()
            .RequireAuthorization(p => p.RequireRole("Admin"));
@@ -39,17 +38,15 @@ namespace Employee.API.Endpoints.Auth
            .AddEndpointFilter<ValidationFilter<AssignRoleDto>>()
            .RequireAuthorization(p => p.RequireRole("Admin"));
 
-      // 2.3 Xem danh sách (Admin hoặc HR)
+      // 2.3 List users (Admin or HR)
       group.MapGet("/users", AuthHandlers.GetAllUsers)
            .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-      // 2.4 Cập nhật Role cho User cụ thể
-      // ⚠️ Lưu ý: Thay đổi quyền hạn là hành động nguy hiểm, nên để Admin only
+      // 2.4 Update roles for a specific user (Admin only — role changes are destructive)
       group.MapPut("/roles/{userId}", AuthHandlers.UpdateUserRoles)
-           // .AddEndpointFilter<ValidationFilter<UpdateUserRolesDto>>() // Nếu bạn có Validation cho DTO này
            .RequireAuthorization(p => p.RequireRole("Admin"));
 
-      // 1. Khóa/Mở khóa User (Admin/HR Only)
+      // 2.5 Activate / deactivate user (Admin or HR)
       group.MapPut("/status/{userId}", AuthHandlers.UpdateStatus)
            .AddEndpointFilter<ValidationFilter<UpdateUserStatusDto>>()
            .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
@@ -58,31 +55,30 @@ namespace Employee.API.Endpoints.Auth
            .AddEndpointFilter<ValidationFilter<ChangePasswordDto>>()
            .RequireAuthorization();
 
-      // 2.5 Get All Roles (Admin Only)
+      // 2.5 Get all roles (Admin only)
       group.MapGet("/roles", AuthHandlers.GetRoles)
            .RequireAuthorization(p => p.RequireRole("Admin"));
 
-               // ---------------------------
-               // 3. NEW-2: REFRESH TOKEN (Public) — uses httpOnly cookie for refresh token
-               // ---------------------------
-               // Override group-level "auth" limiter with the more generous "refresh" policy.
-               // Silent refresh is called automatically on page reload — blocking it causes
-               // false logouts when the same IP recently called login or other auth endpoints.
-               group.MapPost("/refresh-token", AuthHandlers.RefreshToken)
+      // ---------------------------
+      // 3. REFRESH TOKEN (Public) — uses httpOnly cookie
+      // Override the group-level "auth" limiter with the more generous "refresh" policy
+      // because silent refresh fires automatically on every page load.
+      // ---------------------------
+      group.MapPost("/refresh-token", AuthHandlers.RefreshToken)
            .AddEndpointFilter<ValidationFilter<RefreshAccessTokenDto>>()
            .AllowAnonymous()
            .RequireRateLimiting("refresh");
 
-               // LOGOUT — clears the httpOnly refresh token cookie; use refresh policy
-               // so a rapid logout after forced-logout loop doesn't get double-429'd.
-               group.MapPost("/logout", AuthHandlers.Logout)
-                    .AllowAnonymous()
-                    .RequireRateLimiting("refresh");
+      // LOGOUT — clears the httpOnly refresh token cookie; share the "refresh" policy
+      // to avoid double-429 on rapid forced-logout flows.
+      group.MapPost("/logout", AuthHandlers.Logout)
+           .AllowAnonymous()
+           .RequireRateLimiting("refresh");
 
-               // ---------------------------
-               // 4. NEW-3: FORGOT / RESET PASSWORD (Public)
-               // ---------------------------
-               group.MapPost("/forgot-password", AuthHandlers.ForgotPassword)
+      // ---------------------------
+      // 4. FORGOT / RESET PASSWORD (Public)
+      // ---------------------------
+      group.MapPost("/forgot-password", AuthHandlers.ForgotPassword)
            .AddEndpointFilter<ValidationFilter<ForgotPasswordDto>>()
            .AllowAnonymous();
 

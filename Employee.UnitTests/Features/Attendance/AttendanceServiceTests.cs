@@ -56,7 +56,7 @@ namespace Employee.UnitTests.Features.Attendance
       await _service.GetTeamAttendanceSummaryAsync(managerId, fromDate, toDate);
 
       // Assert
-      // OPT-3: Verify GetByManagerIdAsync is called
+      // Verify GetByManagerIdAsync is called
       _mockEmployeeRepo.Verify(x => x.GetByManagerIdAsync(managerId, It.IsAny<CancellationToken>()), Times.Once);
 
       // Verify GetAllAsync is NOT called (No full table scan)

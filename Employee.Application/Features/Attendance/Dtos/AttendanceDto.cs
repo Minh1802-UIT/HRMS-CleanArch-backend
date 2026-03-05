@@ -1,4 +1,4 @@
-
+﻿
 namespace Employee.Application.Features.Attendance.Dtos
 {
   // ==========================================
@@ -22,7 +22,7 @@ namespace Employee.Application.Features.Attendance.Dtos
   }
 
   // ==========================================
-  // 2. OUTPUT: B?NG C�NG TH�NG (T? AttendanceBucket)
+  // 2. OUTPUT: MONTHLY ATTENDANCE TABLE (from AttendanceBucket)
   // ==========================================
   public class MonthlyAttendanceDto
   {
@@ -32,13 +32,13 @@ namespace Employee.Application.Features.Attendance.Dtos
     // T?ng h?p nhanh
     public int TotalPresent { get; set; }
     public int TotalLate { get; set; }
-    public double TotalWorkingHours { get; set; } // C?ng d?n gi? l�m
+    public double TotalWorkingHours { get; set; } // Accumulated working hours
 
-    // Chi ti?t t?ng ng�y
+    // Daily log details
     public List<DailyLogDto> Logs { get; set; } = new();
   }
 
-  // DTO chi ti?t cho t?ng ng�y (Mapping t? ValueObject DailyLog)
+  // DTO for each day's log (mapping from DailyLog value object)
   public class DailyLogDto
   {
     public DateTime Date { get; set; }
@@ -71,7 +71,7 @@ namespace Employee.Application.Features.Attendance.Dtos
     public DateTime FromDate { get; set; }
     public DateTime ToDate { get; set; }
 
-    // T?ng h?p trong kho?ng th?i gian n�y
+    // Summary for the requested date range
     public double TotalWorkingHours { get; set; }
     public double TotalOvertimeHours { get; set; }
 
@@ -117,6 +117,6 @@ namespace Employee.Application.Features.Attendance.Dtos
     public double Overtime { get; set; }
     public string Status { get; set; } = "Pending"; // Approved, Rejected, Pending
 
-    public List<double> DailyHours { get; set; } = new(); // Gi? l�m t?ng ng�y d? v? chart/table
+    public List<double> DailyHours { get; set; } = new(); // Gi? l
   }
 }

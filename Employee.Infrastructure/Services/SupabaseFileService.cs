@@ -23,6 +23,26 @@ namespace Employee.Infrastructure.Services
         private static readonly string[] AllowedExtensions =
             { ".jpg", ".jpeg", ".png", ".pdf", ".docx" };
 
+        // SECURITY: Magic bytes (file signatures) prevent attackers from renaming
+        // malicious files to an allowed extension (e.g. shell.php → shell.jpg).
+        private static readonly Dictionary<string, byte[][]> MagicBytes = new()
+        {
+            { ".jpg",  [ [0xFF, 0xD8, 0xFF] ] },
+            { ".jpeg", [ [0xFF, 0xD8, 0xFF] ] },
+            { ".png",  [ [0x89, 0x50, 0x4E, 0x47] ] },
+            { ".pdf",  [ [0x25, 0x50, 0x44, 0x46] ] },
+            { ".docx", [ [0x50, 0x4B, 0x03, 0x04], [0x50, 0x4B, 0x05, 0x06] ] },
+        };
+
+        private static bool HasValidMagicBytes(byte[] fileBytes, string extension)
+        {
+            if (!MagicBytes.TryGetValue(extension, out var signatures))
+                return false;
+            return signatures.Any(sig =>
+                fileBytes.Length >= sig.Length &&
+                fileBytes.Take(sig.Length).SequenceEqual(sig));
+        }
+
         public SupabaseFileService(
             IOptions<SupabaseStorageOptions> options,
             IHttpClientFactory httpClientFactory,
@@ -58,8 +78,7 @@ namespace Employee.Infrastructure.Services
             _storageBaseUrl = $"{projectUrl.TrimEnd('/')}/storage/v1";
 
             _logger.LogInformation("Supabase Storage base URL: {Url}", _storageBaseUrl);
-            _logger.LogInformation("Supabase ServiceKey: {First}...{Last} (len={Len})",
-                serviceKey[..10], serviceKey[^6..], serviceKey.Length);
+            // SECURITY: Never log credentials or partial key material — removed
 
             _http = httpClientFactory.CreateClient("SupabaseStorage");
             // Do NOT set DefaultRequestHeaders — use per-request headers instead
@@ -97,6 +116,11 @@ namespace Employee.Infrastructure.Services
                 using var ms = new MemoryStream();
                 await file.Content.CopyToAsync(ms);
                 var data = ms.ToArray();
+
+                // SECURITY: Magic bytes check — validate file content matches declared extension.
+                // Extension-only checks can be bypassed by renaming a malicious file.
+                if (!HasValidMagicBytes(data, extension))
+                    throw new InvalidOperationException("File content does not match the declared file type.");
 
                 _logger.LogInformation(
                     "Uploading to Supabase: url={Url}, size={Size} bytes",

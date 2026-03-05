@@ -36,7 +36,7 @@ namespace Employee.API.Endpoints.Auth
       return ResultUtils.Created("Account registered successfully.");
     }
 
-    // 2. LOGIN (Public) � sets refresh token as httpOnly cookie
+    // 2. LOGIN (Public) — stores refresh token as an httpOnly cookie
     public static async Task<IResult> Login([FromBody] LoginDto dto, ISender sender, HttpContext context)
     {
       var result = await sender.Send(new LoginCommand
@@ -58,7 +58,7 @@ namespace Employee.API.Endpoints.Auth
         Path = "/"
       });
 
-      // Return a fixed typed contract � no anonymous objects, no guessing on the client.
+      // Return a fixed typed contract — avoids anonymous objects and guesswork on the client.
       return ResultUtils.Success(new LoginSuccessDto
       {
         AccessToken = result.AccessToken,
@@ -133,7 +133,7 @@ namespace Employee.API.Endpoints.Auth
       return ResultUtils.Success(roles, "Retrieved all roles successfully.");
     }
 
-    // 8. REFRESH TOKEN (Public) � reads refresh token from httpOnly cookie
+    // 8. REFRESH TOKEN (Public) — reads refresh token from httpOnly cookie
     public static async Task<IResult> RefreshToken([FromBody] RefreshAccessTokenDto dto, ISender sender, HttpContext context)
     {
       // Read refresh token from httpOnly cookie
@@ -165,7 +165,7 @@ namespace Employee.API.Endpoints.Auth
       }, "Token refreshed successfully.");
     }
 
-    // 11. LOGOUT � revokes server-side tokens then clears the httpOnly cookie
+    // 11. LOGOUT — revokes server-side tokens then clears the httpOnly cookie
     public static async Task<IResult> Logout(
         HttpContext context,
         IIdentityService identityService,
@@ -188,7 +188,7 @@ namespace Employee.API.Endpoints.Auth
     // 9. FORGOT PASSWORD (Public)
     public static async Task<IResult> ForgotPassword([FromBody] ForgotPasswordDto dto, ISender sender)
     {
-      // C4-FIX: Token is sent via EmailService, NOT returned in API response
+      // Token is sent via email only — never returned in the API response
       await sender.Send(new ForgotPasswordCommand { Email = dto.Email });
       return ResultUtils.Success("If the email exists, a reset link has been sent.");
     }

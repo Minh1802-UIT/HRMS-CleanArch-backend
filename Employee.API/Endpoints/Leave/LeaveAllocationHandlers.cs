@@ -1,4 +1,4 @@
-using Employee.API.Common;
+ï»¿using Employee.API.Common;
 using Employee.Application.Common.Interfaces;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Application.Features.Leave.Dtos;
@@ -10,7 +10,7 @@ namespace Employee.API.Endpoints.Leave
 {
   public static class LeaveAllocationHandlers
   {
-    // 1. GET MY BALANCE (User xem s? du c?a mình)
+    // 1. GET MY BALANCE
     public static async Task<IResult> GetMyBalance(
         ILeaveAllocationService service,
         ICurrentUser currentUser)
@@ -33,7 +33,7 @@ namespace Employee.API.Endpoints.Leave
       return ResultUtils.Success(result, "Retrieved all leave allocations successfully.");
     }
 
-    // 2. GET EMPLOYEE BALANCE (HR/Admin xem s? du c?a nhân viên khác)
+    // 2. GET EMPLOYEE BALANCE (HR/Admin views another employee's balance)
     public static async Task<IResult> GetBalanceByEmployee(
         string employeeId,
         ILeaveAllocationService service,
@@ -53,25 +53,25 @@ namespace Employee.API.Endpoints.Leave
       return ResultUtils.Success(balance, "Retrieved employee leave balance successfully.");
     }
 
-    // 3. ALLOCATE / UPDATE (HR c?p phép ho?c di?u ch?nh s? du)
-    // Ðây là hàm quan tr?ng nh?t: Create or Update Allocation
+    // 3. ALLOCATE / UPDATE (HR grants or adjusts leave days)
+
     public static async Task<IResult> Allocate(
         [FromBody] CreateAllocationDto dto,
         ILeaveAllocationService service)
     {
-      // Logic: N?u chua có thì t?o m?i, có r?i thì update (c?ng d?n ho?c ghi dè tùy logic service)
+      // Create if absent, update if already exist (upsert handled by service)
       await service.AllocateDaysAsync(dto);
       return ResultUtils.Success($"Allocated {dto.NumberOfDays} days for employee successfully.");
     }
 
-    // 4. DELETE ALLOCATION (Admin thu h?i phép - Ít dùng nhung c?n có)
+    // 4. DELETE ALLOCATION (Admin revokes leave days)
     public static async Task<IResult> Delete(string id, ILeaveAllocationService service)
     {
       await service.DeleteAsync(id);
       return ResultUtils.Success("Leave allocation removed successfully.");
     }
 
-    // 5. INITIALIZE (T? d?ng kh?i t?o phép cho nam m?i)
+    // 5. INITIALIZE (Auto-initialize leave allocations for a new year)
     public static async Task<IResult> Initialize(
         int year,
         string employeeId,
@@ -81,7 +81,7 @@ namespace Employee.API.Endpoints.Leave
       return ResultUtils.Success("Leave allocation initialized successfully.");
     }
 
-    // 6. CARRY FORWARD (NEW-5) — Admin triggers year-end carry-forward
+    // 6. CARRY FORWARD â€” Admin triggers year-end carry-forward
     // POST /api/leave-allocations/carry-forward/{fromYear}
     public static async Task<IResult> CarryForward(
         int fromYear,

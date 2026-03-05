@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace Employee.Application.Features.Payroll.Dtos
 {
-  /// <summary>NEW-7: Monthly PIT breakdown for one employee.</summary>
+  /// <summary>Monthly PIT breakdown for one employee.</summary>
   public class MonthlyTaxSummaryDto
   {
     public string Month { get; set; } = string.Empty;     // "01-2026"
@@ -17,7 +17,7 @@ namespace Employee.Application.Features.Payroll.Dtos
     public decimal FinalNetSalary { get; set; }
   }
 
-  /// <summary>NEW-7: Annual personal-income-tax summary for one employee.</summary>
+  /// <summary>Annual personal-income-tax summary for one employee.</summary>
   public class EmployeeTaxSummaryDto
   {
     public string EmployeeId { get; set; } = string.Empty;
@@ -36,7 +36,7 @@ namespace Employee.Application.Features.Payroll.Dtos
     public decimal TotalNetSalary { get; set; }
   }
 
-  /// <summary>NEW-7: Full annual PIT report for all employees in a given year.</summary>
+  /// <summary>Full annual PIT report for all employees in a given year.</summary>
   public class AnnualTaxReportDto
   {
     public int Year { get; set; }

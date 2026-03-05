@@ -39,7 +39,7 @@ namespace Employee.API.Middlewares
                 Employee.Application.Common.Exceptions.ConcurrencyException =>
                     (StatusCodes.Status409Conflict, "CONCURRENCY_ERROR", "Data has been modified by another user", null, true),
 
-                // M1-FIX: Handle BusinessRuleViolationException → 422
+                // Handle BusinessRuleViolationException → 422
                 Employee.Application.Common.Exceptions.BusinessRuleViolationException =>
                     (StatusCodes.Status422UnprocessableEntity, "BUSINESS_RULE_VIOLATION", "Business rule violated", null, true),
 

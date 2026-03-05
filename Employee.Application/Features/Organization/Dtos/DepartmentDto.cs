@@ -1,4 +1,4 @@
-
+﻿
 namespace Employee.Application.Features.Organization.Dtos
 {
   // 1. VIEW DTO (Output)
@@ -30,7 +30,7 @@ namespace Employee.Application.Features.Organization.Dtos
   // 2. CREATE DTO (Input)
   public class CreateDepartmentDto
   {
-    // Regex: Ch? cho ph�p ch?, s?, g?ch ngang, g?ch du?i
+    // Only letters, digits, hyphens, and underscores are allowed
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
@@ -45,7 +45,7 @@ namespace Employee.Application.Features.Organization.Dtos
     public string Id { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
 
-    // Code thu?ng kh�ng cho s?a, n?u s?a th� d�ng validate tuong t? Create
+    // Code is normally not editable; validate the same way as Create if it is
     // public string Code { get; set; } = string.Empty; 
     public string? Description { get; set; }
 

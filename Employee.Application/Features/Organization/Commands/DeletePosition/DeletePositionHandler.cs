@@ -16,7 +16,7 @@ namespace Employee.Application.Features.Organization.Commands.DeletePosition
   {
     public async Task Handle(DeletePositionCommand request, CancellationToken cancellationToken)
     {
-      // IMP-1: Check employee references
+      // Check employee references before deleting
       var hasEmployees = await employeeRepo.ExistsByPositionIdAsync(request.Id, cancellationToken);
       if (hasEmployees)
         throw new ValidationException("Không thể xóa chức vụ đang có nhân viên.");

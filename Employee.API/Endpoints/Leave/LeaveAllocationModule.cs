@@ -12,31 +12,31 @@ namespace Employee.API.Endpoints.Leave
                               .WithTags("Leave Management - Allocation")
                               .RequireAuthorization();
 
-               // 1. Lấy số dư của tôi
+               // 1. My leave balance
                group.MapGet("/me", LeaveAllocationHandlers.GetMyBalance);
 
-               // 1.5 Lấy báo cáo toàn bộ (Admin/HR)
+               // 1.5 Full allocation report (Admin/HR)
                group.MapPost("/list", LeaveAllocationHandlers.GetAllBalances)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-               // 2. Lấy số dư của nhân viên cụ thể (HR/Admin) xem của người khác -> Update: Allow Owner too
+               // 2. Balance for a specific employee (HR/Admin, or the employee themselves)
                group.MapGet("/employee/{employeeId}", LeaveAllocationHandlers.GetBalanceByEmployee)
                     .RequireAuthorization();
 
-               // 3. HR/Admin cấp phép
+               // 3. Allocate / adjust leave days (HR/Admin)
                group.MapPost("/", LeaveAllocationHandlers.Allocate)
                     .AddEndpointFilter<ValidationFilter<CreateAllocationDto>>()
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-               // 4. Thu hồi phép
+               // 4. Revoke allocation
                group.MapDelete("/{id}", LeaveAllocationHandlers.Delete)
                     .RequireAuthorization(p => p.RequireRole("Admin"));
 
-               // 5. Initialize (Auto) — Admin/HR only
+               // 5. Initialize allocations for a new year (Admin/HR)
                group.MapPost("/initialize/{year}", LeaveAllocationHandlers.Initialize)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-               // 6. Year-end carry-forward (NEW-5) — Admin only
+               // 6. Year-end carry-forward (Admin only)
                group.MapPost("/carry-forward/{fromYear}", LeaveAllocationHandlers.CarryForward)
                     .RequireAuthorization(p => p.RequireRole("Admin"));
           }

@@ -9,7 +9,7 @@ namespace Employee.Application.Features.Leave.EventHandlers
   /// <summary>
   /// Handles LeaveRequestApprovedEvent:
   /// - Logs structured info for monitoring dashboards
-  /// - NEW-9: Sends in-app notification to the employee
+  /// - Sends in-app notification to the employee
   /// </summary>
   public class LeaveRequestApprovedEventHandler : INotificationHandler<DomainEventNotification<LeaveRequestApprovedEvent>>
   {
@@ -31,7 +31,7 @@ namespace Employee.Application.Features.Leave.EventHandlers
           notificationWrapper.DomainEvent.LeaveRequestId, notificationWrapper.DomainEvent.EmployeeId,
           notificationWrapper.DomainEvent.ApprovedBy, notificationWrapper.DomainEvent.WorkingDaysDeducted);
 
-      // NEW-9: Create in-app notification for the employee
+      // Create in-app notification for the employee
       await _notificationService.CreateAsync(
           userId: notificationWrapper.DomainEvent.EmployeeId,
           title: "Leave Request Approved ✅",

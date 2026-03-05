@@ -1,4 +1,4 @@
-using Employee.API.Common;
+﻿using Employee.API.Common;
 using Employee.Domain.Constants;
 using Employee.Domain.Common.Models;
 using Employee.Application.Features.Leave.Dtos;
@@ -26,7 +26,7 @@ namespace Employee.API.Endpoints.Leave
       return ResultUtils.Success(result, "Retrieved paginated leave requests successfully.");
     }
 
-    // 1. GET MY LEAVES (Xem l?ch s? ngh? ph�p c?a ch�nh m�nh)
+    // 1. GET MY LEAVES (View own leave request history)
     public static async Task<IResult> GetMyLeaves(
         ISender sender,
         ICurrentUser currentUser)
@@ -53,12 +53,12 @@ namespace Employee.API.Endpoints.Leave
     public static async Task<IResult> GetById(string id, ISender sender, ICurrentUser currentUser)
     {
       var item = await sender.Send(new GetLeaveRequestByIdQuery(id));
-      // Employee ch? du?c xem don ngh? ph�p c?a ch�nh m�nh; Admin/HR/Manager du?c xem t?t c?
+      // Employees can only view their own requests; Admin/HR/Manager can view all
       if (!currentUser.IsInRole("Admin") && !currentUser.IsInRole("HR") && !currentUser.IsInRole("Manager"))
       {
         var employeeId = currentUser.EmployeeId ?? currentUser.UserId;
         if (item.EmployeeId != employeeId)
-          return ResultUtils.Fail("LEAVE_REQUEST_FORBIDDEN", "B?n kh�ng c� quy?n xem don ngh? ph�p n�y.", 403);
+          return ResultUtils.Fail("LEAVE_REQUEST_FORBIDDEN", "B?n khng c quy?n xem don ngh? php ny.", 403);
       }
       return ResultUtils.Success(item);
     }

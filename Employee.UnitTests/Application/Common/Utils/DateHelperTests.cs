@@ -35,7 +35,7 @@ namespace Employee.UnitTests.Application.Common.Utils
     }
 
     // =====================================================================
-    //  NEW-4: CountCalendarDays — Sandwich Rule
+    //  CountCalendarDays — Sandwich Rule
     // =====================================================================
 
     [Theory]
