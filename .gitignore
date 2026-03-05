@@ -88,4 +88,16 @@ lcov.info
 Thumbs.db
 desktop.ini
 
+## Python (scripts tooling)
+.venv/
+__pycache__/
+*.pyc
+
+## Temp test data files (API debug artifacts)
+attendance_report*.json
+leave_requests*.json
+
+## npm lockfile (not used in .NET project)
+package-lock.json
+
 appsettings.Development.json
