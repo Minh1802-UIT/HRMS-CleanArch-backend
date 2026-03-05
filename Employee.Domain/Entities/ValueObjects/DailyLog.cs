@@ -36,7 +36,13 @@ namespace Employee.Domain.Entities.ValueObjects
     public bool IsMissingPunch { get; set; }
 
     // Computed convenience — true when the employee was physically present.
-    public bool IsPresent => Status == AttendanceStatus.Present;
+    // Also matches legacy Late/EarlyLeave status values stored in old MongoDB documents
+    // before the boolean-flag refactor (those records count as present too).
+#pragma warning disable CS0618 // legacy enum values intentionally supported here
+    public bool IsPresent => Status == AttendanceStatus.Present
+                          || Status == AttendanceStatus.Late
+                          || Status == AttendanceStatus.EarlyLeave;
+#pragma warning restore CS0618
 
     public string Note { get; set; } = string.Empty;
 

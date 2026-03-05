@@ -10,6 +10,16 @@ namespace Employee.Domain.Enums
     Absent,
     Present,
     Leave,
-    Holiday
+    Holiday,
+
+    /// <summary>Legacy value — stored in old MongoDB documents before the boolean-flag refactor.
+    /// New records use Status=Present + IsLate=true. Do NOT use in new code.</summary>
+    [System.Obsolete("Use Status=Present with IsLate=true instead.")]
+    Late,
+
+    /// <summary>Legacy value — stored in old MongoDB documents before the boolean-flag refactor.
+    /// New records use Status=Present + IsEarlyLeave=true. Do NOT use in new code.</summary>
+    [System.Obsolete("Use Status=Present with IsEarlyLeave=true instead.")]
+    EarlyLeave
   }
 }
