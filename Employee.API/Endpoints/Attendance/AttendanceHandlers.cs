@@ -299,5 +299,28 @@ namespace Employee.API.Endpoints.Attendance
         Window = new { StartUtc = startUtc, EndUtc = endUtc }
       });
     }
+
+    // 8. Backfill holiday flags for a specific month
+    //    POST /api/attendance/admin/backfill-holidays
+    //    Body: { "month": 2, "year": 2026 }
+    public static async Task<IResult> BackfillHolidays(
+        [FromBody] BackfillHolidaysRequest dto,
+        IAttendanceProcessingService processingService)
+    {
+      if (dto.Month < 1 || dto.Month > 12)
+        return ResultUtils.Fail("INVALID_MONTH", "Month must be between 1 and 12.");
+      if (dto.Year < 2000 || dto.Year > 2100)
+        return ResultUtils.Fail("INVALID_YEAR", "Year is out of range.");
+
+      var updatedBuckets = await processingService.BackfillHolidayFlagsAsync(dto.Month, dto.Year);
+      return ResultUtils.Success(new
+      {
+        UpdatedBuckets = updatedBuckets,
+        Month = dto.Month,
+        Year = dto.Year
+      });
+    }
   }
+
+  public record BackfillHolidaysRequest(int Month, int Year);
 }

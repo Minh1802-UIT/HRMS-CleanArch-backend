@@ -46,6 +46,11 @@ namespace Employee.API.Endpoints.Attendance
                //    POST /api/attendance/admin/force-reprocess?month=03-2026
                group.MapPost("/admin/force-reprocess", AttendanceHandlers.ForceReprocessMonth)
                     .RequireAuthorization(p => p.RequireRole("Admin"));
+
+               // 7. Backfill holiday flags for existing attendance records
+               //    POST /api/attendance/admin/backfill-holidays  { month: 2, year: 2026 }
+               group.MapPost("/admin/backfill-holidays", AttendanceHandlers.BackfillHolidays)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
           }
      }
 }

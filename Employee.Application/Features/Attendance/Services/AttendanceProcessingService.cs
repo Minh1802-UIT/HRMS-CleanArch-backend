@@ -17,6 +17,7 @@ namespace Employee.Application.Features.Attendance.Services
     private readonly IAttendanceRepository _attendanceRepo;
     private readonly IEmployeeRepository _employeeRepo;
     private readonly IShiftRepository _shiftRepo;
+    private readonly IPublicHolidayRepository _holidayRepo;
     private readonly AttendanceCalculator _calculator;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<AttendanceProcessingService> _logger;
@@ -33,6 +34,7 @@ namespace Employee.Application.Features.Attendance.Services
         IAttendanceRepository attendanceRepo,
         IEmployeeRepository employeeRepo,
         IShiftRepository shiftRepo,
+        IPublicHolidayRepository holidayRepo,
         AttendanceCalculator calculator,
         IUnitOfWork unitOfWork,
         ILogger<AttendanceProcessingService> logger,
@@ -42,6 +44,7 @@ namespace Employee.Application.Features.Attendance.Services
       _attendanceRepo = attendanceRepo;
       _employeeRepo = employeeRepo;
       _shiftRepo = shiftRepo;
+      _holidayRepo = holidayRepo;
       _calculator = calculator;
       _unitOfWork = unitOfWork;
       _logger = logger;
@@ -72,13 +75,20 @@ namespace Employee.Application.Features.Attendance.Services
         {
           x.EmployeeId,
           LogicalDate = GetLogicalDate(x.Timestamp)
-        });
+        }).ToList();
+
+        // Load public holidays covering all logical dates in this batch (one round-trip)
+        var batchDates = groupedLogs.Select(g => g.Key.LogicalDate).Distinct().ToList();
+        var batchStart = batchDates.Min();
+        var batchEnd = batchDates.Max();
+        var holidayList = await _holidayRepo.GetByDateRangeAsync(batchStart, batchEnd);
+        var holidayMap = holidayList.ToDictionary(h => h.Date.Date, h => h.Name);
 
         foreach (var group in groupedLogs)
         {
           try
           {
-            await ProcessSingleGroupAsync(group.Key.EmployeeId, group.Key.LogicalDate, group.ToList());
+            await ProcessSingleGroupAsync(group.Key.EmployeeId, group.Key.LogicalDate, group.ToList(), holidayMap);
             processedCount += group.Count();
             _logger.LogInformation(
                 "ProcessRawLogsAsync: Processed {Count} logs for EmployeeId={EmployeeId} LogicalDate={Date}",
@@ -109,7 +119,8 @@ namespace Employee.Application.Features.Attendance.Services
     // Core: process one (employeeId + logicalDate) group
     // -------------------------------------------------------------------------
     private async Task ProcessSingleGroupAsync(
-        string employeeId, DateTime workDate, List<RawAttendanceLog> newLogs)
+        string employeeId, DateTime workDate, List<RawAttendanceLog> newLogs,
+        IReadOnlyDictionary<DateTime, string>? holidayMap = null)
     {
       await _unitOfWork.BeginTransactionAsync();
       try
@@ -232,6 +243,16 @@ namespace Employee.Application.Features.Attendance.Services
         // --- STEP D: Calculate ---
         _calculator.CalculateDailyStatus(dailyLog, shift);
 
+        // --- STEP D2: Apply holiday flag ---
+        // Must run AFTER the calculator so OT/working-hours are not erased.
+        if (holidayMap != null && holidayMap.TryGetValue(workDate.Date, out var holidayName))
+        {
+          dailyLog.SetHoliday(true, holidayName);
+          _logger.LogInformation(
+              "Holiday flag applied: EmployeeId={Id} Date={Date} Holiday={Name}",
+              employeeId, workDate.ToString("yyyy-MM-dd"), holidayName);
+        }
+
         // --- STEP E: Persist ---
         bucket.AddOrUpdateDailyLog(dailyLog);
         await _attendanceRepo.UpdateAsync(bucket.Id, bucket);
@@ -341,6 +362,64 @@ namespace Employee.Application.Features.Attendance.Services
         log.MarkAsFailed(error);
         await _rawRepo.MarkAsErrorAsync(log.Id, error);
       }
+    }
+
+    // -------------------------------------------------------------------------
+    // Backfill: retroactively mark holiday flags for a whole month
+    // -------------------------------------------------------------------------
+    public async Task<int> BackfillHolidayFlagsAsync(int month, int year)
+    {
+      var monthKey = $"{month:D2}-{year}";
+      var monthStart = new DateTime(year, month, 1);
+      var monthEnd = monthStart.AddMonths(1).AddDays(-1);
+
+      // Load all attendance buckets for the month
+      var buckets = (await _attendanceRepo.GetByMonthAsync(monthKey)).ToList();
+      if (!buckets.Any())
+      {
+        _logger.LogInformation("BackfillHolidayFlagsAsync: No buckets found for {MonthKey}", monthKey);
+        return 0;
+      }
+
+      // Load holidays for the month (one round-trip)
+      var holidays = await _holidayRepo.GetByDateRangeAsync(monthStart, monthEnd);
+      var holidayMap = holidays.ToDictionary(h => h.Date.Date, h => h.Name);
+
+      if (!holidayMap.Any())
+      {
+        _logger.LogInformation("BackfillHolidayFlagsAsync: No holidays found for {MonthKey}", monthKey);
+        return 0;
+      }
+
+      int updatedCount = 0;
+
+      foreach (var bucket in buckets)
+      {
+        bool bucketChanged = false;
+
+        foreach (var dailyLog in bucket.DailyLogs)
+        {
+          if (holidayMap.TryGetValue(dailyLog.Date.Date, out var holidayName) && !dailyLog.IsHoliday)
+          {
+            dailyLog.SetHoliday(true, holidayName);
+            bucketChanged = true;
+            _logger.LogInformation(
+                "BackfillHolidayFlagsAsync: Marked holiday for EmployeeId={Id} Date={Date} Holiday={Name}",
+                bucket.EmployeeId, dailyLog.Date.ToString("yyyy-MM-dd"), holidayName);
+          }
+        }
+
+        if (bucketChanged)
+        {
+          bucket.RecalculateTotals();
+          await _attendanceRepo.UpdateAsync(bucket.Id, bucket);
+          updatedCount++;
+        }
+      }
+
+      _logger.LogInformation(
+          "BackfillHolidayFlagsAsync: {Count} buckets updated for {MonthKey}", updatedCount, monthKey);
+      return updatedCount;
     }
   }
 }

@@ -110,16 +110,27 @@ namespace Employee.Domain.Entities.ValueObjects
       IsMissingPunch = isMissingPunch;
     }
 
+    /// <summary>
+    /// Marks this day as a public holiday.
+    /// - If the employee has NO check-in (absent): sets Status=Holiday so it counts as paid holiday.
+    /// - If the employee IS present (checked in): only sets the IsHoliday flag; Status stays Present
+    ///   so working-hours / OT / present-count remain intact (holiday OT rate applied separately).
+    /// </summary>
     public void SetHoliday(bool isHoliday, string note = "Holiday")
     {
       IsHoliday = isHoliday;
       if (isHoliday)
       {
-        Status = AttendanceStatus.Holiday;
-        Note = note;
-        IsLate = false;
-        IsEarlyLeave = false;
-        IsMissingPunch = false;
+        Note = string.IsNullOrEmpty(Note) ? note : $"{Note} · {note}";
+        // Only override status when the day is a true absence (no punch).
+        // Present employees keep their calculated status so TotalPresent stays correct.
+        if (!CheckIn.HasValue)
+        {
+          Status = AttendanceStatus.Holiday;
+          IsLate = false;
+          IsEarlyLeave = false;
+          IsMissingPunch = false;
+        }
       }
     }
 
