@@ -112,7 +112,7 @@ namespace Employee.Infrastructure.Repositories.Payroll
           .Set(x => x.IsDeleted, true)
           .Set(x => x.UpdatedAt, DateTime.UtcNow);
       await _collection.UpdateManyAsync(
-          x => x.EmployeeId == employeeId && x.IsDeleted != true,
+          Builders<PayrollEntity>.Filter.Where(x => x.EmployeeId == employeeId && x.IsDeleted != true),
           update,
           cancellationToken: cancellationToken);
     }
