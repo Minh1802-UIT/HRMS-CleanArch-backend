@@ -281,9 +281,12 @@ namespace Employee.Application.Common.Services
                   .FontSize(8).FontColor(Colors.Grey.Darken2);
             });
 
-            page.Content().Table(table =>
+            page.Content().Column(contentCol =>
             {
-              table.ColumnsDefinition(c =>
+              // ── Attendance table ───────────────────────────────────
+              contentCol.Item().Table(table =>
+              {
+                table.ColumnsDefinition(c =>
               {
                 c.ConstantColumn(62);  // Date
                 c.ConstantColumn(30);  // Day
@@ -351,12 +354,12 @@ namespace Employee.Application.Common.Services
                     .Text(violationNote).FontColor(
                         flags.Count > 0 ? Colors.Orange.Darken2 : Colors.Grey.Darken1);
               }
-            });
+              });
 
-            // Summary footer row
-            page.Content().PaddingTop(6).Table(table =>
-            {
-              table.ColumnsDefinition(c =>
+              // ── Summary tiles ──────────────────────────────────────
+              contentCol.Item().PaddingTop(6).Table(table =>
+              {
+                table.ColumnsDefinition(c =>
               {
                 c.RelativeColumn(); c.RelativeColumn(); c.RelativeColumn(); c.RelativeColumn();
               });
@@ -370,6 +373,7 @@ namespace Employee.Application.Common.Services
               SummaryTile(table, "Leave Days (this month)\nNgày nghỉ phép",
                   dailyLogs.Count(l => l.Status == AttendanceStatus.Leave).ToString() + " days",
                   Colors.Blue.Darken1);
+              });
             });
 
             page.Footer().AlignCenter().Text(x =>
