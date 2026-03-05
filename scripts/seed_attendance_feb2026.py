@@ -63,6 +63,15 @@ assert len(ALL_EMPLOYEE_IDS) == 128, f"Expected 128 employees, got {len(ALL_EMPL
 # Feb 2026: weekends are Feb 1(Sun),7(Sat),8(Sun),14(Sat),15(Sun),21(Sat),22(Sun),28(Sat)
 WEEKEND_DAYS = {1, 7, 8, 14, 15, 21, 22, 28}
 
+# Tết holidays 2026 (paid, no punch)
+HOLIDAY_DAYS = {
+    16: "Nghi Tet Nguyen Dan (bu 29 Thang Chap)",
+    17: "Tet Nguyen Dan - Mung 1",
+    18: "Tet Nguyen Dan - Mung 2",
+    19: "Tet Nguyen Dan - Mung 3",
+    20: "Tet Nguyen Dan - Mung 4",
+}
+
 # Shifts: S01 = first 90 employees, S02 = next 38
 # (80/20 split approximately)
 def get_shift_for_index(i):
@@ -112,23 +121,27 @@ def compute_working_hours(check_in: datetime, check_out: datetime, shift: dict) 
 def generate_daily_log(emp_idx: int, day: int, shift_code: str, rng: random.Random) -> dict:
     """Generate a DailyLog entry for a given day (1-28) of Feb 2026."""
     is_weekend = day in WEEKEND_DAYS
+    is_holiday = day in HOLIDAY_DAYS
     date_utc = datetime(2026, 2, day, 0, 0, 0, tzinfo=timezone.utc)
     shift = SHIFTS[shift_code]
 
     if is_weekend:
         return {
-            "Date": date_utc,
-            "CheckIn": None,
-            "CheckOut": None,
-            "ShiftCode": shift_code,
-            "WorkingHours": 0.0,
-            "LateMinutes": 0,
-            "EarlyLeaveMinutes": 0,
-            "OvertimeHours": 0.0,
-            "Status": "Weekend",
-            "Note": "",
-            "IsHoliday": False,
-            "IsWeekend": True,
+            "Date": date_utc, "CheckIn": None, "CheckOut": None,
+            "ShiftCode": shift_code, "WorkingHours": 0.0,
+            "LateMinutes": 0, "EarlyLeaveMinutes": 0, "OvertimeHours": 0.0,
+            "Status": "Weekend", "Note": "", "IsHoliday": False, "IsWeekend": True,
+        }
+
+    if is_holiday:
+        # Paid public holiday – no punch, full 8h for everyone, zero OT
+        return {
+            "Date": date_utc, "CheckIn": None, "CheckOut": None,
+            "ShiftCode": shift_code, "WorkingHours": 8.0,
+            "LateMinutes": 0, "EarlyLeaveMinutes": 0, "OvertimeHours": 0.0,
+            "Status": "Holiday", "Note": HOLIDAY_DAYS[day],
+            "IsHoliday": True, "IsWeekend": False,
+            "IsLate": False, "IsEarlyLeave": False, "IsMissingPunch": False,
         }
 
     # Working day
@@ -250,12 +263,12 @@ def generate_bucket(emp_id: str, emp_idx: int) -> dict:
         log = generate_daily_log(emp_idx, day, shift_code, rng)
         daily_logs.append(log)
 
-    total_present = sum(
+    total_present  = sum(
         1 for l in daily_logs
-        if l["Status"] in ("Present", "Late", "EarlyLeave") and not l["IsWeekend"]
+        if l["Status"] in ("Present", "Late", "EarlyLeave")
     )
-    total_late = sum(1 for l in daily_logs if l["Status"] == "Late")
-    total_overtime = sum(1 for l in daily_logs if l["OvertimeHours"] > 0)
+    total_late     = sum(1 for l in daily_logs if l.get("IsLate") or l["Status"] == "Late")
+    total_overtime = sum(l["OvertimeHours"] for l in daily_logs)  # SUM of hours, not count
 
     now_utc = datetime(2026, 3, 1, 0, 0, 0, tzinfo=timezone.utc)
     epoch_min = datetime(1, 1, 1, tzinfo=timezone.utc)  # matches the sample's -62135596800000 ms epoch

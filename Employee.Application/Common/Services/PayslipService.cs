@@ -19,15 +19,18 @@ namespace Employee.Application.Common.Services
     private readonly IPayrollRepository _payrollRepo;
     private readonly IAttendanceRepository _attendanceRepo;
     private readonly ILeaveRequestRepository _leaveRepo;
+    private readonly TimeZoneInfo _timeZone;
 
     public PayslipService(
         IPayrollRepository payrollRepo,
         IAttendanceRepository attendanceRepo,
-        ILeaveRequestRepository leaveRepo)
+        ILeaveRequestRepository leaveRepo,
+        TimeZoneInfo timeZone)
     {
       _payrollRepo = payrollRepo;
       _attendanceRepo = attendanceRepo;
       _leaveRepo = leaveRepo;
+      _timeZone = timeZone;
       QuestPDF.Settings.License = LicenseType.Community;
     }
 
@@ -330,30 +333,64 @@ namespace Employee.Application.Common.Services
                 else { statusText = "Absent"; statusColor = Colors.Red.Darken1; }
 #pragma warning restore CS0618
 
-                var flags = new List<string>();
-                if (log.IsLate) flags.Add($"Late +{log.LateMinutes}m");
-                if (log.IsEarlyLeave) flags.Add($"Early -{log.EarlyLeaveMinutes}m");
-                if (log.IsMissingPunch) flags.Add("No punch-out");
-                var violationNote = string.Join(" · ", flags);
-                if (!string.IsNullOrWhiteSpace(log.Note))
-                  violationNote = string.IsNullOrWhiteSpace(violationNote)
-                      ? log.Note : $"{violationNote} · {log.Note}";
+                  // On holiday rows: suppress late/early flags (full attendance granted)
+                  // and show only the holiday name from Note.
+                  string violationNote;
+                  if (log.IsHoliday && !log.IsWeekend)
+                  {
+                    violationNote = log.Note ?? string.Empty;
+                  }
+                  else
+                  {
+                    var flags = new List<string>();
+                    if (log.IsLate) flags.Add($"Late +{log.LateMinutes}m");
+                    if (log.IsEarlyLeave) flags.Add($"Early -{log.EarlyLeaveMinutes}m");
+                    if (log.IsMissingPunch) flags.Add("No punch-out");
+                    violationNote = string.Join(" · ", flags);
+                    if (!string.IsNullOrWhiteSpace(log.Note))
+                      violationNote = string.IsNullOrWhiteSpace(violationNote)
+                          ? log.Note : $"{violationNote} · {log.Note}";
+                  }
 
-                LogTd(table, log.Date.ToString("dd/MM/yyyy"), bg);
+                  // Convert UTC → Vietnam local time for display
+                  string checkInDisplay, checkOutDisplay, workedDisplay, otDisplay;
+                  if (log.IsHoliday && !log.IsWeekend)
+                  {
+                    // Holiday: full 8h for everyone, no punch times, no OT
+                    checkInDisplay = "-";
+                    checkOutDisplay = "-";
+                    workedDisplay = "8.0h";
+                    otDisplay = "-";
+                  }
+                  else
+                  {
+                    checkInDisplay = log.CheckIn.HasValue
+                        ? TimeZoneInfo.ConvertTimeFromUtc(log.CheckIn.Value, _timeZone).ToString("HH:mm")
+                        : "-";
+                    checkOutDisplay = log.CheckOut.HasValue
+                        ? TimeZoneInfo.ConvertTimeFromUtc(log.CheckOut.Value, _timeZone).ToString("HH:mm")
+                        : "-";
+                    workedDisplay = log.WorkingHours > 0 ? $"{log.WorkingHours:F1}h" : "-";
+                    otDisplay = log.OvertimeHours > 0 ? $"{log.OvertimeHours:F1}h" : "-";
+                  }
+
+                  LogTd(table, log.Date.ToString("dd/MM/yyyy"), bg);
                 LogTd(table, log.Date.ToString("ddd"), bg);
                 LogTd(table, string.IsNullOrEmpty(log.ShiftCode) ? "-" : log.ShiftCode, bg);
-                LogTd(table, log.CheckIn.HasValue ? log.CheckIn.Value.ToString("HH:mm") : "-", bg);
-                LogTd(table, log.CheckOut.HasValue ? log.CheckOut.Value.ToString("HH:mm") : "-", bg);
-                LogTd(table, log.WorkingHours > 0 ? $"{log.WorkingHours:F1}h" : "-", bg);
-                LogTd(table, log.OvertimeHours > 0 ? $"{log.OvertimeHours:F1}h" : "-", bg);
-                table.Cell().Background(bg).BorderBottom(1)
+                  LogTd(table, checkInDisplay, bg);
+                  LogTd(table, checkOutDisplay, bg);
+                  LogTd(table, workedDisplay, bg);
+                  LogTd(table, otDisplay, bg);
+                  table.Cell().Background(bg).BorderBottom(1)
                     .BorderColor(Colors.Grey.Lighten2).Padding(3)
                     .Text(statusText).FontColor(statusColor).SemiBold();
                 table.Cell().Background(bg).BorderBottom(1)
                     .BorderColor(Colors.Grey.Lighten2).Padding(3)
                     .Text(violationNote).FontColor(
-                        flags.Count > 0 ? Colors.Orange.Darken2 : Colors.Grey.Darken1);
-              }
+                        log.IsHoliday ? Colors.Purple.Darken1
+                      : !string.IsNullOrWhiteSpace(violationNote) ? Colors.Orange.Darken2
+                      : Colors.Grey.Darken1);
+                }
               });
 
               // ── Summary tiles ──────────────────────────────────────
