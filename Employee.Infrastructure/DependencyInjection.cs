@@ -168,13 +168,43 @@ namespace Employee.Infrastructure
             // ==========================================
             // Uses the same Redis instance as the app cache — no new infrastructure needed.
             // Jobs survive app restarts and are retried automatically on failure.
-            var redisCs = redisConnectionString ?? "localhost:6379";
+            // We reuse the same URI-parsing logic as the cache block above so that
+            // rediss:// URIs (Upstash) work correctly and AbortOnConnectFail=false
+            // prevents a hard crash when Redis is temporarily unreachable at startup.
+            var rawHangfireCs = redisConnectionString ?? "localhost:6379";
+            ConfigurationOptions hangfireCfg;
+
+            if (rawHangfireCs.StartsWith("rediss://", StringComparison.OrdinalIgnoreCase) ||
+                rawHangfireCs.StartsWith("redis://", StringComparison.OrdinalIgnoreCase))
+            {
+                var uri = new Uri(rawHangfireCs);
+                var password = Uri.UnescapeDataString(uri.UserInfo.Split(':', 2).LastOrDefault() ?? "");
+                hangfireCfg = new ConfigurationOptions
+                {
+                    EndPoints = { $"{uri.Host}:{uri.Port}" },
+                    Password = password,
+                    Ssl = uri.Scheme.Equals("rediss", StringComparison.OrdinalIgnoreCase),
+                    SslProtocols = System.Security.Authentication.SslProtocols.Tls12
+                                 | System.Security.Authentication.SslProtocols.Tls13,
+                };
+            }
+            else
+            {
+                hangfireCfg = ConfigurationOptions.Parse(rawHangfireCs);
+            }
+
+            hangfireCfg.AbortOnConnectFail = false;
+            hangfireCfg.ConnectTimeout = 5000;
+            hangfireCfg.SyncTimeout = 5000;
+
+            var hangfireMultiplexer = ConnectionMultiplexer.Connect(hangfireCfg);
+            services.AddSingleton<IConnectionMultiplexer>(hangfireMultiplexer);
 
             services.AddHangfire(config => config
                 .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
                 .UseSimpleAssemblyNameTypeSerializer()
                 .UseRecommendedSerializerSettings()
-                .UseRedisStorage(redisCs, new RedisStorageOptions
+                .UseRedisStorage(hangfireMultiplexer, new RedisStorageOptions
                 {
                     Prefix = "hangfire:",
                     InvisibilityTimeout = TimeSpan.FromMinutes(30)
