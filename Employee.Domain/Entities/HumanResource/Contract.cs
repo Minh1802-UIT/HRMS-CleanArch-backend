@@ -45,10 +45,25 @@ namespace Employee.Domain.Entities.HumanResource
       EndDate = endDate;
     }
 
-    public void Activate()
+    /// <summary>
+    /// Schedules the contract for future activation when StartDate is in the future.
+    /// Transitions: Draft → Pending.
+    /// </summary>
+    public void ScheduleActivation()
     {
       if (Status != ContractStatus.Draft)
-        throw new InvalidOperationException($"Cannot activate contract in '{Status}' status. Only Draft contracts can be activated.");
+        throw new InvalidOperationException($"Cannot schedule contract in '{Status}' status. Only Draft contracts can be scheduled.");
+      Status = ContractStatus.Pending;
+    }
+
+    /// <summary>
+    /// Activates the contract immediately.
+    /// Transitions: Draft → Active OR Pending → Active (by background job on StartDate).
+    /// </summary>
+    public void Activate()
+    {
+      if (Status != ContractStatus.Draft && Status != ContractStatus.Pending)
+        throw new InvalidOperationException($"Cannot activate contract in '{Status}' status. Only Draft or Pending contracts can be activated.");
       Status = ContractStatus.Active;
     }
 

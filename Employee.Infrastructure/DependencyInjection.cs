@@ -12,6 +12,8 @@ using Employee.Infrastructure.Repositories.Payroll;
 using Employee.Infrastructure.Repositories.Performance;
 using Employee.Infrastructure.Services;
 using Employee.Infrastructure.BackgroundServices;
+using Hangfire;
+using Hangfire.Redis.StackExchange;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Driver;
@@ -160,6 +162,32 @@ namespace Employee.Infrastructure
             services.AddHttpClient("SupabaseStorage");
             services.AddScoped<IFileService, SupabaseFileService>();
             services.AddScoped<ICacheService, CacheService>();
+
+            // ==========================================
+            // 10. HANGFIRE (persistent background jobs)
+            // ==========================================
+            // Uses the same Redis instance as the app cache — no new infrastructure needed.
+            // Jobs survive app restarts and are retried automatically on failure.
+            var redisCs = redisConnectionString ?? "localhost:6379";
+
+            services.AddHangfire(config => config
+                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                .UseSimpleAssemblyNameTypeSerializer()
+                .UseRecommendedSerializerSettings()
+                .UseRedisStorage(redisCs, new RedisStorageOptions
+                {
+                    Prefix = "hangfire:",
+                    InvisibilityTimeout = TimeSpan.FromMinutes(30)
+                }));
+
+            services.AddHangfireServer(options =>
+            {
+                options.WorkerCount = 2;   // small footprint — adjust as needed
+                options.ServerName = "hrms-worker";
+            });
+
+            services.AddScoped<AccountProvisioningJob>();
+            services.AddScoped<IBackgroundJobService, HangfireBackgroundJobService>();
 
             return services;
         }

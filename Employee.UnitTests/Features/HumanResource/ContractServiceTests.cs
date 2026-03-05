@@ -10,6 +10,7 @@ using Employee.Application.Features.HumanResource.Dtos;
 using Employee.Domain.Events;
 using Employee.Application.Common.Models;
 using Employee.Application.Common.Exceptions;
+using Employee.Domain.Interfaces.Common;
 using MediatR;
 using Employee.Domain.Enums;
 using System.Collections.Generic;
@@ -28,6 +29,7 @@ namespace Employee.UnitTests.Features.HumanResource
         private readonly Mock<ICurrentUser> _mockUser;
         private readonly Mock<IPublisher> _mockPublisher;
         private readonly Mock<IUnitOfWork> _mockUnitOfWork;
+        private readonly Mock<IDateTimeProvider> _mockDateTime;
 
         private readonly ContractService _service;
 
@@ -39,6 +41,10 @@ namespace Employee.UnitTests.Features.HumanResource
             _mockUser = new Mock<ICurrentUser>();
             _mockPublisher = new Mock<IPublisher>();
             _mockUnitOfWork = new Mock<IUnitOfWork>();
+            _mockDateTime = new Mock<IDateTimeProvider>();
+
+            // Default: "today" is 2025-06-01 — a fixed anchor so tests are deterministic.
+            _mockDateTime.Setup(x => x.UtcNow).Returns(new DateTime(2025, 6, 1, 0, 0, 0, DateTimeKind.Utc));
 
             _service = new ContractService(
                 _mockRepo.Object,
@@ -47,18 +53,79 @@ namespace Employee.UnitTests.Features.HumanResource
                 _mockUser.Object,
                 _mockPublisher.Object,
                 _mockUnitOfWork.Object,
-                new Moq.Mock<Employee.Domain.Interfaces.Common.IDateTimeProvider>().Object
+                _mockDateTime.Object
             );
         }
 
-        [Fact]
-        public async Task CreateAsync_ShouldExpireOldContract_WhenNewStartsLater()
+        // ─── Helper ──────────────────────────────────────────────────────────
+
+        private (EmployeeEntity emp, ContractEntity old) SetupEmployeeWithActiveContract(
+            string empId, DateTime oldStartDate, DateTime newStartDate)
         {
-            // Arrange
-            var empId = "emp1";
-            var oldContract = new ContractEntity(empId, "OLD-001", new DateTime(2025, 1, 1));
+            var employee = new EmployeeEntity("EMP001", "Test", "test@hrm.com");
+            employee.SetId(empId);
+
+            var oldContract = new ContractEntity(empId, "OLD-001", oldStartDate);
             oldContract.SetId("old1");
             oldContract.Activate();
+
+            _mockEmpRepo.Setup(x => x.GetByIdAsync(empId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(employee);
+            _mockRepo.Setup(x => x.GetByEmployeeIdAsync(empId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<ContractEntity> { oldContract });
+            _mockRepo.Setup(x => x.ExistsOverlapAsync(
+                    It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime?>(),
+                    It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+
+            return (employee, oldContract);
+        }
+
+        // ─── StartDate = today → activateNow = true ──────────────────────────
+
+        [Fact]
+        public async Task CreateAsync_WhenStartDateIsToday_ShouldActivateImmediatelyAndExpireOldContract()
+        {
+            // Arrange — today = 2025-06-01 (from default mock), StartDate = today
+            var empId = "emp1";
+            var today = new DateTime(2025, 6, 1);
+            var (_, oldContract) = SetupEmployeeWithActiveContract(empId,
+                oldStartDate: new DateTime(2024, 1, 1),
+                newStartDate: today);
+
+            var dto = new CreateContractDto
+            {
+                EmployeeId = empId,
+                ContractCode = "NEW-001",
+                StartDate = today,
+                Salary = new SalaryInfoInputDto { BasicSalary = 1000 }
+            };
+
+            // Act
+            var result = await _service.CreateAsync(dto);
+
+            // Assert — new contract is Active immediately (ContractDto.Status is a string)
+            Assert.Equal("Active", result.Status);
+
+            // Old contract was expired atomically
+            Assert.Equal(ContractStatus.Expired, oldContract.Status);
+            Assert.Equal(today.AddDays(-1), oldContract.EndDate);
+
+            _mockRepo.Verify(x => x.UpdateAsync(oldContract.Id, oldContract, It.IsAny<CancellationToken>()), Times.Once);
+            _mockRepo.Verify(x => x.CreateAsync(It.IsAny<ContractEntity>(), It.IsAny<CancellationToken>()), Times.Once);
+            _mockUnitOfWork.Verify(x => x.CommitTransactionAsync(), Times.Once);
+        }
+
+        // ─── StartDate in future → activateNow = false ───────────────────────
+
+        [Fact]
+        public async Task CreateAsync_WhenStartDateIsInFuture_ShouldSchedulePendingAndNotExpireOldContract()
+        {
+            // Arrange — today = 2025-06-01, StartDate = 2026-01-01 (future)
+            var empId = "emp1";
+            var (_, oldContract) = SetupEmployeeWithActiveContract(empId,
+                oldStartDate: new DateTime(2024, 1, 1),
+                newStartDate: new DateTime(2026, 1, 1));
 
             var dto = new CreateContractDto
             {
@@ -68,24 +135,20 @@ namespace Employee.UnitTests.Features.HumanResource
                 Salary = new SalaryInfoInputDto { BasicSalary = 1000 }
             };
 
-            var employee = new EmployeeEntity("EMP001", "Test", "test@hrm.com");
-            employee.SetId(empId);
-            _mockEmpRepo.Setup(x => x.GetByIdAsync(empId, It.IsAny<CancellationToken>())).ReturnsAsync(employee);
-            _mockRepo.Setup(x => x.GetByEmployeeIdAsync(empId, It.IsAny<CancellationToken>())).ReturnsAsync(new List<ContractEntity> { oldContract });
-            _mockRepo.Setup(x => x.ExistsOverlapAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime?>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
-                .ReturnsAsync(false);
-
             // Act
-            await _service.CreateAsync(dto);
+            var result = await _service.CreateAsync(dto);
 
-            // Assert
-            Assert.Equal(ContractStatus.Expired, oldContract.Status);
-            Assert.Equal(dto.StartDate.AddDays(-1), oldContract.EndDate);
+            // Assert — new contract is Pending (background job activates on StartDate)
+            Assert.Equal("Pending", result.Status);
 
-            _mockRepo.Verify(x => x.UpdateAsync(oldContract.Id, oldContract, It.IsAny<CancellationToken>()), Times.Once);
-            _mockRepo.Verify(x => x.CreateAsync(It.IsAny<ContractEntity>(), It.IsAny<CancellationToken>()), Times.Once);
+            // Old contract should NOT be expired yet — background job handles the atomic swap
+            Assert.Equal(ContractStatus.Active, oldContract.Status);
+
+            _mockRepo.Verify(x => x.UpdateAsync(oldContract.Id, oldContract, It.IsAny<CancellationToken>()), Times.Never);
             _mockUnitOfWork.Verify(x => x.CommitTransactionAsync(), Times.Once);
         }
+
+        // ─── Overlap validation ───────────────────────────────────────────────
 
         [Fact]
         public async Task CreateAsync_ShouldThrow_WhenOverlapExists()
@@ -103,10 +166,11 @@ namespace Employee.UnitTests.Features.HumanResource
             var employee = new EmployeeEntity("EMP001", "Test", "test@hrm.com");
             employee.SetId(empId);
             _mockEmpRepo.Setup(x => x.GetByIdAsync(empId, It.IsAny<CancellationToken>())).ReturnsAsync(employee);
-            _mockRepo.Setup(x => x.GetByEmployeeIdAsync(empId, It.IsAny<CancellationToken>())).ReturnsAsync(new List<ContractEntity>());
-
-            // Simulate overlap
-            _mockRepo.Setup(x => x.ExistsOverlapAsync(It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime?>(), It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+            _mockRepo.Setup(x => x.GetByEmployeeIdAsync(empId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<ContractEntity>());
+            _mockRepo.Setup(x => x.ExistsOverlapAsync(
+                    It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime?>(),
+                    It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
                 .ReturnsAsync(true);
 
             // Act & Assert
@@ -114,8 +178,44 @@ namespace Employee.UnitTests.Features.HumanResource
             _mockUnitOfWork.Verify(x => x.RollbackTransactionAsync(), Times.Once);
         }
 
+        // ─── Domain event ─────────────────────────────────────────────────────
+
         [Fact]
-        public async Task CreateAsync_ShouldPublishEvent()
+        public async Task CreateAsync_ShouldPublishContractCreatedEvent()
+        {
+            // Arrange
+            var empId = "emp1";
+            var dto = new CreateContractDto
+            {
+                EmployeeId = empId,
+                ContractCode = "NEW-001",
+                StartDate = new DateTime(2026, 1, 1), // future → Pending path
+                Salary = new SalaryInfoInputDto { BasicSalary = 1000 }
+            };
+
+            var employee = new EmployeeEntity("EMP001", "Test", "test@hrm.com");
+            employee.SetId(empId);
+            _mockEmpRepo.Setup(x => x.GetByIdAsync(empId, It.IsAny<CancellationToken>())).ReturnsAsync(employee);
+            _mockRepo.Setup(x => x.GetByEmployeeIdAsync(empId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<ContractEntity>());
+            _mockRepo.Setup(x => x.ExistsOverlapAsync(
+                    It.IsAny<string>(), It.IsAny<DateTime>(), It.IsAny<DateTime?>(),
+                    It.IsAny<List<string>>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+
+            // Act
+            await _service.CreateAsync(dto);
+
+            // Assert
+            _mockPublisher.Verify(
+                x => x.Publish(It.IsAny<DomainEventNotification<ContractCreatedEvent>>(), It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
+
+        // ─── Negative salary ──────────────────────────────────────────────────
+
+        [Fact]
+        public async Task CreateAsync_ShouldThrow_WhenSalaryIsNegative()
         {
             // Arrange
             var empId = "emp1";
@@ -124,19 +224,18 @@ namespace Employee.UnitTests.Features.HumanResource
                 EmployeeId = empId,
                 ContractCode = "NEW-001",
                 StartDate = new DateTime(2026, 1, 1),
-                Salary = new SalaryInfoInputDto { BasicSalary = 1000 }
+                Salary = new SalaryInfoInputDto { BasicSalary = -500 }
             };
 
             var employee = new EmployeeEntity("EMP001", "Test", "test@hrm.com");
             employee.SetId(empId);
             _mockEmpRepo.Setup(x => x.GetByIdAsync(empId, It.IsAny<CancellationToken>())).ReturnsAsync(employee);
-            _mockRepo.Setup(x => x.GetByEmployeeIdAsync(empId, It.IsAny<CancellationToken>())).ReturnsAsync(new List<ContractEntity>());
+            _mockRepo.Setup(x => x.GetByEmployeeIdAsync(empId, It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new List<ContractEntity>());
 
-            // Act
-            await _service.CreateAsync(dto);
-
-            // Assert
-            _mockPublisher.Verify(x => x.Publish(It.IsAny<DomainEventNotification<ContractCreatedEvent>>(), It.IsAny<System.Threading.CancellationToken>()), Times.Once);
+            // Act & Assert
+            await Assert.ThrowsAsync<ValidationException>(() => _service.CreateAsync(dto));
+            _mockUnitOfWork.Verify(x => x.RollbackTransactionAsync(), Times.Once);
         }
     }
 }

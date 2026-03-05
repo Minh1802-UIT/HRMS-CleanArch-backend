@@ -14,5 +14,7 @@ public interface IContractRepository : IBaseRepository<ContractEntity>
 
   Task<bool> ExistsOverlapAsync(string employeeId, DateTime startDate, DateTime? endDate, List<string>? excludedIds = null, CancellationToken cancellationToken = default);
   Task<List<ContractEntity>> GetExpiredActiveContractsAsync(DateTime currentDate, CancellationToken cancellationToken = default); // For Background Job
+  /// <summary>Returns Pending contracts whose StartDate &lt;= currentDate (ready to become Active).</summary>
+  Task<List<ContractEntity>> GetPendingContractsDueAsync(DateTime currentDate, CancellationToken cancellationToken = default);
   Task DeleteByEmployeeIdAsync(string employeeId, CancellationToken cancellationToken = default); // IMP-3
 }

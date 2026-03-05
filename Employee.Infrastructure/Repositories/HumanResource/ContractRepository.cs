@@ -117,5 +117,15 @@ namespace Employee.Infrastructure.Repositories.HumanResource
           .Set(x => x.UpdatedAt, DateTime.UtcNow);
       await _collection.UpdateManyAsync(x => x.EmployeeId == employeeId && x.IsDeleted != true, update, cancellationToken: cancellationToken);
     }
+
+    public async Task<List<ContractEntity>> GetPendingContractsDueAsync(DateTime currentDate, CancellationToken cancellationToken = default)
+    {
+      var filter = Builders<ContractEntity>.Filter.And(
+          Builders<ContractEntity>.Filter.Eq(x => x.IsDeleted, false),
+          Builders<ContractEntity>.Filter.Eq(x => x.Status, ContractStatus.Pending),
+          Builders<ContractEntity>.Filter.Lte(x => x.StartDate, currentDate)
+      );
+      return await _collection.Find(filter).ToListAsync(cancellationToken);
+    }
   }
 }

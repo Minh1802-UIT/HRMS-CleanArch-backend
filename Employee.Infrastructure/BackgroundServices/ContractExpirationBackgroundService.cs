@@ -59,6 +59,17 @@ namespace Employee.Infrastructure.BackgroundServices
                     using var scope = _scopeFactory.CreateScope();
                     var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
 
+                    // Step 1: Activate Pending contracts whose StartDate <= today
+                    //         (must run BEFORE expiry so a contract starting today is Active)
+                    _logger.LogInformation("Triggering pending contract activation check via MediatR...");
+                    var activated = await mediator.Send(
+                        new Employee.Application.Features.HumanResource.Commands.Contracts.ActivatePendingContractsCommand(),
+                        stoppingToken);
+
+                    if (activated > 0)
+                        _logger.LogInformation("Activated {Count} pending contract(s).", activated);
+
+                    // Step 2: Expire Active contracts whose EndDate < today
                     _logger.LogInformation("Triggering contract expiration check via MediatR...");
                     var count = await mediator.Send(new ExpireContractsCommand(), stoppingToken);
 

@@ -25,6 +25,7 @@ using System.Text.Json;
 using System.Threading.RateLimiting;
 
 using System.Security.Claims;
+using Hangfire;
 using Serilog;
 using Microsoft.AspNetCore.HttpOverrides;
 
@@ -448,6 +449,16 @@ app.UseResponseCaching(); // N3-FIX
 app.UseRateLimiter(); // N1-FIX
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Hangfire dashboard — Admin-only, restricted to /hangfire path
+// Skipped in Testing environment (no Redis connection available)
+if (!app.Environment.IsEnvironment("Testing"))
+{
+  app.UseHangfireDashboard("/hangfire", new Hangfire.DashboardOptions
+  {
+    Authorization = new[] { new Employee.API.Services.HangfireAuthFilter() }
+  });
+}
 
 // Protect uploaded files from anonymous access; public assets remain open
 app.UseWhen(

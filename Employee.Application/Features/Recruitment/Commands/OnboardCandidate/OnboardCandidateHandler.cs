@@ -41,6 +41,11 @@ namespace Employee.Application.Features.Recruitment.Commands.OnboardCandidate
       if (candidate.Status != CandidateStatus.Hired)
         throw new ValidationException("Only candidates with 'Hired' status can be onboarded.");
 
+      // 3. Check EmployeeCode duplicate (same rule as Direct Create)
+      var codeExists = await _employeeRepo.ExistsByCodeAsync(request.OnboardData.EmployeeCode, cancellationToken);
+      if (codeExists)
+        throw new ValidationException($"Mã nhân viên '{request.OnboardData.EmployeeCode}' đã tồn tại.");
+
       await _unitOfWork.BeginTransactionAsync();
       try
       {
@@ -52,13 +57,15 @@ namespace Employee.Application.Features.Recruitment.Commands.OnboardCandidate
         );
 
         // 2. Set Job Details
+        // Status defaults to Probation (same as Direct Create) — onboarded candidates
+        // still go through a probation period before becoming fully Active.
         var job = new JobDetails
         {
           DepartmentId = request.OnboardData.DepartmentId,
           PositionId = request.OnboardData.PositionId,
           ManagerId = request.OnboardData.ManagerId ?? string.Empty,
           JoinDate = request.OnboardData.JoinDate,
-          Status = EmployeeStatus.Active
+          Status = EmployeeStatus.Probation
         };
         employee.UpdateJobDetails(job);
 

@@ -106,14 +106,26 @@ namespace Employee.Application.Features.HumanResource.Services
                     throw new ValidationException("New contract overlaps with an existing active contract.");
                 }
 
-                foreach (var oldC in contractsToExpire)
+                // Only expire old contracts immediately when the new one starts today or in the past.
+                // When StartDate is in the future, the background job handles the atomic swap
+                // (Pending → Active + old Active → Expired) to avoid a coverage gap.
+                var today = _dateTime.UtcNow.Date;
+                bool activateNow = dto.StartDate.Date <= today;
+
+                if (activateNow)
                 {
-                    oldC.Expire(dto.StartDate.AddDays(-1));
-                    await _repo.UpdateAsync(oldC.Id, oldC);
+                    foreach (var oldC in contractsToExpire)
+                    {
+                        oldC.Expire(dto.StartDate.AddDays(-1));
+                        await _repo.UpdateAsync(oldC.Id, oldC);
+                    }
                 }
 
                 var contract = dto.ToEntity();
-                contract.Activate();
+                if (activateNow)
+                    contract.Activate();
+                else
+                    contract.ScheduleActivation(); // background job will activate on StartDate
 
                 await _repo.CreateAsync(contract);
 

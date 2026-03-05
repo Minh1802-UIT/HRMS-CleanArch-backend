@@ -105,8 +105,17 @@ namespace Employee.Infrastructure.Repositories.Payroll
       };
     }
 
-    public async Task DeleteByEmployeeIdAsync(string employeeId, CancellationToken cancellationToken = default) =>
-        await _collection.DeleteManyAsync(x => x.EmployeeId == employeeId, cancellationToken);
+    public async Task DeleteByEmployeeIdAsync(string employeeId, CancellationToken cancellationToken = default)
+    {
+      // Soft-delete: payroll records are financial audit data and must be retained.
+      var update = Builders<PayrollEntity>.Update
+          .Set(x => x.IsDeleted, true)
+          .Set(x => x.UpdatedAt, DateTime.UtcNow);
+      await _collection.UpdateManyAsync(
+          x => x.EmployeeId == employeeId && x.IsDeleted != true,
+          update,
+          cancellationToken: cancellationToken);
+    }
 
     public async Task<long> ApproveDraftsByMonthAsync(string monthKey, CancellationToken cancellationToken = default)
     {

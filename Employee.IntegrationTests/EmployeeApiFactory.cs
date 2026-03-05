@@ -58,6 +58,11 @@ public class EmployeeApiFactory : WebApplicationFactory<Program>
       // Remove background services (they need real MongoDB)
       services.RemoveAll<IHostedService>();
 
+      // Replace Hangfire background job service with a no-op mock — prevents
+      // any attempt to connect to Redis for job enqueueing during integration tests.
+      var mockJobService = new Mock<IBackgroundJobService>();
+      services.Replace(ServiceDescriptor.Singleton(mockJobService.Object));
+
       // Setup default behavior for "invalid credentials" test
       MockIdentity.Setup(x => x.LoginAsync("nonexistent@test.com", "WrongPassword123"))
                   .ThrowsAsync(new UnauthorizedAccessException("Invalid credentials"));

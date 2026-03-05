@@ -30,6 +30,11 @@ namespace Employee.UnitTests.Features.Recruitment.Commands
             _mockPublisher = new Mock<IPublisher>();
             _mockUnitOfWork = new Mock<IUnitOfWork>();
 
+            // Default: employee code does not yet exist
+            _mockEmployeeRepo
+                .Setup(x => x.ExistsByCodeAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(false);
+
             _handler = new OnboardCandidateHandler(
                 _mockCandidateRepo.Object,
                 _mockEmployeeRepo.Object,
@@ -47,13 +52,19 @@ namespace Employee.UnitTests.Features.Recruitment.Commands
         }
 
         [Fact]
-        public async Task Onboard_HiredCandidate_ShouldCreateEmployeeAndReturnId()
+        public async Task Onboard_HiredCandidate_ShouldCreateEmployeeWithProbationStatusAndReturnId()
         {
             // Arrange
             var candidate = CreateHiredCandidate("cand1");
             _mockCandidateRepo.Setup(x => x.GetByIdAsync("cand1", It.IsAny<CancellationToken>())).ReturnsAsync(candidate);
+
+            EmployeeEntity? capturedEmployee = null;
             _mockEmployeeRepo.Setup(x => x.CreateAsync(It.IsAny<EmployeeEntity>(), It.IsAny<CancellationToken>()))
-                .Callback<EmployeeEntity, CancellationToken>((e, _) => e.SetId("emp-new-1"));
+                .Callback<EmployeeEntity, CancellationToken>((e, _) =>
+                {
+                    capturedEmployee = e;
+                    e.SetId("emp-new-1");
+                });
 
             var command = new OnboardCandidateCommand
             {
@@ -73,10 +84,48 @@ namespace Employee.UnitTests.Features.Recruitment.Commands
 
             // Assert
             Assert.Equal("emp-new-1", result);
+            Assert.Equal(CandidateStatus.Onboarded, candidate.Status);
+
+            // Newly onboarded employees start in Probation, not Active
+            Assert.NotNull(capturedEmployee);
+            Assert.Equal(EmployeeStatus.Probation, capturedEmployee!.JobDetails!.Status);
+
             _mockEmployeeRepo.Verify(x => x.CreateAsync(It.IsAny<EmployeeEntity>(), It.IsAny<CancellationToken>()), Times.Once);
             _mockCandidateRepo.Verify(x => x.UpdateAsync(It.IsAny<string>(), It.IsAny<Candidate>(), It.IsAny<CancellationToken>()), Times.Once);
             _mockUnitOfWork.Verify(x => x.CommitTransactionAsync(), Times.Once);
-            Assert.Equal(CandidateStatus.Onboarded, candidate.Status);
+        }
+
+        [Fact]
+        public async Task Onboard_DuplicateEmployeeCode_ShouldThrowValidationExceptionBeforeTransaction()
+        {
+            // Arrange — employee code already taken
+            var candidate = CreateHiredCandidate("cand-dup");
+            _mockCandidateRepo.Setup(x => x.GetByIdAsync("cand-dup", It.IsAny<CancellationToken>())).ReturnsAsync(candidate);
+            _mockEmployeeRepo
+                .Setup(x => x.ExistsByCodeAsync("EMP-TAKEN", It.IsAny<CancellationToken>()))
+                .ReturnsAsync(true);
+
+            var command = new OnboardCandidateCommand
+            {
+                CandidateId = "cand-dup",
+                OnboardData = new OnboardCandidateDto
+                {
+                    EmployeeCode = "EMP-TAKEN",
+                    DepartmentId = "dept1",
+                    PositionId = "pos1",
+                    DateOfBirth = new DateTime(1995, 6, 15)
+                }
+            };
+
+            // Act & Assert
+            var ex = await Assert.ThrowsAsync<ValidationException>(() =>
+                _handler.Handle(command, CancellationToken.None));
+
+            Assert.Contains("EMP-TAKEN", ex.Message);
+
+            // Transaction must never have been opened
+            _mockUnitOfWork.Verify(x => x.BeginTransactionAsync(), Times.Never);
+            _mockEmployeeRepo.Verify(x => x.CreateAsync(It.IsAny<EmployeeEntity>(), It.IsAny<CancellationToken>()), Times.Never);
         }
 
         [Fact]
