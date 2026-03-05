@@ -86,8 +86,8 @@ namespace Employee.Application.Common.Services
             row.RelativeItem().AlignRight().Column(col =>
             {
               col.Item().Text("Employee HRMS").SemiBold();
-              col.Item().Text("123 Clean Architecture St.");
-              col.Item().Text("Ho Chi Minh City, Vietnam");
+              col.Item().Text("131 Nguyen Trong Tuyen St.");
+              col.Item().Text("Phu Nhuan, Ho Chi Minh City, Vietnam");
             });
           });
 

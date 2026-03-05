@@ -49,6 +49,10 @@ namespace Employee.API.Middlewares
                 UnauthorizedAccessException =>
                     (StatusCodes.Status401Unauthorized, ErrorCodes.Unauthorized, "Unauthorized access", null, true),
 
+                // Domain state-transition violations (e.g. mark paid on Draft payroll)
+                InvalidOperationException =>
+                    (StatusCodes.Status422UnprocessableEntity, "INVALID_OPERATION", "Invalid operation", null, true),
+
                 _ => (StatusCodes.Status500InternalServerError, ErrorCodes.InternalError, "Internal system error", null, false)
             };
 
