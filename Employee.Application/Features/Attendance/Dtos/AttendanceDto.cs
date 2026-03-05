@@ -53,7 +53,14 @@ namespace Employee.Application.Features.Attendance.Dtos
     public int LateMinutes { get; set; }
     public int EarlyLeaveMinutes { get; set; }
 
-    public string Status { get; set; } = string.Empty; // Present, Absent, Late...
+    // Base presence status: "Present" | "Absent" | "Leave" | "Holiday"
+    public string Status { get; set; } = string.Empty;
+
+    // Granular violation flags (GAP-01 fix: combined violations now representable)
+    public bool IsLate { get; set; }
+    public bool IsEarlyLeave { get; set; }
+    public bool IsMissingPunch { get; set; }
+
     public double OvertimeHours { get; set; }
     public bool IsWeekend { get; set; }
     public bool IsHoliday { get; set; }

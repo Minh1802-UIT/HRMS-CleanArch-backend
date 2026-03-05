@@ -149,6 +149,9 @@ namespace Employee.Infrastructure
             services.AddHostedService<ContractExpirationBackgroundService>();
             // Nightly hard-delete of soft-deleted records older than 90 days
             services.AddHostedService<SoftDeleteCleanupBackgroundService>();
+            // Sweeps unprocessed RawAttendanceLogs every 5 minutes (configurable).
+            // CheckInHandler no longer processes inline — this job owns all bucket updates.
+            services.AddHostedService<AttendanceProcessingBackgroundJob>();
 
             // ==========================================
             // 9. INFRASTRUCTURE SERVICES

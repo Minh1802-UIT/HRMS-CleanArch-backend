@@ -20,9 +20,13 @@ namespace Employee.Application.Features.Attendance.Services
     private readonly AttendanceCalculator _calculator;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<AttendanceProcessingService> _logger;
+    private readonly TimeZoneInfo _timeZone;
 
-    // Cấu hình Timezone: UTC+7
-    private readonly TimeSpan _systemOffset = TimeSpan.FromHours(7);
+    // Logical-Day cut-off hour (local time).
+    // Any punch timestamp whose local hour is less than this value is assigned to the
+    // PREVIOUS calendar day. This lets overnight-shift checkouts (e.g. 05:30 AM of D+1)
+    // stay in the same logical work-day as the CheckIn from D evening. (BUG-01 fix)
+    private const int LogicalDayCutoffHour = 6;
 
     public AttendanceProcessingService(
         IRawAttendanceLogRepository rawRepo,
@@ -31,7 +35,8 @@ namespace Employee.Application.Features.Attendance.Services
         IShiftRepository shiftRepo,
         AttendanceCalculator calculator,
         IUnitOfWork unitOfWork,
-        ILogger<AttendanceProcessingService> logger)
+        ILogger<AttendanceProcessingService> logger,
+        TimeZoneInfo timeZone)
     {
       _rawRepo = rawRepo;
       _attendanceRepo = attendanceRepo;
@@ -40,49 +45,56 @@ namespace Employee.Application.Features.Attendance.Services
       _calculator = calculator;
       _unitOfWork = unitOfWork;
       _logger = logger;
+      _timeZone = timeZone;
     }
 
+    // -------------------------------------------------------------------------
+    // Public entry-point: called by the background job every 5 minutes
+    // -------------------------------------------------------------------------
     public async Task<string> ProcessRawLogsAsync()
     {
       try
       {
-        // 1. CONCURRENCY: Lấy và Lock dữ liệu để tránh race condition
         var logs = await _rawRepo.GetAndLockUnprocessedLogsAsync(50);
         if (!logs.Any())
         {
           _logger.LogDebug("ProcessRawLogsAsync: No unprocessed logs found.");
-          return "Found 0 unprocessed logs in DB. Please check if raw_attendance_logs collection has any record with IsProcessed: false.";
+          return "Found 0 unprocessed logs in DB.";
         }
 
         _logger.LogInformation("ProcessRawLogsAsync: Found {Count} unprocessed logs. Processing...", logs.Count);
 
         int processedCount = 0;
-        int failedCount = 0;
+        int failedCount    = 0;
 
-        // 2. Group theo ngày Local Time
+        // Group by (EmployeeId + LogicalDate) — BUG-01: use day-breaker, NOT raw LocalDate
         var groupedLogs = logs.GroupBy(x => new
         {
           x.EmployeeId,
-          Date = (x.Timestamp + _systemOffset).Date
+          LogicalDate = GetLogicalDate(x.Timestamp)
         });
 
         foreach (var group in groupedLogs)
         {
           try
           {
-            await ProcessSingleGroupAsync(group.Key.EmployeeId, group.Key.Date, group.ToList());
+            await ProcessSingleGroupAsync(group.Key.EmployeeId, group.Key.LogicalDate, group.ToList());
             processedCount += group.Count();
-            _logger.LogInformation("ProcessRawLogsAsync: Processed {Count} logs for EmployeeId={EmployeeId} Date={Date}", group.Count(), group.Key.EmployeeId, group.Key.Date.ToString("yyyy-MM-dd"));
+            _logger.LogInformation(
+                "ProcessRawLogsAsync: Processed {Count} logs for EmployeeId={EmployeeId} LogicalDate={Date}",
+                group.Count(), group.Key.EmployeeId, group.Key.LogicalDate.ToString("yyyy-MM-dd"));
           }
           catch (Exception ex)
           {
             failedCount += group.Count();
-            _logger.LogError(ex, "ProcessRawLogsAsync: FAILED processing group EmployeeId={EmployeeId} Date={Date}. Error: {Error}", group.Key.EmployeeId, group.Key.Date.ToString("yyyy-MM-dd"), ex.Message);
+            _logger.LogError(ex,
+                "ProcessRawLogsAsync: FAILED processing group EmployeeId={EmployeeId} LogicalDate={Date}. Error: {Error}",
+                group.Key.EmployeeId, group.Key.LogicalDate.ToString("yyyy-MM-dd"), ex.Message);
             await MarkGroupAsError(group, ex.Message);
           }
         }
 
-        var result = $"Processed {processedCount} logs successfully. {failedCount} logs failed. Check bucket collection.";
+        var result = $"Processed {processedCount} logs successfully. {failedCount} logs failed.";
         _logger.LogInformation("ProcessRawLogsAsync: {Result}", result);
         return result;
       }
@@ -93,18 +105,22 @@ namespace Employee.Application.Features.Attendance.Services
       }
     }
 
-    private async Task ProcessSingleGroupAsync(string employeeId, DateTime workDate, List<RawAttendanceLog> newLogs)
+    // -------------------------------------------------------------------------
+    // Core: process one (employeeId + logicalDate) group
+    // -------------------------------------------------------------------------
+    private async Task ProcessSingleGroupAsync(
+        string employeeId, DateTime workDate, List<RawAttendanceLog> newLogs)
     {
       await _unitOfWork.BeginTransactionAsync();
       try
       {
         var monthKey = workDate.ToString("MM-yyyy");
 
-        // --- BƯỚC A: XỬ LÝ GHOST LOG ---
+        // --- STEP A: Resolve Ghost Log of the previous logical day ---
         await ProcessGhostLogAsync(employeeId, workDate.AddDays(-1));
 
-        // --- BƯỚC B: CHUẨN BỊ DỮ LIỆU ---
-        var shift = await GetEffectiveShiftAsync(employeeId, workDate);
+        // --- STEP B: Resolve effective shift & bucket ---
+        var shift  = await GetEffectiveShiftAsync(employeeId, workDate);
         var bucket = await GetOrCreateBucketAsync(employeeId, monthKey);
 
         var dailyLog = bucket.DailyLogs.FirstOrDefault(x => x.Date.Date == workDate.Date);
@@ -114,73 +130,113 @@ namespace Employee.Application.Features.Attendance.Services
           bucket.AddOrUpdateDailyLog(dailyLog);
         }
 
-        // --- BƯỚC C: MERGE LOG ---
-        var checkInLogs = newLogs.Where(x => x.Type == RawLogType.CheckIn).Select(x => x.Timestamp).ToList();
+        // --- STEP C: Merge new raw logs with existing check-times (idempotent) ---
+        var checkInLogs  = newLogs.Where(x => x.Type == RawLogType.CheckIn).Select(x => x.Timestamp).ToList();
         var checkOutLogs = newLogs.Where(x => x.Type == RawLogType.CheckOut).Select(x => x.Timestamp).ToList();
 
-        DateTime? checkIn = dailyLog.CheckIn;
+        DateTime? checkIn  = dailyLog.CheckIn;
         DateTime? checkOut = dailyLog.CheckOut;
 
+        // Explicit CheckIn: keep the earliest punch of the day
         if (checkInLogs.Any())
         {
           var newMin = checkInLogs.Min();
           checkIn = checkIn.HasValue ? (newMin < checkIn.Value ? newMin : checkIn) : newMin;
         }
 
+        // Explicit CheckOut: keep the latest punch of the day
         if (checkOutLogs.Any())
         {
           var newMax = checkOutLogs.Max();
           checkOut = checkOut.HasValue ? (newMax > checkOut.Value ? newMax : checkOut) : newMax;
         }
 
-        var biometricLogs = newLogs.Where(x => x.Type == RawLogType.Biometric).Select(x => x.Timestamp).ToList();
+        // Biometric: first punch = CheckIn (if unknown), last punch = CheckOut ONLY if later
+        // BUG-03 FIX: do not blindly overwrite an explicit CheckOut with a biometric one.
+        var biometricLogs = newLogs.Where(x => x.Type == RawLogType.Biometric)
+                                   .Select(x => x.Timestamp)
+                                   .OrderBy(x => x)
+                                   .ToList();
         if (biometricLogs.Any())
         {
-          var allTimes = biometricLogs.OrderBy(x => x).ToList();
-          if (!checkIn.HasValue) checkIn = allTimes.First();
-          checkOut = allTimes.Last();
+          if (!checkIn.HasValue) checkIn = biometricLogs.First();
+
+          var bioLast = biometricLogs.Last();
+          checkOut = checkOut.HasValue
+              ? (bioLast > checkOut.Value ? bioLast : checkOut)  // keep whichever is later
+              : bioLast;
         }
 
-        // --- DEFENSIVE RECOVERY ---
-        // If checkIn is still null (may happen due to deserialization issue on a previous
-        // batch, or when only CheckOut arrives in this batch), query the raw_attendance_logs
-        // history (including already-processed logs) and recover the earliest CheckIn for
-        // this employee/day. This ensures a checkout batch can never wipe out a previous
-        // check-in.
+        // --- BUG-01 FIX: Overnight cross-day checkout rerouting ---
+        // If we have ONLY a CheckOut for the current logical day (no CheckIn found anywhere)
+        // and the previous logical day has an open overnight ghost, attach this checkout there.
+        if (!checkIn.HasValue && checkOut.HasValue)
+        {
+          var prevLogicalDate = workDate.AddDays(-1);
+          var prevBucket = await _attendanceRepo.GetByEmployeeAndMonthAsync(
+              employeeId, prevLogicalDate.ToString("MM-yyyy"));
+          var prevDayLog = prevBucket?.DailyLogs.FirstOrDefault(
+              x => x.Date.Date == prevLogicalDate.Date);
+
+          if (prevDayLog?.CheckIn.HasValue == true && !prevDayLog.CheckOut.HasValue)
+          {
+            var prevShift = await GetEffectiveShiftAsync(employeeId, prevLogicalDate);
+            if (prevShift?.IsOvernight == true)
+            {
+              _logger.LogInformation(
+                  "ProcessSingleGroupAsync: Overnight checkout rerouted → LogicalDate={PrevDate} EmployeeId={Id}",
+                  prevLogicalDate.ToString("yyyy-MM-dd"), employeeId);
+
+              prevDayLog.UpdateCheckTimes(prevDayLog.CheckIn, checkOut, prevShift.Code);
+              _calculator.CalculateDailyStatus(prevDayLog, prevShift);
+              prevBucket!.AddOrUpdateDailyLog(prevDayLog);
+              await _attendanceRepo.UpdateAsync(prevBucket.Id, prevBucket);
+
+              foreach (var log in newLogs) log.MarkAsProcessed();
+              await _rawRepo.MarkManyAsProcessedAsync(newLogs.Select(l => l.Id));
+              await _unitOfWork.CommitTransactionAsync();
+              return;
+            }
+          }
+        }
+
+        // --- Defensive recovery: attempt to recover a missing CheckIn from history ---
         if (!checkIn.HasValue)
         {
-          // workDate is local time (UTC+7); convert back to UTC window for the query
-          var dayStartUtc = workDate.AddHours(-_systemOffset.Hours);      // local 00:00 → UTC
-          var dayEndUtc   = dayStartUtc.AddDays(1);
-          var allDayLogs  = await _rawRepo.GetByDateRangeAsync(employeeId, dayStartUtc, dayEndUtc);
+          // Convert the logical-day window to a UTC range for the raw-log query
+          var logicalStart = DateTime.SpecifyKind(
+              workDate.Add(TimeSpan.FromHours(LogicalDayCutoffHour)), DateTimeKind.Unspecified);
+          var logicalEnd   = DateTime.SpecifyKind(
+              workDate.AddDays(1).Add(TimeSpan.FromHours(LogicalDayCutoffHour)), DateTimeKind.Unspecified);
+          var dayStartUtc  = TimeZoneInfo.ConvertTimeToUtc(logicalStart, _timeZone);
+          var dayEndUtc    = TimeZoneInfo.ConvertTimeToUtc(logicalEnd,   _timeZone);
+
+          var allDayLogs = await _rawRepo.GetByDateRangeAsync(employeeId, dayStartUtc, dayEndUtc);
           var recoveredCheckIn = allDayLogs
               .Where(x => x.Type == RawLogType.CheckIn)
               .Select(x => (DateTime?)x.Timestamp)
               .DefaultIfEmpty(null)
               .Min();
+
           if (recoveredCheckIn.HasValue)
           {
             checkIn = recoveredCheckIn;
             _logger.LogWarning(
-              "ProcessSingleGroupAsync: Recovered CheckIn={CheckIn} from raw_attendance_logs for EmployeeId={EmployeeId} Date={Date}. Possible prior deserialization issue.",
-              checkIn, employeeId, workDate.ToString("yyyy-MM-dd"));
+                "ProcessSingleGroupAsync: Recovered CheckIn={CheckIn} EmployeeId={Id} Date={Date}",
+                checkIn, employeeId, workDate.ToString("yyyy-MM-dd"));
           }
         }
 
         dailyLog.UpdateCheckTimes(checkIn, checkOut, shift?.Code ?? "Unknown");
 
-        // --- BƯỚC D: TÍNH TOÁN ---
+        // --- STEP D: Calculate ---
         _calculator.CalculateDailyStatus(dailyLog, shift);
 
-        // --- BƯỚC E: LƯU ---
-        bucket.AddOrUpdateDailyLog(dailyLog); // Re-add to ensure recalculated totals
+        // --- STEP E: Persist ---
+        bucket.AddOrUpdateDailyLog(dailyLog);
         await _attendanceRepo.UpdateAsync(bucket.Id, bucket);
 
-        // Mark all logs in this group as processed with a single BulkWriteAsync
-        // (replaces the N individual UpdateOneAsync round-trips that were here before).
-        foreach (var log in newLogs)
-          log.MarkAsProcessed(); // domain state update (in-memory only)
-
+        foreach (var log in newLogs) log.MarkAsProcessed();
         await _rawRepo.MarkManyAsProcessedAsync(newLogs.Select(l => l.Id));
 
         await _unitOfWork.CommitTransactionAsync();
@@ -192,6 +248,9 @@ namespace Employee.Application.Features.Attendance.Services
       }
     }
 
+    // -------------------------------------------------------------------------
+    // Ghost Log: auto-close a previous day that has CheckIn but no CheckOut
+    // -------------------------------------------------------------------------
     private async Task ProcessGhostLogAsync(string employeeId, DateTime prevDate)
     {
       var prevMonthKey = prevDate.ToString("MM-yyyy");
@@ -199,23 +258,56 @@ namespace Employee.Application.Features.Attendance.Services
       if (bucket == null) return;
 
       var prevLog = bucket.DailyLogs.FirstOrDefault(x => x.Date.Date == prevDate.Date);
-      if (prevLog != null && prevLog.CheckIn.HasValue && !prevLog.CheckOut.HasValue)
-      {
-        var prevShift = await GetEffectiveShiftAsync(employeeId, prevDate);
-        if (prevShift != null)
-        {
-          var shiftEndDateTime = prevDate.Add(prevShift.EndTime);
-          if (prevShift.IsOvernight) shiftEndDateTime = shiftEndDateTime.AddDays(1);
+      if (prevLog == null || !prevLog.CheckIn.HasValue || prevLog.CheckOut.HasValue) return;
 
-          var autoCheckOut = shiftEndDateTime - _systemOffset;
-          prevLog.UpdateCheckTimes(prevLog.CheckIn, autoCheckOut, prevShift.Code);
-          prevLog.UpdateCalculationResults(0, 0, 0, 0, AttendanceStatus.Absent, "Missing Checkout [System Auto-closed]");
+      var prevShift = await GetEffectiveShiftAsync(employeeId, prevDate);
+      if (prevShift == null) return;
 
-          _calculator.CalculateDailyStatus(prevLog, prevShift);
-          bucket.AddOrUpdateDailyLog(prevLog);
-          await _attendanceRepo.UpdateAsync(bucket.Id, bucket);
-        }
-      }
+      // Auto-checkout = ShiftEnd of the ghost day, stored as UTC
+      var shiftEndLocal = prevDate.Add(prevShift.EndTime);
+      if (prevShift.IsOvernight) shiftEndLocal = shiftEndLocal.AddDays(1);
+      var autoCheckOutUtc = TimeZoneInfo.ConvertTimeToUtc(
+          DateTime.SpecifyKind(shiftEndLocal, DateTimeKind.Unspecified), _timeZone);
+
+      prevLog.UpdateCheckTimes(prevLog.CheckIn, autoCheckOutUtc, prevShift.Code);
+
+      // Run the calculator first…
+      _calculator.CalculateDailyStatus(prevLog, prevShift);
+
+      // BUG-02 FIX: append the system note AFTER the calculator, so it cannot be
+      // overwritten by the UpdateCalculationResults call inside CalculateDailyStatus.
+      prevLog.UpdateCalculationResults(
+          prevLog.WorkingHours,
+          prevLog.LateMinutes,
+          prevLog.EarlyLeaveMinutes,
+          prevLog.OvertimeHours,
+          prevLog.Status,
+          note: string.IsNullOrEmpty(prevLog.Note)
+              ? "[Auto-closed] Missing checkout"
+              : $"[Auto-closed] {prevLog.Note}",
+          isLate: prevLog.IsLate,
+          isEarlyLeave: prevLog.IsEarlyLeave,
+          isMissingPunch: true);   // flag that this day was auto-closed
+
+      bucket.AddOrUpdateDailyLog(prevLog);
+      await _attendanceRepo.UpdateAsync(bucket.Id, bucket);
+    }
+
+    // -------------------------------------------------------------------------
+    // Helpers
+    // -------------------------------------------------------------------------
+
+    /// <summary>
+    /// Maps a UTC punch timestamp to the logical work-date (local time, day-breaker applied).
+    /// Punches before <see cref="LogicalDayCutoffHour"/> (06:00 AM) are assigned to the
+    /// previous calendar day, so overnight shifts stay in one logical work-day.
+    /// </summary>
+    private DateTime GetLogicalDate(DateTime utcTimestamp)
+    {
+      var localTime = TimeZoneInfo.ConvertTimeFromUtc(utcTimestamp, _timeZone);
+      return localTime.TimeOfDay < TimeSpan.FromHours(LogicalDayCutoffHour)
+          ? localTime.Date.AddDays(-1)
+          : localTime.Date;
     }
 
     private async Task<Shift?> GetEffectiveShiftAsync(string employeeId, DateTime date)
@@ -225,9 +317,8 @@ namespace Employee.Application.Features.Attendance.Services
 
       var employee = await _employeeRepo.GetByIdAsync(employeeId);
       if (!string.IsNullOrEmpty(employee?.JobDetails.ShiftId))
-      {
         return await _shiftRepo.GetByIdAsync(employee.JobDetails.ShiftId);
-      }
+
       return null;
     }
 
@@ -238,12 +329,8 @@ namespace Employee.Application.Features.Attendance.Services
       {
         bucket = new AttendanceBucket(employeeId, monthKey);
         await _attendanceRepo.CreateAsync(bucket);
-        // Re-read to get the server-assigned _id.
         bucket = await _attendanceRepo.GetByEmployeeAndMonthAsync(employeeId, monthKey);
       }
-
-      // Safety guard: if re-read still returns null (transient DB issue), fall back
-      // to the in-memory instance that was just created (it has a client-generated id).
       return bucket ?? new AttendanceBucket(employeeId, monthKey);
     }
 

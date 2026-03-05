@@ -53,12 +53,10 @@ namespace Employee.Domain.Entities.Attendance
     public void RecalculateTotals()
     {
       var logs = DailyLogs ?? Enumerable.Empty<DailyLog>();
-      TotalPresent = logs.Count(x =>
-        x.Status == AttendanceStatus.Present ||
-        x.Status == AttendanceStatus.Late ||
-        x.Status == AttendanceStatus.EarlyLeave);
-
-      TotalLate = logs.Count(x => x.Status == AttendanceStatus.Late);
+      // IsPresent is a computed property: Status == Present
+      TotalPresent = logs.Count(x => x.IsPresent);
+      // TotalLate uses the new boolean flag (independent of base status)
+      TotalLate = logs.Count(x => x.IsLate);
       TotalOvertime = logs.Sum(x => x.OvertimeHours);
     }
   }

@@ -49,18 +49,21 @@ namespace Employee.Application.Features.Attendance.Mappers
     {
       return new DailyLogDto
       {
-        Date = log.Date,
-        DayOfWeek = log.Date.DayOfWeek.ToString(),
-        CheckInTime = log.CheckIn,
-        CheckOutTime = log.CheckOut,
-        ShiftCode = log.ShiftCode,
-        WorkingHours = Math.Round(log.WorkingHours, 2),
-        LateMinutes = log.LateMinutes,
+        Date           = log.Date,
+        DayOfWeek      = log.Date.DayOfWeek.ToString(),
+        CheckInTime    = log.CheckIn,
+        CheckOutTime   = log.CheckOut,
+        ShiftCode      = log.ShiftCode,
+        WorkingHours   = Math.Round(log.WorkingHours, 2),
+        LateMinutes    = log.LateMinutes,
         EarlyLeaveMinutes = log.EarlyLeaveMinutes,
-        Status = log.Status.ToString(),
-        OvertimeHours = Math.Round(log.OvertimeHours, 2),
-        IsWeekend = log.IsWeekend,
-        IsHoliday = log.IsHoliday
+        Status         = log.Status.ToString(),
+        IsLate         = log.IsLate,
+        IsEarlyLeave   = log.IsEarlyLeave,
+        IsMissingPunch = log.IsMissingPunch,
+        OvertimeHours  = Math.Round(log.OvertimeHours, 2),
+        IsWeekend      = log.IsWeekend,
+        IsHoliday      = log.IsHoliday
       };
     }
   }

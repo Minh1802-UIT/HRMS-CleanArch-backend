@@ -14,8 +14,11 @@ namespace Employee.Domain.Entities.Attendance
     public TimeSpan BreakStartTime { get; private set; }
     public TimeSpan BreakEndTime { get; private set; }
 
-    // Grace Period (minutes)
+    // Grace Period: employee is NOT considered late if CheckIn <= ShiftStart + GracePeriodMinutes
     public int GracePeriodMinutes { get; private set; } = 15;
+
+    // OT is only counted when CheckOut exceeds ShiftEnd by at least this many minutes
+    public int OvertimeThresholdMinutes { get; private set; } = 15;
 
     // Is this an overnight shift? (EndTime < StartTime)
     public bool IsOvernight { get; private set; } = false;
@@ -29,7 +32,14 @@ namespace Employee.Domain.Entities.Attendance
     // Private constructor for MongoDB
     private Shift() { }
 
-    public Shift(string name, string code, TimeSpan start, TimeSpan end, TimeSpan breakStart, TimeSpan breakEnd, double standardHours, int gracePeriod = 15, bool isOvernight = false)
+    public Shift(
+      string name, string code,
+      TimeSpan start, TimeSpan end,
+      TimeSpan breakStart, TimeSpan breakEnd,
+      double standardHours,
+      int gracePeriod = 15,
+      bool isOvernight = false,
+      int overtimeThresholdMinutes = 15)
     {
       if (string.IsNullOrWhiteSpace(name)) throw new ArgumentException("Name is required.");
       if (string.IsNullOrWhiteSpace(code)) throw new ArgumentException("Code is required.");
@@ -43,10 +53,18 @@ namespace Employee.Domain.Entities.Attendance
       StandardWorkingHours = standardHours;
       GracePeriodMinutes = gracePeriod;
       IsOvernight = isOvernight;
+      OvertimeThresholdMinutes = overtimeThresholdMinutes;
       IsActive = true;
     }
 
-    public void UpdateDetails(string name, TimeSpan start, TimeSpan end, TimeSpan breakStart, TimeSpan breakEnd, double standardHours, int gracePeriod, bool isOvernight)
+    public void UpdateDetails(
+      string name,
+      TimeSpan start, TimeSpan end,
+      TimeSpan breakStart, TimeSpan breakEnd,
+      double standardHours,
+      int gracePeriod,
+      bool isOvernight,
+      int overtimeThresholdMinutes = 15)
     {
       Name = name;
       StartTime = start;
@@ -56,6 +74,7 @@ namespace Employee.Domain.Entities.Attendance
       StandardWorkingHours = standardHours;
       GracePeriodMinutes = gracePeriod;
       IsOvernight = isOvernight;
+      OvertimeThresholdMinutes = overtimeThresholdMinutes;
     }
 
     public void Activate() => IsActive = true;

@@ -58,6 +58,10 @@ namespace Employee.UnitTests.Features.Payroll
       var container = new PayrollDataContainer
       {
         MonthKey = monthKey,
+        Cycle = new PayrollCycle(2, 2026,
+            new DateTime(2026, 1, 26, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 2, 25, 0, 0, 0, DateTimeKind.Utc),
+            26, "6,0", 0),
         Settings = new PayrollSettings
         {
           SocialInsuranceRate = 0.08m,
@@ -66,7 +70,6 @@ namespace Employee.UnitTests.Features.Payroll
           InsuranceSalaryCap = 36000000,
           PersonalDeduction = 11000000,
           DependentDeduction = 4400000,
-          StandardWorkingDays = 26,
           OvertimeRateNormal = 1.5m
         }
       };
@@ -109,13 +112,16 @@ namespace Employee.UnitTests.Features.Payroll
       var container = new PayrollDataContainer
       {
         MonthKey = "02-2026",
+        Cycle = new PayrollCycle(2, 2026,
+            new DateTime(2026, 1, 26, 0, 0, 0, DateTimeKind.Utc),
+            new DateTime(2026, 2, 25, 0, 0, 0, DateTimeKind.Utc),
+            26, "6,0", 0),
         Settings = new PayrollSettings
         {
           SocialInsuranceRate = 0.08m,
-          InsuranceSalaryCap = 36000000, // Cap
-          StandardWorkingDays = 26
-                }
-            };
+          InsuranceSalaryCap = 36000000 // Cap
+        }
+      };
 
       var emp = new EmployeeEntity("EMP100", "CEO", "ceo@hrm.com");
       emp.SetId(employeeId);

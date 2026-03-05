@@ -56,9 +56,13 @@ namespace Employee.Application
       services.AddScoped<IContractService, ContractService>();
 
       // Attendance
-      var timezoneId = configuration.GetValue<string>("SystemSettings:TimezoneId") ?? "Asia/Ho_Chi_Minh";
-      var timeZone = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
-      services.AddScoped<AttendanceCalculator>(sp => new AttendanceCalculator(timeZone));
+      // GAP-04 FIX: Register TimeZoneInfo as a singleton so that both
+      // AttendanceCalculator and AttendanceProcessingService use the same
+      // DST-aware TimeZoneInfo — no more ad-hoc +7-hour TimeSpan arithmetic.
+      var timezoneId = configuration.GetValue<string>("SystemSettings:TimezoneId") ?? "SE Asia Standard Time";
+      var timeZone   = TimeZoneInfo.FindSystemTimeZoneById(timezoneId);
+      services.AddSingleton(timeZone);
+      services.AddScoped<AttendanceCalculator>();   // injects TimeZoneInfo from above
       services.AddScoped<IShiftService, ShiftService>();
       services.AddScoped<IAttendanceService, AttendanceService>();
       services.AddScoped<IAttendanceProcessingService, AttendanceProcessingService>();

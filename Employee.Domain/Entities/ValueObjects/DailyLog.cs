@@ -23,7 +23,20 @@ namespace Employee.Domain.Entities.ValueObjects
     public int EarlyLeaveMinutes { get; set; }
     public double OvertimeHours { get; set; }
 
+    // Base status: Present | Absent | Leave | Holiday
     public AttendanceStatus Status { get; set; } = AttendanceStatus.Absent;
+
+    // Violation flags — additive, independent of each other.
+    // Replaces using AttendanceStatus.Late / AttendanceStatus.EarlyLeave so that
+    // combined violations (e.g. late AND early-leave the same day) are representable.
+    public bool IsLate { get; set; }
+    public bool IsEarlyLeave { get; set; }
+
+    // Set by Ghost-Log auto-close: employee checked in but never checked out.
+    public bool IsMissingPunch { get; set; }
+
+    // Computed convenience — true when the employee was physically present.
+    public bool IsPresent => Status == AttendanceStatus.Present;
 
     public string Note { get; set; } = string.Empty;
 
@@ -51,6 +64,7 @@ namespace Employee.Domain.Entities.ValueObjects
       return new DailyLog
       {
         Date = date,
+        // Only base statuses accepted here; violation flags are set via UpdateCalculationResults.
         Status = status,
         IsWeekend = (date.DayOfWeek == DayOfWeek.Saturday || date.DayOfWeek == DayOfWeek.Sunday)
       };
@@ -63,7 +77,21 @@ namespace Employee.Domain.Entities.ValueObjects
       ShiftCode = shiftCode;
     }
 
-    public void UpdateCalculationResults(double workingHours, int lateMinutes, int earlyLeaveMinutes, double overtimeHours, AttendanceStatus status, string note = "")
+    /// <summary>
+    /// Updates all calculated fields on this log.
+    /// Pass <paramref name="status"/> as the BASE status only (Present / Absent / Leave / Holiday).
+    /// Use the boolean flags for combined violation tracking.
+    /// </summary>
+    public void UpdateCalculationResults(
+      double workingHours,
+      int lateMinutes,
+      int earlyLeaveMinutes,
+      double overtimeHours,
+      AttendanceStatus status,
+      string note = "",
+      bool isLate = false,
+      bool isEarlyLeave = false,
+      bool isMissingPunch = false)
     {
       WorkingHours = workingHours;
       LateMinutes = lateMinutes;
@@ -71,6 +99,9 @@ namespace Employee.Domain.Entities.ValueObjects
       OvertimeHours = overtimeHours;
       Status = status;
       Note = note;
+      IsLate = isLate;
+      IsEarlyLeave = isEarlyLeave;
+      IsMissingPunch = isMissingPunch;
     }
 
     public void SetHoliday(bool isHoliday, string note = "Holiday")
@@ -80,6 +111,9 @@ namespace Employee.Domain.Entities.ValueObjects
       {
         Status = AttendanceStatus.Holiday;
         Note = note;
+        IsLate = false;
+        IsEarlyLeave = false;
+        IsMissingPunch = false;
       }
     }
 
@@ -87,6 +121,9 @@ namespace Employee.Domain.Entities.ValueObjects
     {
       Status = leaveStatus;
       Note = note;
+      IsLate = false;
+      IsEarlyLeave = false;
+      IsMissingPunch = false;
     }
   }
 }

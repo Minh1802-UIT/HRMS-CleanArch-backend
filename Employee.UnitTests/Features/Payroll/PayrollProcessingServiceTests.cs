@@ -52,7 +52,14 @@ namespace Employee.UnitTests.Features.Payroll
       var year = "2026";
 
       _mockDataProvider.Setup(x => x.FetchCalculationDataAsync(month, year))
-          .ReturnsAsync(new PayrollDataContainer { MonthKey = "02-2026" });
+          .ReturnsAsync(new PayrollDataContainer
+          {
+            MonthKey = "02-2026",
+            Cycle = new PayrollCycle(2, 2026,
+                new DateTime(2026, 1, 26, 0, 0, 0, DateTimeKind.Utc),
+                new DateTime(2026, 2, 25, 0, 0, 0, DateTimeKind.Utc),
+                26, "6,0", 0)
+          });
 
       // Act
       await _service.CalculatePayrollAsync(month, year);
