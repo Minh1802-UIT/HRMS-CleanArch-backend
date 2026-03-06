@@ -15,8 +15,12 @@ namespace Employee.API.Endpoints.Leave
                // 1. My leave balance
                group.MapGet("/me", LeaveAllocationHandlers.GetMyBalance);
 
-               // 1.5 Full allocation report (Admin/HR)
+               // 1.5 Full allocation report (Admin/HR) — GET with query params
                group.MapGet("/", LeaveAllocationHandlers.GetAllBalances)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
+
+               // 1.6 Full allocation report via POST body (used by Angular)
+               group.MapPost("/list", LeaveAllocationHandlers.GetAllBalancesList)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
                // 2. Balance for a specific employee (HR/Admin, or the employee themselves)

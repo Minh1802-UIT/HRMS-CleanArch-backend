@@ -33,6 +33,15 @@ namespace Employee.API.Endpoints.Leave
       return ResultUtils.Success(result, "Retrieved all leave allocations successfully.");
     }
 
+    // 1.6. POST /list — paginated allocation list with body payload
+    public static async Task<IResult> GetAllBalancesList(
+        [FromBody] AllocationFilterDto dto,
+        ILeaveAllocationService service)
+    {
+      var result = await service.GetAllAllocationsAsync(dto, dto.Keyword);
+      return ResultUtils.Success(result, "Retrieved all leave allocations successfully.");
+    }
+
     // 2. GET EMPLOYEE BALANCE (HR/Admin views another employee's balance)
     public static async Task<IResult> GetBalanceByEmployee(
         string employeeId,
