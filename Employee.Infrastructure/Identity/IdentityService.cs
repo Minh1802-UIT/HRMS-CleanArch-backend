@@ -6,9 +6,11 @@ using Employee.Infrastructure.Identity.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Claims;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.DependencyInjection;
 using Employee.Domain.Interfaces.Repositories;
@@ -24,6 +26,12 @@ namespace Employee.Infrastructure.Identity
         private readonly ITokenService _tokenService;
         private readonly IConfiguration _config;
         private readonly IServiceScopeFactory _scopeFactory;
+
+        // Per-user lock to prevent concurrent token-rotation race conditions.
+        // Two simultaneous refresh requests (e.g. two browser tabs) could otherwise
+        // both read the same "valid" entry, both rotate it, and the second write
+        // would overwrite the first, making the first response's cookie invalid.
+        private static readonly ConcurrentDictionary<string, SemaphoreSlim> _userRefreshLocks = new();
 
         public IdentityService(
             UserManager<ApplicationUser> userManager,
@@ -358,59 +366,77 @@ namespace Employee.Infrastructure.Identity
                        ?? throw new NotFoundException("User not found.");
             }
 
-            // ── 2. Hash the incoming token and look it up ─────────────────────────
-            var incomingHash = _tokenService.HashToken(rawRefreshToken);
-            var entry = user.RefreshTokens.FirstOrDefault(t => t.TokenHash == incomingHash);
-
-            if (entry == null)
+            // ── 2. Acquire per-user lock to prevent concurrent rotation race ──────
+            // Two simultaneous refresh requests (e.g. two browser tabs) could both
+            // read the same valid entry, both rotate it, and the second write would
+            // overwrite the first — losing the first response's token.
+            var userIdKey = user.Id.ToString();
+            var userLock = _userRefreshLocks.GetOrAdd(userIdKey, _ => new SemaphoreSlim(1, 1));
+            await userLock.WaitAsync();
+            try
             {
-                // Completely unknown token — fabricated or already pruned.
-                throw new UnauthorizedAccessException("Invalid refresh token.");
-            }
+                // Re-read from DB so we see any rotation that happened while we waited
+                user = await _userManager.FindByIdAsync(userIdKey)
+                       ?? throw new NotFoundException("User not found.");
 
-            if (entry.IsRevoked)
-            {
-                // ── REUSE DETECTION ─────────────────────────────────────────────────────────────────
-                // An already-used token was re-presented → possible theft.
-                // Revoke the ENTIRE family so every rotation from this session is killed.
-                foreach (var t in user.RefreshTokens.Where(t => t.FamilyId == entry.FamilyId))
-                    t.IsRevoked = true;
+                // ── 3. Hash the incoming token and look it up ─────────────────────
+                var incomingHash = _tokenService.HashToken(rawRefreshToken);
+                var entry = user.RefreshTokens.FirstOrDefault(t => t.TokenHash == incomingHash);
+
+                if (entry == null)
+                {
+                    // Completely unknown token — fabricated or already pruned.
+                    throw new UnauthorizedAccessException("Invalid refresh token.");
+                }
+
+                if (entry.IsRevoked)
+                {
+                    // ── REUSE DETECTION ─────────────────────────────────────────────────────────────────
+                    // An already-used token was re-presented → possible theft.
+                    // Revoke the ENTIRE family so every rotation from this session is killed.
+                    foreach (var t in user.RefreshTokens.Where(t => t.FamilyId == entry.FamilyId))
+                        t.IsRevoked = true;
+                    await _userManager.UpdateAsync(user);
+                    throw new UnauthorizedAccessException(
+                        "Refresh token has been revoked. Session terminated for security reasons. Please log in again.");
+                }
+
+                if (entry.ExpiresAt < DateTime.UtcNow)
+                    throw new UnauthorizedAccessException("Refresh token has expired. Please log in again.");
+
+                // ── 4. Rotate: mark current entry used, issue a new sibling ──────
+                entry.IsRevoked = true;
+
+                var newRawToken = _tokenService.GenerateRefreshToken();
+                user.RefreshTokens.Add(new Employee.Infrastructure.Identity.Models.RefreshTokenEntry
+                {
+                    TokenHash = _tokenService.HashToken(newRawToken),
+                    FamilyId = entry.FamilyId,   // same family keeps the reuse-detection chain intact
+                    IssuedAt = DateTime.UtcNow,
+                    ExpiresAt = DateTime.UtcNow.AddDays(7),
+                    IsRevoked = false
+                });
+
+                PruneRefreshTokens(user);
+
+                var roles = await _userManager.GetRolesAsync(user);
+                var newAccessToken = _tokenService.GenerateJwtToken(
+                    user.Id.ToString(), user.Email ?? "", user.FullName, roles, user.EmployeeId);
+
                 await _userManager.UpdateAsync(user);
-                throw new UnauthorizedAccessException(
-                    "Refresh token has been revoked. Session terminated for security reasons. Please log in again.");
+
+                return new LoginResponseDto
+                {
+                    AccessToken = newAccessToken,
+                    RefreshToken = newRawToken,
+                    ExpiresIn = int.Parse(_config["JwtSettings:DurationInMinutes"] ?? "60") * 60,
+                    User = MapToUserDto(user, roles)
+                };
             }
-
-            if (entry.ExpiresAt < DateTime.UtcNow)
-                throw new UnauthorizedAccessException("Refresh token has expired. Please log in again.");
-
-            // ── 3. Rotate: mark current entry used, issue a new sibling ──────────
-            entry.IsRevoked = true;
-
-            var newRawToken = _tokenService.GenerateRefreshToken();
-            user.RefreshTokens.Add(new Employee.Infrastructure.Identity.Models.RefreshTokenEntry
+            finally
             {
-                TokenHash = _tokenService.HashToken(newRawToken),
-                FamilyId = entry.FamilyId,   // same family keeps the reuse-detection chain intact
-                IssuedAt = DateTime.UtcNow,
-                ExpiresAt = DateTime.UtcNow.AddDays(7),
-                IsRevoked = false
-            });
-
-            PruneRefreshTokens(user);
-
-            var roles = await _userManager.GetRolesAsync(user);
-            var newAccessToken = _tokenService.GenerateJwtToken(
-                user.Id.ToString(), user.Email ?? "", user.FullName, roles, user.EmployeeId);
-
-            await _userManager.UpdateAsync(user);
-
-            return new LoginResponseDto
-            {
-                AccessToken = newAccessToken,
-                RefreshToken = newRawToken,
-                ExpiresIn = int.Parse(_config["JwtSettings:DurationInMinutes"] ?? "60") * 60,
-                User = MapToUserDto(user, roles)
-            };
+                userLock.Release();
+            }
         }
 
         public async Task RevokeAllRefreshTokensAsync(string userId)

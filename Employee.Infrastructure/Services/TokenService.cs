@@ -58,7 +58,11 @@ namespace Employee.Infrastructure.Services
       var randomNumber = new byte[64];
       using var rng = RandomNumberGenerator.Create();
       rng.GetBytes(randomNumber);
-      return Convert.ToBase64String(randomNumber);
+      // Use URL-safe Base64 (no +/= chars) to avoid proxy/cookie encoding ambiguity
+      return Convert.ToBase64String(randomNumber)
+                    .Replace('+', '-')
+                    .Replace('/', '_')
+                    .TrimEnd('=');
     }
 
     /// <summary>
