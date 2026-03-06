@@ -42,8 +42,13 @@ namespace Employee.Application.Features.Attendance.Commands.Explanation
       if (dailyLog == null)
         throw new NotFoundException($"Không tìm thấy ngày công {request.Dto.WorkDate:dd/MM/yyyy}.");
 
-      if (!dailyLog.IsMissingPunch && !dailyLog.IsMissingCheckIn)
-        throw new ConflictException("Ngày này không có trạng thái missing punch. Không cần giải trình.");
+      // Accept explanation for:
+      //  - IsMissingPunch (checked in but no checkout, ghost-log may have run)
+      //  - IsMissingCheckIn (checked out but no check-in)
+      //  - Raw missing checkout: has CheckIn but no CheckOut and ghost-log hasn't processed yet
+      bool isMissingCheckout = dailyLog.CheckIn.HasValue && !dailyLog.CheckOut.HasValue;
+      if (!dailyLog.IsMissingPunch && !dailyLog.IsMissingCheckIn && !isMissingCheckout)
+        throw new ConflictException("Ngày này không có trường hợp cần giải trình.");
 
       // Prevent duplicate pending submission
       var existing = await _repo.GetByEmployeeAndDateAsync(request.EmployeeId, request.Dto.WorkDate, cancellationToken);
