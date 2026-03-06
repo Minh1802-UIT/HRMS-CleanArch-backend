@@ -30,20 +30,19 @@ namespace Employee.Application.Features.HumanResource.Commands.DeleteEmployee
     public async Task Handle(DeleteEmployeeCommand request, CancellationToken cancellationToken)
     {
       var emp = await _repo.GetByIdAsync(request.Id, cancellationToken);
-      if (emp == null) throw new NotFoundException($"Không tìm thấy nhân viên có ID '{request.Id}'");
+      if (emp == null) throw new NotFoundException($"Employee with ID '{request.Id}' not found.");
 
-      // 1. Kiểm tra: Không được xóa Manager đang quản lý phòng ban
+      // 1. Block deletion if the employee is currently a department manager
       var isManager = await _deptRepo.ExistsByManagerIdAsync(request.Id, cancellationToken);
       if (isManager)
       {
-        throw new ValidationException($"Không thể xóa nhân viên này vì đang là Quản lý (Manager) của một phòng ban. Vui lòng chuyển quyền quản lý trước.");
+        throw new ValidationException("Cannot delete this employee because they are the Manager of a department. Please reassign the manager role first.");
       }
 
-      // 2. Xóa trong DB
+      // 2. Delete from database
       await _repo.DeleteAsync(request.Id, cancellationToken);
 
-      // 2. 📢 Bắn sự kiện "Nhân viên đã bị xóa"
-      // Event Handler sẽ lo việc: Xóa User Auth, Ghi Log, Xóa Hợp đồng...
+      // 3. Publish domain event — event handler handles: deactivate auth user, audit log, contracts...
       await _publisher.Publish(new EmployeeDeletedEvent(request.Id, emp.EmployeeCode, emp.FullName), cancellationToken);
 
       // 3. Invalidate caches

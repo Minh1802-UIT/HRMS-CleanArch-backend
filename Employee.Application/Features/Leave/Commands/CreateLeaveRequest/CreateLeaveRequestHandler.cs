@@ -45,7 +45,7 @@ namespace Employee.Application.Features.Leave.Commands.CreateLeaveRequest
         // It's an enum name — resolve the document ID via Code
         resolvedType = await _leaveTypeRepo.GetByCodeAsync(request.LeaveType, cancellationToken);
         if (resolvedType == null)
-          throw new NotFoundException($"Không tìm thấy loại phép '{request.LeaveType}' trong hệ thống.");
+          throw new NotFoundException($"Leave type '{request.LeaveType}' not found in the system.");
         leaveTypeId = resolvedType.Id;
       }
       else
@@ -53,22 +53,22 @@ namespace Employee.Application.Features.Leave.Commands.CreateLeaveRequest
         // Assume it's a document ID — look up by ID to get the Code for enum parsing
         resolvedType = await _leaveTypeRepo.GetByIdAsync(request.LeaveType, cancellationToken);
         if (resolvedType == null)
-          throw new NotFoundException($"Không tìm thấy loại phép có ID '{request.LeaveType}'.");
+          throw new NotFoundException($"Leave type with ID '{request.LeaveType}' not found.");
 
         if (!Enum.TryParse<Employee.Domain.Enums.LeaveCategory>(resolvedType.Code, true, out leaveCategory))
-          throw new ValidationException($"Mã loại phép '{resolvedType.Code}' không hợp lệ.");
+          throw new ValidationException($"Leave type code '{resolvedType.Code}' is not a valid leave category.");
         leaveTypeId = resolvedType.Id;
       }
 
-      // 1.1 Check Overlap (Chống trùng lịch)
+      // 1.1 Check for scheduling overlap
       var hasOverlap = await _repo.ExistsOverlapAsync(request.EmployeeId, request.FromDate, request.ToDate, cancellationToken: cancellationToken);
       if (hasOverlap)
       {
-        throw new ConflictException("Khoảng thời gian này bạn đã có đơn nghỉ phép khác (đang chờ duyệt hoặc đã duyệt).");
+        throw new ConflictException("A leave request already exists for this date range (pending or approved).");
       }
 
-      // 2. Check số dư (Balance Validation) — use resolved document ID
-      // NEW-4 Sandwich Rule: if the leave type applies the sandwich rule, count ALL calendar days
+      // 2. Balance validation — use resolved document ID
+      // Sandwich Rule: if the leave type applies the sandwich rule, count ALL calendar days
       // (weekends between leave days are consumed). Otherwise count only working days.
       var daysRequested = resolvedType.IsSandwichRuleApplied
           ? Employee.Application.Common.Utils.DateHelper.CountCalendarDays(request.FromDate, request.ToDate)
@@ -80,7 +80,7 @@ namespace Employee.Application.Features.Leave.Commands.CreateLeaveRequest
 
       if (currentBalance < daysRequested)
       {
-        throw new ValidationException($"Số dư phép không đủ. Hiện có {currentBalance}, yêu cầu {daysRequested} (chỉ tính ngày làm việc).");
+        throw new ValidationException($"Insufficient leave balance. Available: {currentBalance} day(s), requested: {daysRequested} day(s).");
       }
 
       // 3. Create Entity directly (DDD)

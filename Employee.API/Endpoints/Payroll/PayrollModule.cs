@@ -41,7 +41,7 @@ namespace Employee.API.Endpoints.Payroll
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
                // Approve / confirm payroll payment
-               group.MapPut("/{id}/status", PayrollHandlers.UpdateStatus)
+               group.MapPost("/{id}/status", PayrollHandlers.UpdateStatus)
                     .AddEndpointFilter<ValidationFilter<UpdatePayrollStatusDto>>()
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 

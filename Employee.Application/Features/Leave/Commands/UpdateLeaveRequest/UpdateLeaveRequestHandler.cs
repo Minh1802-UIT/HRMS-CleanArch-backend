@@ -18,22 +18,22 @@ namespace Employee.Application.Features.Leave.Commands.UpdateLeaveRequest
         public async Task Handle(UpdateLeaveRequestCommand request, CancellationToken cancellationToken)
         {
             var entity = await _repo.GetByIdAsync(request.Id, cancellationToken);
-            if (entity == null) throw new NotFoundException($"Không tìm thấy đơn nghỉ phép có ID '{request.Id}'");
+            if (entity == null) throw new NotFoundException($"Leave request with ID '{request.Id}' not found.");
 
             if (entity.EmployeeId != request.EmployeeId)
-                throw new ValidationException("Bạn không có quyền sửa đơn này");
+                throw new ValidationException("You do not have permission to edit this leave request.");
 
-            // Parse Enum
+            // Parse leave category enum
             if (!Enum.TryParse<Employee.Domain.Enums.LeaveCategory>(request.Dto.LeaveType, true, out var leaveCategory))
             {
-                throw new ValidationException($"Loại nghỉ phép '{request.Dto.LeaveType}' không hợp lệ.");
+                throw new ValidationException($"Leave type '{request.Dto.LeaveType}' is not a valid leave category.");
             }
 
             // Check date overlap — pass excludeId to avoid flagging this request as competing with itself
             var hasOverlap = await _repo.ExistsOverlapAsync(entity.EmployeeId, request.Dto.FromDate, request.Dto.ToDate, request.Id, cancellationToken);
             if (hasOverlap)
             {
-                throw new ValidationException("Khoảng thời gian này bạn đã có đơn nghỉ phép khác.");
+                throw new ValidationException("A leave request already exists for this date range.");
             }
 
             try

@@ -29,10 +29,10 @@ namespace Employee.API.Endpoints.Payroll
       group.MapGet("/{monthKey}", PayrollCycleHandlers.GetByMonthKey);
 
       // Đóng chu kỳ (chốt sổ)
-      group.MapPut("/{monthKey}/close", PayrollCycleHandlers.Close);
+      group.MapPost("/{monthKey}/close", PayrollCycleHandlers.Close);
 
       // Hủy chu kỳ
-      group.MapPut("/{monthKey}/cancel", PayrollCycleHandlers.Cancel);
+      group.MapPost("/{monthKey}/cancel", PayrollCycleHandlers.Cancel);
     }
   }
 

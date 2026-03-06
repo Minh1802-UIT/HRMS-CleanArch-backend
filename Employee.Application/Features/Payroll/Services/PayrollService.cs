@@ -21,7 +21,7 @@ namespace Employee.Application.Features.Payroll.Services
       var payroll = await _payrollRepo.GetByEmployeeAndMonthAsync(employeeId, month);
       if (payroll == null)
       {
-        throw new NotFoundException("B?ng luong chua du?c t�nh cho nh�n vi�n n�y. Vui l�ng ch?y t�nh luong tru?c.");
+        throw new NotFoundException("Payroll has not been calculated for this employee yet. Please run payroll calculation first.");
       }
 
       return payroll.ToDto();

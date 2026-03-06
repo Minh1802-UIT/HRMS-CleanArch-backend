@@ -21,7 +21,7 @@ namespace Employee.API.Endpoints.Leave
            .AddEndpointFilter<ValidationFilter<CreateLeaveTypeDto>>()
            .RequireAuthorization(p => p.RequireRole("Admin"));
 
-      group.MapPut("/{id}", LeaveTypeHandlers.Update)
+      group.MapPatch("/{id}", LeaveTypeHandlers.Update)
            .AddEndpointFilter<ValidationFilter<UpdateLeaveTypeDto>>()
            .RequireAuthorization(p => p.RequireRole("Admin"));
 

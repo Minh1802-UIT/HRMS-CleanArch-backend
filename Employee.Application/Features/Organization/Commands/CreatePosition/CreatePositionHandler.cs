@@ -22,7 +22,7 @@ namespace Employee.Application.Features.Organization.Commands.CreatePosition
       if (!string.IsNullOrEmpty(request.Dto.ParentId))
       {
         var parent = await repo.GetByIdAsync(request.Dto.ParentId, cancellationToken);
-        if (parent == null) throw new NotFoundException("Không tìm thấy chức vụ cấp trên");
+        if (parent == null) throw new NotFoundException("Parent position not found.");
 
         // Guard: prevent excessively deep hierarchy
         var depth = await GetDepthAsync(request.Dto.ParentId, cancellationToken);

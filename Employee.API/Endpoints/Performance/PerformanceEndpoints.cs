@@ -33,7 +33,7 @@ namespace Employee.API.Endpoints.Performance
         return ResultUtils.Created(id, "Performance goal created successfully.");
       }).RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
 
-      group.MapPut("/goals/{id}/progress", async (string id, [FromBody] double progress, ISender sender) =>
+      group.MapPatch("/goals/{id}/progress", async (string id, [FromBody] double progress, ISender sender) =>
       {
         var success = await sender.Send(new UpdatePerformanceGoalProgressCommand(id, progress));
         return success ? ResultUtils.Success("Goal progress updated.") : ResultUtils.Fail("GOAL_NOT_FOUND", "Goal not found.");
@@ -52,7 +52,7 @@ namespace Employee.API.Endpoints.Performance
         return ResultUtils.Created(id, "Performance review created successfully.");
       }).RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
 
-      group.MapPut("/reviews/{id}", async (string id, [FromBody] PerformanceReviewDto dto, ISender sender) =>
+      group.MapPatch("/reviews/{id}", async (string id, [FromBody] PerformanceReviewDto dto, ISender sender) =>
       {
         var success = await sender.Send(new UpdatePerformanceReviewCommand(id, dto));
         return success ? ResultUtils.Success("Performance review updated.") : ResultUtils.Fail("REVIEW_NOT_FOUND", "Review not found.");

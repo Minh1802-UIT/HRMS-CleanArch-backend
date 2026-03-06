@@ -27,35 +27,35 @@ namespace Employee.Application.Features.Leave.Commands.CancelLeaveRequest
         public async Task Handle(CancelLeaveRequestCommand request, CancellationToken cancellationToken)
         {
             var entity = await _repo.GetByIdAsync(request.Id, cancellationToken);
-            if (entity == null) throw new NotFoundException("Không tìm thấy đơn");
+            if (entity == null) throw new NotFoundException("Leave request not found.");
 
             if (entity.EmployeeId != request.EmployeeId)
-                throw new ValidationException("Bạn không có quyền hủy đơn này");
+                throw new ValidationException("You do not have permission to cancel this leave request.");
 
-            // Allow canceling Approved requests now (with Refund logic)
+            // Allow canceling Approved requests (with refund logic)
             if (entity.Status != Employee.Domain.Enums.LeaveStatus.Pending &&
                 entity.Status != Employee.Domain.Enums.LeaveStatus.Approved)
             {
-                throw new ValidationException("Chỉ được hủy đơn khi đang chờ duyệt hoặc đã duyệt (nhưng chưa nghỉ).");
+                throw new ValidationException("Leave request can only be cancelled when it is Pending or Approved (but not yet started).");
             }
 
             // Refund logic if cancelling an Approved leave
             if (entity.Status == Employee.Domain.Enums.LeaveStatus.Approved)
             {
                 // Guard: only allow cancel if leave hasn't started yet
-                // Dùng UTC+7 (Asia/Ho_Chi_Minh) nhất quán với AttendanceProcessingService
+                // Use Vietnam time (UTC+7) consistent with AttendanceProcessingService
                 var vnOffset = TimeSpan.FromHours(7);
                 var todayVn = DateTimeOffset.UtcNow.ToOffset(vnOffset).Date;
                 if (entity.FromDate.Date <= todayVn)
-                    throw new ValidationException("Không thể hủy đơn nghỉ phép đã bắt đầu hoặc đã qua.");
+                    throw new ValidationException("Cannot cancel a leave request that has already started or passed.");
 
                 // Resolve LeaveType document ID — fail fast to avoid cancelling without refund
                 var leaveTypeDoc = await _leaveTypeRepo.GetByCodeAsync(entity.LeaveType.ToString(), cancellationToken);
                 if (leaveTypeDoc == null)
-                    throw new NotFoundException($"Không tìm thấy loại phép '{entity.LeaveType}' trong hệ thống. Không thể hoàn trả ngày phép.");
+                    throw new NotFoundException($"Leave type '{entity.LeaveType}' not found in the system. Cannot refund leave days.");
 
                 var year = entity.FromDate.Year.ToString();
-                // Dùng cùng logic với ReviewLeaveRequestHandler: Sandwich Rule → ngày lịch, ngược lại → ngày làm việc
+                // Apply Sandwich Rule consistently with ReviewLeaveRequestHandler: calendar days vs working days
                 var days = leaveTypeDoc.IsSandwichRuleApplied
                     ? Employee.Application.Common.Utils.DateHelper.CountCalendarDays(entity.FromDate, entity.ToDate)
                     : Employee.Application.Common.Utils.DateHelper.CountWorkingDays(entity.FromDate, entity.ToDate);

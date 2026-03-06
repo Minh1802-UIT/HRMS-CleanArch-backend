@@ -13,8 +13,8 @@ namespace Employee.API.Endpoints.HumanResource
                      .WithTags("HumanResource - Employees")
                      .RequireAuthorization();
 
-      group.MapPost("/list", EmployeeHandlers.GetPagedList)
-           .WithName("GetPagedEmployeeList");
+               group.MapGet("/", EmployeeHandlers.GetPagedList)
+                    .WithName("GetPagedEmployeeList");
 
       group.MapGet("/lookup", EmployeeHandlers.GetLookup)
            .WithName("GetEmployeeLookup");
@@ -31,9 +31,9 @@ namespace Employee.API.Endpoints.HumanResource
            .AddEndpointFilter<ValidationFilter<CreateEmployeeDto>>()
            .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-      // 4. UPDATE (HR/Admin Only)
-      group.MapPut("/{id}", EmployeeHandlers.Update)
-           .AddEndpointFilter<ValidationFilter<UpdateEmployeeDto>>()
+               // 4. UPDATE (HR/Admin Only)
+               group.MapPatch("/{id}", EmployeeHandlers.Update)
+                    .AddEndpointFilter<ValidationFilter<UpdateEmployeeDto>>()
            .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
       // 5. DELETE (Admin Only)

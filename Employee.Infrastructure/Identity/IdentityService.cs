@@ -194,7 +194,7 @@ namespace Employee.Infrastructure.Identity
             if (user == null) return Result.Failure(new[] { "User not found." });
 
             if (!AllowedRoles.Contains(roleName))
-                return Result.Failure(new[] { $"Role '{roleName}' không hợp lệ. Chỉ cho phép: {string.Join(", ", AllowedRoles)}." });
+                return Result.Failure(new[] { $"Role '{roleName}' is not allowed. Permitted roles: {string.Join(", ", AllowedRoles)}." });
 
             if (!await _roleManager.RoleExistsAsync(roleName))
             {
@@ -208,7 +208,7 @@ namespace Employee.Infrastructure.Identity
         public async Task<string> RegisterAsync(RegisterDto dto)
         {
             var existingUser = await _userManager.FindByNameAsync(dto.Username);
-            if (existingUser != null) throw new ConflictException("Username đã tồn tại");
+            if (existingUser != null) throw new ConflictException("Username already exists.");
 
             if (!string.IsNullOrEmpty(dto.Email))
             {
@@ -229,12 +229,12 @@ namespace Employee.Infrastructure.Identity
                         }
                         else
                         {
-                            throw new ConflictException("Email đã tồn tại");
+                            throw new ConflictException("Email address is already in use.");
                         }
                     }
                     else
                     {
-                        throw new ConflictException("Email đã tồn tại");
+                        throw new ConflictException("Email address is already in use.");
                     }
                 }
             }
@@ -274,12 +274,12 @@ namespace Employee.Infrastructure.Identity
 
             if (user == null)
             {
-                throw new UnauthorizedAccessException("Tài khoản không tồn tại.");
+                throw new UnauthorizedAccessException("Account not found.");
             }
 
             if (user.LockoutEnd != null && user.LockoutEnd > DateTimeOffset.UtcNow)
             {
-                throw new UnauthorizedAccessException("Tài khoản đã bị khóa. Liên hệ Admin.");
+                throw new UnauthorizedAccessException("Account is locked. Please contact Admin.");
             }
 
             // H-4: Explicitly check the IsActive flag in addition to the lockout check.
@@ -287,12 +287,12 @@ namespace Employee.Infrastructure.Identity
             // in the DB or via ToggleUserStatusAsync without using lockout).
             if (!user.IsActive)
             {
-                throw new UnauthorizedAccessException("Tài khoản đã bị vô hiệu hóa. Liên hệ Admin.");
+                throw new UnauthorizedAccessException("Account is disabled. Please contact Admin.");
             }
 
             if (!await _userManager.CheckPasswordAsync(user, password))
             {
-                throw new UnauthorizedAccessException("Mật khẩu không đúng.");
+                throw new UnauthorizedAccessException("Invalid password.");
             }
 
             var roles = await _userManager.GetRolesAsync(user);
@@ -339,23 +339,23 @@ namespace Employee.Infrastructure.Identity
                     .Where(u => u.RefreshTokens.Any(t => t.TokenHash == lookupHash))
                     .FirstOrDefaultAsync();
                 if (user == null)
-                    throw new UnauthorizedAccessException("Refresh token không hợp lệ.");
+                    throw new UnauthorizedAccessException("Invalid refresh token.");
             }
             else
             {
                 // ── Normal path: validate principal from the (possibly expired) token ─
                 var principal = _tokenService.GetPrincipalFromExpiredToken(accessToken);
                 if (principal == null)
-                    throw new UnauthorizedAccessException("Access token không hợp lệ.");
+                    throw new UnauthorizedAccessException("Invalid access token.");
 
                 // ClaimTypes.Name stores the fullName, NOT the login username.
                 // Use NameIdentifier (userId) for a reliable lookup.
                 var userId = principal.FindFirstValue(ClaimTypes.NameIdentifier);
                 if (string.IsNullOrEmpty(userId))
-                    throw new UnauthorizedAccessException("Không tìm thấy thông tin user từ token.");
+                    throw new UnauthorizedAccessException("Could not identify user from token.");
 
                 user = await _userManager.FindByIdAsync(userId)
-                       ?? throw new NotFoundException("User không tồn tại.");
+                       ?? throw new NotFoundException("User not found.");
             }
 
             // ── 2. Hash the incoming token and look it up ─────────────────────────
@@ -365,23 +365,23 @@ namespace Employee.Infrastructure.Identity
             if (entry == null)
             {
                 // Completely unknown token — fabricated or already pruned.
-                throw new UnauthorizedAccessException("Refresh token không hợp lệ.");
+                throw new UnauthorizedAccessException("Invalid refresh token.");
             }
 
             if (entry.IsRevoked)
             {
-                // ── REUSE DETECTION ─────────────────────────────────────────────────
+                // ── REUSE DETECTION ─────────────────────────────────────────────────────────────────
                 // An already-used token was re-presented → possible theft.
                 // Revoke the ENTIRE family so every rotation from this session is killed.
                 foreach (var t in user.RefreshTokens.Where(t => t.FamilyId == entry.FamilyId))
                     t.IsRevoked = true;
                 await _userManager.UpdateAsync(user);
                 throw new UnauthorizedAccessException(
-                    "Refresh token đã bị thu hồi. Phiên đăng nhập bị chấm dứt vì lý do bảo mật. Vui lòng đăng nhập lại.");
+                    "Refresh token has been revoked. Session terminated for security reasons. Please log in again.");
             }
 
             if (entry.ExpiresAt < DateTime.UtcNow)
-                throw new UnauthorizedAccessException("Refresh token đã hết hạn. Vui lòng đăng nhập lại.");
+                throw new UnauthorizedAccessException("Refresh token has expired. Please log in again.");
 
             // ── 3. Rotate: mark current entry used, issue a new sibling ──────────
             entry.IsRevoked = true;

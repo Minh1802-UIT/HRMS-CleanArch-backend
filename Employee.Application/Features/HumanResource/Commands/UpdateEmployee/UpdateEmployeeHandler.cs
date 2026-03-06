@@ -39,26 +39,26 @@ namespace Employee.Application.Features.HumanResource.Commands.UpdateEmployee
     public async Task Handle(UpdateEmployeeCommand request, CancellationToken cancellationToken)
     {
       var oldEmp = await _repo.GetByIdAsync(request.Id, cancellationToken);
-      if (oldEmp == null) throw new NotFoundException($"Không tìm thấy nhân viên có ID '{request.Id}'");
+      if (oldEmp == null) throw new NotFoundException($"Employee with ID '{request.Id}' not found.");
 
-      // 0. Concurrency Check (Optimistic Locking)
+      // 0. Concurrency check (optimistic locking)
       if (oldEmp.Version != request.Version)
       {
-        throw new ConcurrencyException("Dữ liệu phiên bản cũ (Version mismatch). Vui lòng tải lại.");
+        throw new ConcurrencyException("Data has been modified by another request (version mismatch). Please reload and try again.");
       }
 
-      // 1. Kiểm tra Phòng ban (nếu có thay đổi)
+      // 1. Validate department (if changed)
       if (oldEmp.JobDetails.DepartmentId != request.JobDetails.DepartmentId)
       {
         var dept = await _deptRepo.GetByIdAsync(request.JobDetails.DepartmentId, cancellationToken);
-        if (dept == null) throw new NotFoundException($"Phòng ban có ID '{request.JobDetails.DepartmentId}' không tồn tại!");
+        if (dept == null) throw new NotFoundException($"Department with ID '{request.JobDetails.DepartmentId}' not found.");
       }
 
-      // 2. Kiểm tra Chức vụ
+      // 2. Validate position (if changed)
       if (oldEmp.JobDetails.PositionId != request.JobDetails.PositionId)
       {
         var pos = await _posRepo.GetByIdAsync(request.JobDetails.PositionId, cancellationToken);
-        if (pos == null) throw new NotFoundException($"Chức vụ có ID '{request.JobDetails.PositionId}' không tồn tại!");
+        if (pos == null) throw new NotFoundException($"Position with ID '{request.JobDetails.PositionId}' not found.");
       }
 
       var oldVal = new
@@ -68,7 +68,7 @@ namespace Employee.Application.Features.HumanResource.Commands.UpdateEmployee
         PosId = oldEmp.JobDetails.PositionId
       };
 
-      // 3. Map từ Command sang Entity
+      // 3. Map command to entity
       var dto = new UpdateEmployeeDto
       {
         Id = request.Id,

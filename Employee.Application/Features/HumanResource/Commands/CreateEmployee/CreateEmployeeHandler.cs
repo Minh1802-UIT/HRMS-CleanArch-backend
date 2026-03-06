@@ -44,22 +44,22 @@ namespace Employee.Application.Features.HumanResource.Commands.CreateEmployee
       await _unitOfWork.BeginTransactionAsync();
       try
       {
-        // 1. Kiểm tra trùng mã nhân viên
+        // 1. Check for duplicate employee code
         var exists = await _repo.ExistsByCodeAsync(request.EmployeeCode, cancellationToken);
         if (exists)
-          throw new ConflictException($"Mã nhân viên '{request.EmployeeCode}' đã tồn tại!");
+          throw new ConflictException($"Employee code '{request.EmployeeCode}' already exists.");
 
-        // 2. Kiểm tra Phòng ban
+        // 2. Validate department
         var dept = await _deptRepo.GetByIdAsync(request.JobDetails.DepartmentId, cancellationToken);
         if (dept == null)
-          throw new NotFoundException($"Phòng ban có ID '{request.JobDetails.DepartmentId}' không tồn tại!");
+          throw new NotFoundException($"Department with ID '{request.JobDetails.DepartmentId}' not found.");
 
-        // 3. Kiểm tra Chức vụ
+        // 3. Validate position
         var pos = await _posRepo.GetByIdAsync(request.JobDetails.PositionId, cancellationToken);
         if (pos == null)
-          throw new NotFoundException($"Chức vụ có ID '{request.JobDetails.PositionId}' không tồn tại!");
+          throw new NotFoundException($"Position with ID '{request.JobDetails.PositionId}' not found.");
 
-        // 4. Map từ Command sang Entity
+        // 4. Map command to entity
         var dto = new CreateEmployeeDto
         {
           EmployeeCode = request.EmployeeCode,
@@ -73,10 +73,10 @@ namespace Employee.Application.Features.HumanResource.Commands.CreateEmployee
 
         var employee = dto.ToEntity();
 
-        // 5. Lưu vào DB
+        // 5. Persist to database
         await _repo.CreateAsync(employee, cancellationToken);
 
-        // 6. 📢 Bắn sự kiện "Nhân viên đã được tạo"
+        // 6. Publish domain event
         var resultDto = employee.ToDto();
         await _publisher.Publish(
             new DomainEventNotification<EmployeeCreatedEvent>(

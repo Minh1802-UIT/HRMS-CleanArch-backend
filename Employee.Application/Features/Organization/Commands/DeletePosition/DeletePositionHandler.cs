@@ -19,12 +19,12 @@ namespace Employee.Application.Features.Organization.Commands.DeletePosition
       // Check employee references before deleting
       var hasEmployees = await employeeRepo.ExistsByPositionIdAsync(request.Id, cancellationToken);
       if (hasEmployees)
-        throw new ValidationException("Không thể xóa chức vụ đang có nhân viên.");
+        throw new ValidationException("Cannot delete a position that has active employees.");
 
       // Check child positions
       var allPositions = await repo.GetAllActiveAsync(cancellationToken);
       if (allPositions.Any(p => p.ParentId == request.Id))
-        throw new ValidationException("Không thể xóa chức vụ đang có chức vụ con.");
+        throw new ValidationException("Cannot delete a position that has child positions.");
 
       await repo.DeleteAsync(request.Id, cancellationToken);
       await cache.RemoveAsync(CacheKeys.PositionTree);

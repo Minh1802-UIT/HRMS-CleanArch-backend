@@ -34,8 +34,8 @@ namespace Employee.API.Endpoints.Attendance
                group.MapGet("/employee/{employeeId}/report", AttendanceHandlers.GetEmployeeReport)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
 
-               // 4. Báo cáo ngày (Dashboard) - M3-UPDATE: POST to allow body with pagination
-               group.MapPost("/daily/{dateStr}", AttendanceHandlers.GetDailyReport)
+               // 4. Báo cáo ngày (Dashboard)
+               group.MapGet("/daily/{dateStr}", AttendanceHandlers.GetDailyReport)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
 
                // 5. Kích hoạt xử lý (Admin/HR dùng để tổng hợp dữ liệu nháp vào báo cáo)

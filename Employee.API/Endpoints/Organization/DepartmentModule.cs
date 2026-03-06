@@ -22,8 +22,8 @@ public class DepartmentModule : ICarterModule
          .AddEndpointFilter<ValidationFilter<CreateDepartmentDto>>()
          .RequireAuthorization(p => p.RequireRole("Admin")); // Chỉ Admin tạo phòng ban
 
-    group.MapPut("/{id}", DepartmentHandlers.Update)
-         .AddEndpointFilter<ValidationFilter<UpdateDepartmentDto>>()
+          group.MapPatch("/{id}", DepartmentHandlers.Update)
+               .AddEndpointFilter<ValidationFilter<UpdateDepartmentDto>>()
          .RequireAuthorization(p => p.RequireRole("Admin"));
 
     group.MapDelete("/{id}", DepartmentHandlers.Delete)

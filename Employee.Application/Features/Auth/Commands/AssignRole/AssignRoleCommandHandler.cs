@@ -25,15 +25,15 @@ namespace Employee.Application.Features.Auth.Commands.AssignRole
         {
       // 1. Get User by Username
       var user = await _identityService.GetUserByUsernameAsync(request.Username);
-            if (user == null) throw new NotFoundException($"User '{request.Username}' không tồn tại");
+            if (user == null) throw new NotFoundException($"User '{request.Username}' not found.");
 
-      // 2. Assign Role
-      var result = await _identityService.AssignRoleAsync(user.Id, request.RoleName);
+            // 2. Assign role
+            var result = await _identityService.AssignRoleAsync(user.Id, request.RoleName);
 
       if (!result.Succeeded)
       {
-        throw new ValidationException($"Không thể gán quyền cho User '{request.Username}': {string.Join(", ", result.Errors)}");
-      }
+                throw new ValidationException($"Failed to assign role to user '{request.Username}': {string.Join(", ", result.Errors)}");
+            }
 
       // 3. Audit Log
       var adminId = _currentUser.UserId ?? "System";

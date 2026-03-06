@@ -26,7 +26,7 @@ namespace Employee.API.Endpoints.Leave
 
     // 1.5. GET ALL BALANCES (Report cho Admin/HR)
     public static async Task<IResult> GetAllBalances(
-        [FromBody] AllocationFilterDto dto,
+        [AsParameters] AllocationFilterDto dto,
         ILeaveAllocationService service)
     {
       var result = await service.GetAllAllocationsAsync(dto, dto.Keyword);

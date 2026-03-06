@@ -33,7 +33,7 @@ namespace Employee.API.Endpoints.Auth
         FullName = dto.FullName,
         EmployeeId = dto.EmployeeId
       });
-      return ResultUtils.Created("Account registered successfully.");
+      return ResultUtils.CreatedNoData("Account registered successfully.");
     }
 
     // 2. LOGIN (Public) — stores refresh token as an httpOnly cookie
@@ -72,7 +72,7 @@ namespace Employee.API.Endpoints.Auth
     public static async Task<IResult> CreateRole([FromBody] CreateRoleDto dto, ISender sender)
     {
       await sender.Send(new CreateRoleCommand { RoleName = dto.RoleName });
-      return ResultUtils.Created($"Role '{dto.RoleName}' created successfully.");
+      return ResultUtils.CreatedNoData($"Role '{dto.RoleName}' created successfully.");
     }
 
     // 4. ASSIGN ROLE (Admin Only)

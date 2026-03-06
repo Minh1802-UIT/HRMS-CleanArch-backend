@@ -38,7 +38,7 @@ public static class DepartmentHandlers
   public static async Task<IResult> Create([FromBody] CreateDepartmentDto dto, ISender sender)
   {
     var result = await sender.Send(new CreateDepartmentCommand(dto));
-    return ResultUtils.Created(result.Id);
+    return ResultUtils.Created(result.Id, "Created successfully", $"/api/departments/{result.Id}");
   }
 
   public static async Task<IResult> Update(string id, [FromBody] UpdateDepartmentDto dto, ISender sender)

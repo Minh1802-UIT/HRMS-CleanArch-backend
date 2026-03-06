@@ -1,5 +1,4 @@
 ﻿using Employee.Domain.Enums;
-using MongoDB.Bson.Serialization.Attributes;
 using System;
 
 namespace Employee.Domain.Entities.ValueObjects
@@ -53,9 +52,6 @@ namespace Employee.Domain.Entities.ValueObjects
     // MongoDB Driver 3.x selects the constructor with the MOST parameters when
     // multiple public ctors exist. With only ONE ctor, there is no ambiguity —
     // the driver MUST use this and then populate all properties via public setters.
-    // [BsonConstructor] kept as explicit documentation, but the single-ctor rule
-    // is the true guarantee.
-    [BsonConstructor]
     public DailyLog()
     {
       ShiftCode = string.Empty;

@@ -44,7 +44,7 @@ namespace Employee.Application.Features.Recruitment.Commands.OnboardCandidate
       // 3. Check EmployeeCode duplicate (same rule as Direct Create)
       var codeExists = await _employeeRepo.ExistsByCodeAsync(request.OnboardData.EmployeeCode, cancellationToken);
       if (codeExists)
-        throw new ValidationException($"Mã nhân viên '{request.OnboardData.EmployeeCode}' đã tồn tại.");
+        throw new ValidationException($"Employee code '{request.OnboardData.EmployeeCode}' already exists.");
 
       await _unitOfWork.BeginTransactionAsync();
       try

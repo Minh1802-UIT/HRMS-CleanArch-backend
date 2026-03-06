@@ -20,7 +20,7 @@ namespace Employee.Application.Features.Auth.Commands.ResetPassword
       if (!result.Succeeded)
       {
         var errors = string.Join(", ", result.Errors);
-        throw new ValidationException($"Đặt lại mật khẩu thất bại: {errors}");
+        throw new ValidationException($"Password reset failed: {errors}");
       }
     }
   }

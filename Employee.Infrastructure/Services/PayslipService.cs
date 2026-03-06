@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace Employee.Application.Common.Services
+namespace Employee.Infrastructure.Services
 {
   public class PayslipService : IPayslipService
   {
@@ -302,35 +302,35 @@ namespace Employee.Application.Common.Services
                 c.RelativeColumn();    // Violations / Note
               });
 
-              table.Header(h =>
-              {
-                Th(h, "Date / Ngày");
-                Th(h, "Day");
-                Th(h, "Shift");
-                Th(h, "Check-In");
-                Th(h, "Check-Out");
-                Th(h, "Worked");
-                Th(h, "OT");
-                Th(h, "Status");
-                Th(h, "Violations / Note");
-              });
+                table.Header(h =>
+                {
+                  Th(h, "Date / Ngày");
+                  Th(h, "Day");
+                  Th(h, "Shift");
+                  Th(h, "Check-In");
+                  Th(h, "Check-Out");
+                  Th(h, "Worked");
+                  Th(h, "OT");
+                  Th(h, "Status");
+                  Th(h, "Violations / Note");
+                });
 
-              foreach (var log in dailyLogs)
-              {
-                var bg = (log.IsWeekend || log.IsHoliday)
-                    ? Colors.Grey.Lighten3 : Colors.White;
+                foreach (var log in dailyLogs)
+                {
+                  var bg = (log.IsWeekend || log.IsHoliday)
+                      ? Colors.Grey.Lighten3 : Colors.White;
 
-                string statusText;
-                string statusColor;
+                  string statusText;
+                  string statusColor;
 #pragma warning disable CS0618
-                if (log.IsHoliday) { statusText = "Holiday"; statusColor = Colors.Purple.Darken1; }
-                else if (log.IsWeekend) { statusText = "Weekend"; statusColor = Colors.Grey.Darken1; }
-                else if (log.Status == AttendanceStatus.Leave) { statusText = "Leave"; statusColor = Colors.Blue.Darken1; }
-                else if (log.Status == AttendanceStatus.Present
-                      || log.Status == AttendanceStatus.Late
-                      || log.Status == AttendanceStatus.EarlyLeave)
-                { statusText = "Present"; statusColor = Colors.Green.Darken1; }
-                else { statusText = "Absent"; statusColor = Colors.Red.Darken1; }
+                  if (log.IsHoliday) { statusText = "Holiday"; statusColor = Colors.Purple.Darken1; }
+                  else if (log.IsWeekend) { statusText = "Weekend"; statusColor = Colors.Grey.Darken1; }
+                  else if (log.Status == AttendanceStatus.Leave) { statusText = "Leave"; statusColor = Colors.Blue.Darken1; }
+                  else if (log.Status == AttendanceStatus.Present
+                        || log.Status == AttendanceStatus.Late
+                        || log.Status == AttendanceStatus.EarlyLeave)
+                  { statusText = "Present"; statusColor = Colors.Green.Darken1; }
+                  else { statusText = "Absent"; statusColor = Colors.Red.Darken1; }
 #pragma warning restore CS0618
 
                   // On holiday rows: suppress late/early flags (full attendance granted)
@@ -375,8 +375,8 @@ namespace Employee.Application.Common.Services
                   }
 
                   LogTd(table, log.Date.ToString("dd/MM/yyyy"), bg);
-                LogTd(table, log.Date.ToString("ddd"), bg);
-                LogTd(table, string.IsNullOrEmpty(log.ShiftCode) ? "-" : log.ShiftCode, bg);
+                  LogTd(table, log.Date.ToString("ddd"), bg);
+                  LogTd(table, string.IsNullOrEmpty(log.ShiftCode) ? "-" : log.ShiftCode, bg);
                   LogTd(table, checkInDisplay, bg);
                   LogTd(table, checkOutDisplay, bg);
                   LogTd(table, workedDisplay, bg);
@@ -384,12 +384,12 @@ namespace Employee.Application.Common.Services
                   table.Cell().Background(bg).BorderBottom(1)
                     .BorderColor(Colors.Grey.Lighten2).Padding(3)
                     .Text(statusText).FontColor(statusColor).SemiBold();
-                table.Cell().Background(bg).BorderBottom(1)
-                    .BorderColor(Colors.Grey.Lighten2).Padding(3)
-                    .Text(violationNote).FontColor(
-                        log.IsHoliday ? Colors.Purple.Darken1
-                      : !string.IsNullOrWhiteSpace(violationNote) ? Colors.Orange.Darken2
-                      : Colors.Grey.Darken1);
+                  table.Cell().Background(bg).BorderBottom(1)
+                      .BorderColor(Colors.Grey.Lighten2).Padding(3)
+                      .Text(violationNote).FontColor(
+                          log.IsHoliday ? Colors.Purple.Darken1
+                        : !string.IsNullOrWhiteSpace(violationNote) ? Colors.Orange.Darken2
+                        : Colors.Grey.Darken1);
                 }
               });
 
@@ -400,16 +400,16 @@ namespace Employee.Application.Common.Services
               {
                 c.RelativeColumn(); c.RelativeColumn(); c.RelativeColumn(); c.RelativeColumn();
               });
-              SummaryTile(table, "Total Present\nTổng ngày có mặt",
-                  (bucket?.TotalPresent ?? 0).ToString() + " days", Colors.Green.Darken1);
-              SummaryTile(table, "Total Late\nNgày đi trễ",
-                  (bucket?.TotalLate ?? 0).ToString() + " days",
-                  (bucket?.TotalLate ?? 0) > 0 ? Colors.Orange.Darken1 : (string?)null);
-              SummaryTile(table, "Total OT\nTổng tăng ca",
-                  $"{(bucket?.TotalOvertime ?? 0):F2}h", Colors.Purple.Darken1);
-              SummaryTile(table, "Leave Days (this month)\nNgày nghỉ phép",
-                  dailyLogs.Count(l => l.Status == AttendanceStatus.Leave).ToString() + " days",
-                  Colors.Blue.Darken1);
+                SummaryTile(table, "Total Present\nTổng ngày có mặt",
+                    (bucket?.TotalPresent ?? 0).ToString() + " days", Colors.Green.Darken1);
+                SummaryTile(table, "Total Late\nNgày đi trễ",
+                    (bucket?.TotalLate ?? 0).ToString() + " days",
+                    (bucket?.TotalLate ?? 0) > 0 ? Colors.Orange.Darken1 : (string?)null);
+                SummaryTile(table, "Total OT\nTổng tăng ca",
+                    $"{(bucket?.TotalOvertime ?? 0):F2}h", Colors.Purple.Darken1);
+                SummaryTile(table, "Leave Days (this month)\nNgày nghỉ phép",
+                    dailyLogs.Count(l => l.Status == AttendanceStatus.Leave).ToString() + " days",
+                    Colors.Blue.Darken1);
               });
             });
 

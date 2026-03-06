@@ -35,16 +35,16 @@ namespace Employee.API.Endpoints.Recruitment
       group.MapPost("/", async ([FromBody] JobVacancyDto dto, ISender sender) =>
       {
         await sender.Send(new CreateJobVacancyCommand(dto));
-        return ResultUtils.Created("Job vacancy created successfully.");
+        return ResultUtils.CreatedNoData("Job vacancy created successfully.");
       });
 
-      group.MapPut("/{id}", async (string id, [FromBody] JobVacancyDto dto, ISender sender) =>
+      group.MapPatch("/{id}", async (string id, [FromBody] JobVacancyDto dto, ISender sender) =>
       {
         await sender.Send(new UpdateJobVacancyCommand(id, dto));
         return ResultUtils.Success("Job vacancy updated successfully.");
       });
 
-      group.MapPut("/{id}/close", async (string id, ISender sender) =>
+      group.MapPost("/{id}/close", async (string id, ISender sender) =>
       {
         await sender.Send(new CloseJobVacancyCommand(id));
         return ResultUtils.Success("Job vacancy closed.");

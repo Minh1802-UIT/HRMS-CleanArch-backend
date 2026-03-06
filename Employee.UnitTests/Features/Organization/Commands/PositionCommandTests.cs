@@ -62,7 +62,7 @@ namespace Employee.UnitTests.Features.Organization.Commands
 
       // Act & Assert
       var ex = await Assert.ThrowsAsync<ValidationException>(() => _deleteHandler.Handle(command, CancellationToken.None));
-      Assert.Contains("có nhân viên", ex.Message);
+      Assert.Contains("active employees", ex.Message);
     }
 
     [Fact]
@@ -79,7 +79,7 @@ namespace Employee.UnitTests.Features.Organization.Commands
 
       // Act & Assert
       var ex = await Assert.ThrowsAsync<ValidationException>(() => _deleteHandler.Handle(command, CancellationToken.None));
-      Assert.Contains("có chức vụ con", ex.Message);
+      Assert.Contains("child positions", ex.Message);
     }
   }
 }

@@ -19,7 +19,7 @@ namespace Employee.API.Endpoints.Leave
   public static class LeaveRequestHandlers
   {
     public static async Task<IResult> GetPagedList(
-      [FromBody] PaginationParams pagination,
+      [AsParameters] PaginationParams pagination,
       ISender sender)
     {
       var result = await sender.Send(new GetLeaveRequestsPagedQuery(pagination));
@@ -58,7 +58,7 @@ namespace Employee.API.Endpoints.Leave
       {
         var employeeId = currentUser.EmployeeId ?? currentUser.UserId;
         if (item.EmployeeId != employeeId)
-          return ResultUtils.Fail("LEAVE_REQUEST_FORBIDDEN", "B?n khng c quy?n xem don ngh? php ny.", 403);
+          return ResultUtils.Fail("LEAVE_REQUEST_FORBIDDEN", "You do not have permission to view this leave request.", 403);
       }
       return ResultUtils.Success(item);
     }
@@ -79,7 +79,7 @@ namespace Employee.API.Endpoints.Leave
       };
 
       var resultDto = await sender.Send(command);
-      return ResultUtils.Created(resultDto, "Leave request submitted successfully via CQRS.");
+      return ResultUtils.Created(resultDto, "Leave request submitted successfully via CQRS.", $"/api/leaves/{resultDto.Id}");
     }
 
     // 4. UPDATE (S?a don - CQRS)

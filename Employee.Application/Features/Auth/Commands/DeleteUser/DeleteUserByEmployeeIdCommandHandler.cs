@@ -30,8 +30,8 @@ namespace Employee.Application.Features.Auth.Commands.DeleteUser
 
       if (!result.Succeeded)
       {
-        throw new ValidationException($"Không thể vô hiệu hóa User cho EmployeeId '{request.EmployeeId}': {string.Join(", ", result.Errors)}");
-      }
+                throw new ValidationException($"Failed to deactivate user for EmployeeId '{request.EmployeeId}': {string.Join(", ", result.Errors)}");
+            }
 
       // Log deactivation
       await _auditService.LogAsync(

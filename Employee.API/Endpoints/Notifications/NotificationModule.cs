@@ -17,7 +17,7 @@ namespace Employee.API.Endpoints.Notifications
       group.MapGet("/unread-count", NotificationHandlers.GetUnreadCount);
 
       // Mark a single notification as read
-      group.MapPut("/{id}/read", NotificationHandlers.MarkRead);
+      group.MapPost("/{id}/read", NotificationHandlers.MarkRead);
 
       // Mark all notifications as read
       group.MapPost("/read-all", NotificationHandlers.MarkAllRead);

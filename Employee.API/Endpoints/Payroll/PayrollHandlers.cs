@@ -40,12 +40,12 @@ namespace Employee.API.Endpoints.Payroll
       {
         var employeeId = currentUser.EmployeeId ?? currentUser.UserId;
         if (item.EmployeeId != employeeId)
-          return ResultUtils.Fail("PAYROLL_FORBIDDEN", "B?n khng c quy?n xem phi?u luong ny.", 403);
+          return ResultUtils.Fail("PAYROLL_FORBIDDEN", "You do not have permission to view this payslip.", 403);
       }
       return ResultUtils.Success(item);
     }
 
-    // 3. GET BY MONTH (Admin/HR xem b?ng t?ng h?p)
+    // 3. GET BY MONTH (Admin/HR view payroll summary)
     public static async Task<IResult> GetByMonth(
         [FromQuery] string month,
         [AsParameters] PaginationParams pagination,
@@ -100,7 +100,7 @@ namespace Employee.API.Endpoints.Payroll
         var payroll = await payrollService.GetByIdAsync(id);
         var employeeId = currentUser.EmployeeId ?? currentUser.UserId;
         if (payroll.EmployeeId != employeeId)
-          return ResultUtils.Fail("PAYSLIP_FORBIDDEN", "B?n khng c quy?n t?i payslip ny.", 403);
+          return ResultUtils.Fail("PAYSLIP_FORBIDDEN", "You do not have permission to download this payslip.", 403);
       }
       var pdfBytes = await service.GeneratePayslipPdfAsync(id);
       if (pdfBytes == null) return ResultUtils.Fail("PAYSLIP_NOT_FOUND", $"Payslip PDF not found for payroll id '{id}'.", 404);

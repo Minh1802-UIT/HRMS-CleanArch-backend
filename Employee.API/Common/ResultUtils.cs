@@ -64,13 +64,17 @@ namespace Employee.API.Common
       return 400;
     }
 
-    // 4. Created (201)
-    public static IResult Created<T>(T data, string message = "Created successfully")
+    // 4. Created (201) — pass a non-null 'location' to emit a Location response header.
+    public static IResult Created<T>(T data, string message = "Created successfully", string? location = null)
     {
-      return Results.Json(ApiResponse<T>.SuccessResult(data, message), statusCode: 201);
+      var body = ApiResponse<T>.SuccessResult(data, message);
+      return location != null
+        ? Results.Created(location, body)
+        : Results.Json(body, statusCode: 201);
     }
 
-    public static IResult Created(string message = "Created successfully")
+    /// <summary>201 Created with no data body. Use Created&lt;object?&gt;(null, message) for message-only responses.</summary>
+    public static IResult CreatedNoData(string message = "Created successfully")
     {
       return Created<object?>(null, message);
     }

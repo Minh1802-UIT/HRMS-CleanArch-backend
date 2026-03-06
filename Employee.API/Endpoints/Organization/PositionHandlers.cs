@@ -41,13 +41,13 @@ namespace Employee.API.Endpoints.Organization
     public static async Task<IResult> Create([FromBody] CreatePositionDto dto, ISender sender)
     {
       var id = await sender.Send(new CreatePositionCommand(dto));
-      return ResultUtils.Created(id, "Position created successfully.");
+      return ResultUtils.Created(id, "Position created successfully.", $"/api/positions/{id}");
     }
 
     // 4. UPDATE
     public static async Task<IResult> Update(string id, [FromBody] UpdatePositionDto dto, ISender sender)
     {
-      // Validate ID trên URL và Body ph?i kh?p nhau
+      // Validate ID trï¿½n URL vï¿½ Body ph?i kh?p nhau
       if (id != dto.Id)
       {
         return ResultUtils.Fail(ErrorCodes.InvalidData, "DevLog: URL ID mismatch.");

@@ -23,7 +23,7 @@ namespace Employee.API.Endpoints.Organization
            .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
       // 3. UPDATE: Chỉ Admin/HR
-      group.MapPut("/{id}", PositionHandlers.Update)
+      group.MapPatch("/{id}", PositionHandlers.Update)
            .AddEndpointFilter<ValidationFilter<UpdatePositionDto>>()
            .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 

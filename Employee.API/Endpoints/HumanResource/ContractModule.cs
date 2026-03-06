@@ -10,8 +10,8 @@ namespace Employee.API.Endpoints.HumanResource
     public void AddRoutes(IEndpointRouteBuilder app)
     {
       var group = app.MapGroup("/api/contracts")
-                     .WithTags("HumanResource - Contracts") // Tách tag cho d? nhìn trên Swagger
-                     .RequireAuthorization(); // M?c d?nh yêu c?u dang nh?p
+                     .WithTags("HumanResource - Contracts") // Tï¿½ch tag cho d? nhï¿½n trï¿½n Swagger
+                     .RequireAuthorization(); // M?c d?nh yï¿½u c?u dang nh?p
 
       // 1. GET ALL (Admin/HR Only)
       group.MapGet("/", ContractHandlers.GetPaged)
@@ -32,9 +32,9 @@ namespace Employee.API.Endpoints.HumanResource
            .AddEndpointFilter<ValidationFilter<CreateContractDto>>()
            .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-      // 4. UPDATE (Admin/HR Only)
-      group.MapPut("/{id}", ContractHandlers.Update)
-           .AddEndpointFilter<ValidationFilter<UpdateContractDto>>()
+               // 4. UPDATE (Admin/HR Only)
+               group.MapPatch("/{id}", ContractHandlers.Update)
+                    .AddEndpointFilter<ValidationFilter<UpdateContractDto>>()
            .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
       // 5. DELETE (Admin Only)

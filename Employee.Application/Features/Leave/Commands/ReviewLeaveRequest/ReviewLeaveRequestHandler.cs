@@ -32,14 +32,14 @@ namespace Employee.Application.Features.Leave.Commands.ReviewLeaveRequest
     public async Task Handle(ReviewLeaveRequestCommand request, CancellationToken cancellationToken)
     {
       var entity = await _repo.GetByIdAsync(request.Id, cancellationToken);
-      if (entity == null) throw new NotFoundException($"Không tìm thấy đơn nghỉ phép có ID '{request.Id}'");
+      if (entity == null) throw new NotFoundException($"Leave request with ID '{request.Id}' not found.");
 
       var oldStatus = entity.Status;
 
-      // Parse Enum
+      // Parse status enum from request
       if (!Enum.TryParse<Employee.Domain.Enums.LeaveStatus>(request.ReviewDto.Status, true, out var newStatus))
       {
-        throw new ValidationException($"Trạng thái '{request.ReviewDto.Status}' không hợp lệ.");
+        throw new ValidationException($"Status '{request.ReviewDto.Status}' is not a valid leave status.");
       }
 
       // Pre-resolve LeaveType BEFORE persisting — fail fast to avoid inconsistent state
@@ -49,10 +49,10 @@ namespace Employee.Application.Features.Leave.Commands.ReviewLeaveRequest
       {
         var leaveTypeDoc = await _leaveTypeRepo.GetByCodeAsync(entity.LeaveType.ToString(), cancellationToken);
         if (leaveTypeDoc == null)
-          throw new NotFoundException($"Không tìm thấy loại phép '{entity.LeaveType}' trong hệ thống.");
+          throw new NotFoundException($"Leave type '{entity.LeaveType}' not found in the system.");
         leaveTypeDocId = leaveTypeDoc.Id;
-        // Áp dụng Sandwich Rule nhất quán với CreateLeaveRequestHandler:
-        // Nếu loại phép có Sandwich Rule thì tính theo ngày lịch, ngược lại tính ngày làm việc
+        // Apply Sandwich Rule consistently with CreateLeaveRequestHandler:
+        // if the leave type has the sandwich rule, count calendar days; otherwise count working days
         workingDays = leaveTypeDoc.IsSandwichRuleApplied
             ? Employee.Application.Common.Utils.DateHelper.CountCalendarDays(entity.FromDate, entity.ToDate)
             : Employee.Application.Common.Utils.DateHelper.CountWorkingDays(entity.FromDate, entity.ToDate);
@@ -69,7 +69,7 @@ namespace Employee.Application.Features.Leave.Commands.ReviewLeaveRequest
       }
       else
       {
-        throw new ValidationException("Chỉ được phép 'Approved' hoặc 'Rejected'.");
+        throw new ValidationException("Only 'Approved' or 'Rejected' status transitions are allowed.");
       }
 
       // Optimistic concurrency: rejects with ConcurrencyException (→ HTTP 409) if

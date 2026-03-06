@@ -17,18 +17,18 @@ namespace Employee.Application.Features.Organization.Commands.UpdatePosition
     public async Task Handle(UpdatePositionCommand request, CancellationToken cancellationToken)
     {
       var existing = await repo.GetByIdAsync(request.Id, cancellationToken);
-      if (existing == null) throw new NotFoundException("Không tìm thấy chức vụ");
+      if (existing == null) throw new NotFoundException("Position not found.");
 
-      // Cycle Detection
+      // Cycle detection
       if (!string.IsNullOrEmpty(request.Dto.ParentId))
       {
-        if (request.Dto.ParentId == request.Id) throw new ValidationException("Một chức năng không thể làm cấp trên của chính nó.");
+        if (request.Dto.ParentId == request.Id) throw new ValidationException("A position cannot be its own parent.");
 
         var isSubordinate = await IsSubordinateAsync(request.Id, request.Dto.ParentId, cancellationToken);
-        if (isSubordinate) throw new ValidationException("Không thể đặt cấp trên là một chức vụ thuộc cấp dưới của mình.");
+        if (isSubordinate) throw new ValidationException("Cannot set a subordinate position as the parent.");
 
         var parent = await repo.GetByIdAsync(request.Dto.ParentId, cancellationToken);
-        if (parent == null) throw new NotFoundException("Không tìm thấy chức vụ cấp trên");
+        if (parent == null) throw new NotFoundException("Parent position not found.");
       }
 
       // 1. Update Department

@@ -30,20 +30,19 @@ namespace Employee.API.Endpoints.HumanResource
     // 3. CREATE
     public static async Task<IResult> Create([FromBody] CreateContractDto dto, IContractService service)
     {
-      // ?? GHI CHÚ QUAN TR?NG V? LOGIC BA:
-      // Handler KHÔNG check logic "Kho?ng tr?ng h?p d?ng" hay "Ngày hi?u l?c".
-      // Vi?c dó Service s? làm. N?u sai logic, Service ném Exception, Middleware s? b?t.
+      // ?? GHI CHï¿½ QUAN TR?NG V? LOGIC BA:
+      // Handler KHï¿½NG check logic "Kho?ng tr?ng h?p d?ng" hay "Ngï¿½y hi?u l?c".
+      // Vi?c dï¿½ Service s? lï¿½m. N?u sai logic, Service nï¿½m Exception, Middleware s? b?t.
 
       var id = await service.CreateAsync(dto);
 
-      // Tr? v? 201 Created
-      return ResultUtils.Created(id, "Contract created successfully.");
+      return ResultUtils.Created(id, "Contract created successfully.", $"/api/contracts/{id}");
     }
 
     // 4. UPDATE
     public static async Task<IResult> Update(string id, [FromBody] UpdateContractDto dto, IContractService service)
     {
-      // 1. Validate ID kh?p (Filter không làm du?c vi?c này vì ID n?m trên URL)
+      // 1. Validate ID kh?p (Filter khï¿½ng lï¿½m du?c vi?c nï¿½y vï¿½ ID n?m trï¿½n URL)
       if (id != dto.Id)
       {
         return ResultUtils.Fail(ErrorCodes.InvalidData, "DevLog: URL ID does not match Body ID.");
@@ -104,7 +103,7 @@ namespace Employee.API.Endpoints.HumanResource
     {
       if (string.IsNullOrEmpty(currentUser.EmployeeId))
       {
-        return ResultUtils.Fail("AUTH_UNLINKED", "Tài kho?n chua liên k?t nhân viên.");
+        return ResultUtils.Fail("AUTH_UNLINKED", "Tï¿½i kho?n chua liï¿½n k?t nhï¿½n viï¿½n.");
       }
 
       var result = await service.GetByEmployeeIdAsync(currentUser.EmployeeId);

@@ -18,7 +18,7 @@ namespace Employee.API.Endpoints.HumanResource
   {
 
     public static async Task<IResult> GetPagedList(
-      [FromBody] PaginationParams pagination,
+      [AsParameters] PaginationParams pagination,
       ISender sender)
     {
       var result = await sender.Send(new GetEmployeesPagedQuery(pagination));
@@ -56,7 +56,7 @@ namespace Employee.API.Endpoints.HumanResource
       };
 
       var result = await sender.Send(command);
-      return ResultUtils.Created(result, "Employee created successfully via CQRS.");
+      return ResultUtils.Created(result, "Employee created successfully via CQRS.", $"/api/employees/{result.Id}");
     }
 
     // 4. UPDATE (CQRS - Using MediatR)

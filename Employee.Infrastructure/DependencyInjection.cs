@@ -218,6 +218,8 @@ namespace Employee.Infrastructure
 
             services.AddScoped<AccountProvisioningJob>();
             services.AddScoped<IBackgroundJobService, HangfireBackgroundJobService>();
+            services.AddScoped<IPayslipService, PayslipService>();
+            services.AddScoped<IExcelExportService, ExcelExportService>();
 
             return services;
         }

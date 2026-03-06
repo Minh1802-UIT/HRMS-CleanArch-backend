@@ -19,12 +19,12 @@ namespace Employee.Application.Features.Organization.Commands.DeleteDepartment
       // Check employee references
       var hasEmployees = await employeeRepo.ExistsByDepartmentIdAsync(request.Id, cancellationToken);
       if (hasEmployees)
-        throw new ValidationException("Không thể xóa phòng ban đang có nhân viên.");
+        throw new ValidationException("Cannot delete a department that has active employees.");
 
       // Check sub-departments
       var children = await repo.GetChildrenAsync(request.Id, cancellationToken);
       if (children.Any())
-        throw new ValidationException("Không thể xóa phòng ban đang có phòng ban con.");
+        throw new ValidationException("Cannot delete a department that has sub-departments.");
 
       await repo.DeleteAsync(request.Id, cancellationToken);
       await cache.RemoveAsync(CacheKeys.DepartmentTree);

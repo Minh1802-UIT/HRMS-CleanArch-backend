@@ -130,10 +130,10 @@ namespace Employee.API.Endpoints.Attendance
       return ResultUtils.Success(report);
     }
 
-    // 4. GET DAILY REPORT FOR ALL EMPLOYEES (Dashboard) - M3-UPDATE: Change to POST to support Paging
+    // 4. GET DAILY REPORT FOR ALL EMPLOYEES (Dashboard)
     public static async Task<IResult> GetDailyReport(
         string dateStr,
-        [FromBody] PaginationParams pagination,
+        [AsParameters] PaginationParams pagination,
         IAttendanceService service,
         IAttendanceRepository repo,
         IEmployeeRepository employeeRepo)

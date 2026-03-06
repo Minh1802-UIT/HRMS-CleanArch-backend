@@ -42,13 +42,13 @@ namespace Employee.API.Endpoints.Auth
       group.MapGet("/users", AuthHandlers.GetAllUsers)
            .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-      // 2.4 Update roles for a specific user (Admin only — role changes are destructive)
-      group.MapPut("/roles/{userId}", AuthHandlers.UpdateUserRoles)
-           .RequireAuthorization(p => p.RequireRole("Admin"));
+               // 2.4 Update roles for a specific user (Admin only — role changes are destructive)
+               group.MapPatch("/roles/{userId}", AuthHandlers.UpdateUserRoles)
+                    .RequireAuthorization(p => p.RequireRole("Admin"));
 
-      // 2.5 Activate / deactivate user (Admin or HR)
-      group.MapPut("/status/{userId}", AuthHandlers.UpdateStatus)
-           .AddEndpointFilter<ValidationFilter<UpdateUserStatusDto>>()
+               // 2.5 Activate / deactivate user (Admin or HR)
+               group.MapPost("/status/{userId}", AuthHandlers.UpdateStatus)
+                    .AddEndpointFilter<ValidationFilter<UpdateUserStatusDto>>()
            .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
       group.MapPost("/change-password", AuthHandlers.ChangePassword)

@@ -20,9 +20,9 @@ namespace Employee.API.Endpoints.Recruitment
                      .WithTags("Recruitment - Interviews")
                      .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-      group.MapGet("/by-candidate/{candidateId}", async (string candidateId, ISender sender) =>
+      group.MapGet("/", async ([FromQuery] string? candidateId, ISender sender) =>
       {
-        var result = await sender.Send(new GetInterviewsByCandidateQuery(candidateId));
+        var result = await sender.Send(new GetInterviewsByCandidateQuery(candidateId ?? string.Empty));
         return ResultUtils.Success(result, "Retrieved interviews successfully.");
       });
 
@@ -35,16 +35,16 @@ namespace Employee.API.Endpoints.Recruitment
       group.MapPost("/", async ([FromBody] InterviewDto dto, ISender sender) =>
       {
         await sender.Send(new CreateInterviewCommand(dto));
-        return ResultUtils.Created("Interview scheduled successfully.");
+        return ResultUtils.CreatedNoData("Interview scheduled successfully.");
       });
 
-      group.MapPut("/{id}", async (string id, [FromBody] InterviewDto dto, ISender sender) =>
+      group.MapPatch("/{id}", async (string id, [FromBody] InterviewDto dto, ISender sender) =>
       {
         await sender.Send(new UpdateInterviewCommand(id, dto));
         return ResultUtils.Success("Interview updated successfully.");
       });
 
-      group.MapPut("/{id}/review", async (string id, [FromBody] ReviewInterviewDto dto, ISender sender) =>
+      group.MapPost("/{id}/review", async (string id, [FromBody] ReviewInterviewDto dto, ISender sender) =>
       {
         await sender.Send(new ReviewInterviewCommand(id, dto));
         return ResultUtils.Success("Interview reviewed.");

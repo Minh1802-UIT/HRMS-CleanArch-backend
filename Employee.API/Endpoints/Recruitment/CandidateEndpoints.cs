@@ -21,9 +21,9 @@ namespace Employee.API.Endpoints.Recruitment
                      .WithTags("Recruitment - Candidates")
                      .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-      group.MapGet("/by-vacancy/{vacancyId}", async (string vacancyId, ISender sender) =>
+      group.MapGet("/", async ([FromQuery] string? vacancyId, ISender sender) =>
       {
-        var result = await sender.Send(new GetCandidatesByVacancyQuery(vacancyId));
+        var result = await sender.Send(new GetCandidatesByVacancyQuery(vacancyId ?? string.Empty));
         return ResultUtils.Success(result, "Retrieved candidates successfully.");
       });
 
@@ -38,16 +38,16 @@ namespace Employee.API.Endpoints.Recruitment
       group.MapPost("/", async ([FromBody] CandidateDto dto, ISender sender) =>
       {
         await sender.Send(new CreateCandidateCommand(dto));
-        return ResultUtils.Created("Candidate created successfully.");
+        return ResultUtils.CreatedNoData("Candidate created successfully.");
       });
 
-      group.MapPut("/{id}", async (string id, [FromBody] CandidateDto dto, ISender sender) =>
+      group.MapPatch("/{id}", async (string id, [FromBody] CandidateDto dto, ISender sender) =>
       {
         await sender.Send(new UpdateCandidateCommand(id, dto));
         return ResultUtils.Success("Candidate updated successfully.");
       });
 
-      group.MapPut("/{id}/status", async (string id, [FromBody] UpdateCandidateStatusDto dto, ISender sender) =>
+      group.MapPost("/{id}/status", async (string id, [FromBody] UpdateCandidateStatusDto dto, ISender sender) =>
       {
         await sender.Send(new UpdateCandidateStatusCommand(id, dto.Status));
         return ResultUtils.Success("Candidate status updated.");

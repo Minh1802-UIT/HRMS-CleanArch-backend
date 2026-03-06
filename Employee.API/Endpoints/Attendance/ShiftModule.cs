@@ -22,7 +22,7 @@ namespace Employee.API.Endpoints.Attendance
            .AddEndpointFilter<ValidationFilter<CreateShiftDto>>()
            .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-      group.MapPut("/{id}", ShiftHandlers.Update)
+      group.MapPatch("/{id}", ShiftHandlers.Update)
            .AddEndpointFilter<ValidationFilter<UpdateShiftDto>>()
            .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
