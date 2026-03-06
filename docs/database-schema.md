@@ -1,7 +1,7 @@
 # Database Schema — HRMS
 
-> **Document Version:** 1.0  
-> **Last Updated:** March 6, 2026  
+> **Document Version:** 1.1  
+> **Last Updated:** June 2025  
 > **Author:** Senior Developer  
 > **Database:** MongoDB 7 — `EmployeeCleanDB`
 
@@ -28,6 +28,8 @@
    - 7.1 [shifts](#71-shifts)
    - 7.2 [raw_attendance_logs](#72-raw_attendance_logs)
    - 7.3 [attendance_buckets](#73-attendance_buckets)
+   - 7.4 [overtime_schedules](#74-overtime_schedules)
+   - 7.5 [attendance_explanations](#75-attendance_explanations)
 8. [Leave Management Module](#8-leave-management-module)
    - 8.1 [leave_types](#81-leave_types)
    - 8.2 [leave_allocations](#82-leave_allocations)
@@ -64,7 +66,7 @@
 | Soft Delete | Tất cả collections đều có field `isDeleted` |
 | Timezone | UTC (datetime lưu UTC, tính toán dùng `SE Asia Standard Time` UTC+7) |
 
-**Tổng số collections: 22**
+**Tổng số collections: 24**
 
 | # | Collection | Module | Entity |
 |---|---|---|---|
@@ -80,17 +82,19 @@
 | 10 | `shifts` | Attendance | `Shift` |
 | 11 | `raw_attendance_logs` | Attendance | `RawAttendanceLog` |
 | 12 | `attendance_buckets` | Attendance | `AttendanceBucket` |
-| 13 | `leave_types` | Leave | `LeaveType` |
-| 14 | `leave_allocations` | Leave | `LeaveAllocation` |
-| 15 | `leave_requests` | Leave | `LeaveRequest` |
-| 16 | `public_holidays` | Payroll | `PublicHoliday` |
-| 17 | `payroll_cycles` | Payroll | `PayrollCycle` |
-| 18 | `payrolls` | Payroll | `PayrollEntity` |
-| 19 | `performance_reviews` | Performance | `PerformanceReview` |
-| 20 | `performance_goals` | Performance | `PerformanceGoal` |
-| 21 | `notifications` | Notification | `Notification` |
-| 22 | `audit_logs` | System | `AuditLog` |
-| 23 | `system_settings` | System | `SystemSetting` |
+| 13 | `overtime_schedules` | Attendance | `OvertimeSchedule` |
+| 14 | `attendance_explanations` | Attendance | `AttendanceExplanation` |
+| 15 | `leave_types` | Leave | `LeaveType` |
+| 16 | `leave_allocations` | Leave | `LeaveAllocation` |
+| 17 | `leave_requests` | Leave | `LeaveRequest` |
+| 18 | `public_holidays` | Payroll | `PublicHoliday` |
+| 19 | `payroll_cycles` | Payroll | `PayrollCycle` |
+| 20 | `payrolls` | Payroll | `PayrollEntity` |
+| 21 | `performance_reviews` | Performance | `PerformanceReview` |
+| 22 | `performance_goals` | Performance | `PerformanceGoal` |
+| 23 | `notifications` | Notification | `Notification` |
+| 24 | `audit_logs` | System | `AuditLog` |
+| — | `system_settings` | System | `SystemSetting` |
 
 ---
 
@@ -669,11 +673,77 @@ Chứa array `dailyLogs[]` với mọi ngày trong tháng.
 | `isLate` | bool | Flag đi muộn (có thể `true` kể cả `status = Present`) |
 | `isEarlyLeave` | bool | Flag về sớm |
 | `isMissingPunch` | bool | `true` nếu auto-close do quên check-out (ghost log) |
+| `isMissingCheckIn` | bool | `true` nếu chỉ có check-out mà không có check-in sau toàn bộ bước phục hồi |
 | `note` | string | Ghi chú |
 | `isHoliday` | bool | Ngày lễ quốc gia |
 | `isWeekend` | bool | Cuối tuần |
 
 > **Unique constraint:** Mỗi `(employeeId, month)` chỉ có 1 document. Background job `AddOrUpdateDailyLog()` upsert vào mảng `dailyLogs`.
+
+---
+
+### 7.4 `overtime_schedules`
+
+**Entity:** `OvertimeSchedule`  
+Ghi nhận các ngày OT đã được Admin/HR phê duyệt cho từng nhân viên.  
+Chỉ những ngày có bản ghi `OvertimeSchedule` mới được hệ thống tính giờ làm thêm — các ngày khác checkout-after-shift-end sẽ bị bỏ qua.
+
+```json
+{
+  "_id": "ObjectId",
+  "employeeId": "ObjectId",
+  "date": "ISODate(2026-03-15T00:00:00Z)",
+  "note": "Client deadline",
+  "isDeleted": false,
+  "createdAt": "ISODate",
+  ...
+}
+```
+
+| Field | Type | Required | Mô tả |
+|---|---|---|---|
+| `employeeId` | ObjectId ref | ✅ | → `employees._id` |
+| `date` | DateTime (UTC, date-only) | ✅ | Ngày được phép làm thêm giờ (normalized 00:00:00 UTC) |
+| `note` | string? | ❌ | Lý do phê duyệt OT (e.g., "Client deadline", "Month-end closing") |
+
+> **Lưu ý:** `date` được normalize thành midnight UTC khi lưu — chỉ so sánh phần ngày.
+
+### 7.5 `attendance_explanations`
+
+**Entity:** `AttendanceExplanation`  
+Đơn giải trình của nhân viên khi quên check-out (`IsMissingPunch = true`).  
+- Manager **approve** → hệ thống tự ghi 8 tiếng đủ công cho ngày đó.  
+- Manager **reject** → ngày đó giữ nguyên 0 giờ (mất 1 công).
+
+```json
+{
+  "_id": "ObjectId",
+  "employeeId": "ObjectId",
+  "workDate": "ISODate(2026-03-12T00:00:00Z)",
+  "reason": "Quên check-out do đi họp client",
+  "status": "Pending",
+  "reviewedBy": null,
+  "reviewNote": null,
+  "reviewedAt": null,
+  "isDeleted": false,
+  "createdAt": "ISODate",
+  ...
+}
+```
+
+| Field | Type | Required | Mô tả |
+|---|---|---|---|
+| `employeeId` | ObjectId ref | ✅ | → `employees._id` |
+| `workDate` | DateTime (UTC, date-only) | ✅ | Ngày công cần giải trình (normalized 00:00:00 UTC) |
+| `reason` | string | ✅ | Lý do giải trình (max 500 ký tự) |
+| `status` | ExplanationStatus (string) | ✅ | `Pending` / `Approved` / `Rejected` |
+| `reviewedBy` | string? | ❌ | UserId của Manager/HR đã xử lý |
+| `reviewNote` | string? | ❌ | Ghi chú của người xét duyệt |
+| `reviewedAt` | DateTime? | ❌ | Thời điểm xét duyệt |
+
+**Domain Rules:**
+- Chỉ giải trình được khi `IsMissingPunch = true` trên ngày tương ứng.
+- Chỉ duyệt/từ chối khi `status = Pending`.
 
 ---
 
@@ -1160,6 +1230,20 @@ Tất cả enums được lưu dưới dạng **string** trong MongoDB.
 | `Holiday` | Ngày lễ quốc gia |
 | ~~`Late`~~ | *(Legacy — thay bằng flag `isLate`)* |
 | ~~`EarlyLeave`~~ | *(Legacy — thay bằng flag `isEarlyLeave`)* |
+
+### RawLogType
+| Value | Mô tả |
+|---|---|
+| `CheckIn` | Sự kiện chấm công vào |
+| `CheckOut` | Sự kiện chấm công ra |
+| `Biometric` | Sự kiện từ thiết bị sinh trắc học (chưa phân loại hướng) |
+
+### ExplanationStatus
+| Value | Mô tả |
+|---|---|
+| `Pending` | Chờ xét duyệt |
+| `Approved` | Đã duyệt — hệ thống tự ghi đủ 8h công cho ngày đó |
+| `Rejected` | Bị từ chối — ngày đó giữ 0h |
 
 ### LeaveStatus
 | Value | Mô tả |

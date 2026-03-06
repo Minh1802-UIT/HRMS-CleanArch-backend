@@ -1,7 +1,7 @@
 # API Endpoint Reference — HRMS
 
-> **Document Version:** 1.0  
-> **Last Updated:** March 6, 2026  
+> **Document Version:** 1.1  
+> **Last Updated:** June 2025  
 > **Author:** Senior Developer  
 > **Base URL (Dev):** `http://localhost:5000`  
 > **Base URL (Prod):** `https://hrms-api.onrender.com`  
@@ -33,8 +33,9 @@
 20. [Dashboard](#20-dashboard)
 21. [Audit Logs](#21-audit-logs)
 22. [File Upload](#22-file-upload)
-23. [Rate Limiting](#23-rate-limiting)
-24. [Error Codes Reference](#24-error-codes-reference)
+23. [Dev Tools](#23-dev-tools)
+24. [Rate Limiting](#24-rate-limiting)
+25. [Error Codes Reference](#25-error-codes-reference)
 
 ---
 
@@ -1001,6 +1002,129 @@ Cập nhật lại cờ ngày lễ cho dữ liệu attendance cũ.
 
 ---
 
+### `POST /api/attendance/explanation`
+
+Nhân viên gửi đơn giải trình khi quên check-out (`isMissingPunch = true`).
+
+**Auth:** Bất kỳ user đã đăng nhập
+
+**Request body:**
+
+```json
+{
+  "workDate": "2026-03-12T00:00:00Z",
+  "reason": "Quên check-out do đi họp client đột xuất"
+}
+```
+
+**Response `201`:** ID của đơn giải trình vừa tạo.
+
+---
+
+### `GET /api/attendance/explanation/me`
+
+Danh sách đơn giải trình của bản thân.
+
+**Auth:** Bất kỳ user đã đăng nhập
+
+**Response `200`:** Danh sách `AttendanceExplanationDto`.
+
+---
+
+### `GET /api/attendance/explanation/pending`
+
+Danh sách đơn giải trình đang chờ duyệt (toàn công ty).
+
+**Auth:** `Admin`, `HR`, `Manager`
+
+**Response `200`:** Danh sách đơn có `status = Pending`.
+
+---
+
+### `PUT /api/attendance/explanation/{id}/review`
+
+Duyệt hoặc từ chối đơn giải trình.
+
+**Auth:** `Admin`, `HR`, `Manager`
+
+**Request body:**
+
+```json
+{
+  "status": "Approved",
+  "reviewNote": "Đã xác nhận với manager trực tiếp"
+}
+```
+
+> `status`: `Approved` | `Rejected`  
+> - `Approved` → hệ thống tự ghi đủ 8h công cho ngày giải trình.  
+> - `Rejected` → ngày đó giữ nguyên 0 h (mất 1 công).
+
+---
+
+### `POST /api/attendance/overtime-schedule`
+
+Tạo một bản ghi OT đã phê duyệt cho một nhân viên cụ thể.
+
+**Auth:** `Admin`, `HR`
+
+**Request body:**
+
+```json
+{
+  "employeeId": "66f1234abc...",
+  "date": "2026-03-20T00:00:00Z",
+  "note": "Sprint deadline"
+}
+```
+
+**Response `201`:** ID của bản ghi vừa tạo.
+
+---
+
+### `POST /api/attendance/overtime-schedule/bulk`
+
+Tạo hàng loạt bản ghi OT cho nhiều nhân viên (tất cả active hoặc theo danh sách).
+
+**Auth:** `Admin`, `HR`
+
+**Request body:**
+
+```json
+{
+  "employeeIds": ["66f1234abc...", "66f5678def..."],
+  "date": "2026-03-20T00:00:00Z",
+  "note": "Month-end closing"
+}
+```
+
+> Trường `employeeIds` trống = áp dụng cho tất cả nhân viên active.
+
+---
+
+### `DELETE /api/attendance/overtime-schedule/{id}`
+
+Xóa bản ghi OT đã phê duyệt.
+
+**Auth:** `Admin`, `HR`
+
+**Path param:** `id` — ObjectId của bản ghi overtime schedule.
+
+**Response `200`:** `"Overtime schedule deleted successfully."`
+
+---
+
+### `GET /api/attendance/overtime-schedule`
+
+Danh sách bản ghi OT đã phê duyệt theo tháng.
+
+**Auth:** `Admin`, `HR`, `Manager`  
+**Query params:** `month` (MM-YYYY)
+
+**Response `200`:** Danh sách `OvertimeScheduleDto`.
+
+---
+
 ## 11. Attendance — Shifts
 
 **Base path:** `/api/shifts`  
@@ -1208,6 +1332,26 @@ Báo cáo số dư phép toàn công ty.
 
 **Auth:** `Admin`, `HR`  
 **Query params:** `pageNumber`, `pageSize`, `searchTerm`
+
+---
+
+### `POST /api/leave-allocations/list`
+
+Báo cáo số dư phép toàn công ty — phiên bản POST body (dùng cho Angular khi cần truyền nhiều filter hơn GET query string).
+
+**Auth:** `Admin`, `HR`
+
+**Request body:**
+
+```json
+{
+  "pageNumber": 1,
+  "pageSize": 20,
+  "searchTerm": "Nguyen"
+}
+```
+
+**Response `200`:** Dữ liệu paged giống `GET /api/leave-allocations`.
 
 ---
 
@@ -1751,7 +1895,40 @@ Upload file (avatar, CV, contract PDF, v.v.).
 
 ---
 
-## 23. Rate Limiting
+## 23. Dev Tools
+
+**Base path:** `/api/dev`  
+**Auth:** `Admin` (toàn bộ module)  
+**Môi trường:** Chỉ hoạt động khi `ASPNETCORE_ENVIRONMENT = Development`. Route không được đăng ký trong Production.
+
+---
+
+### `POST /api/dev/seed-attendance`
+
+Seed dữ liệu chấm công mẫu (Mon–Fri đủ công) cho tất cả nhân viên active trong một tháng.  
+Bỏ qua nhân viên đã có bucket cho tháng đó.
+
+**Auth:** `Admin`  
+**Query params:** `month` (MM-yyyy, e.g., `02-2026`) — mặc định tháng trước nếu không truyền.
+
+> **Chỉ dùng khi phát triển/test.** Endpoint này bị chặn hoàn toàn ở môi trường production (HTTP 403).
+
+**Response `200`:**
+
+```json
+{
+  "data": {
+    "month": "02-2026",
+    "created": 12,
+    "skipped": 3,
+    "totalEmployees": 15
+  }
+}
+```
+
+---
+
+## 24. Rate Limiting
 
 Hệ thống sử dụng `PartitionedRateLimiter` — mỗi user/IP có bucket độc lập.
 
@@ -1778,7 +1955,7 @@ Header `Retry-After: <seconds>` luôn có trong response 429.
 
 ---
 
-## 24. Error Codes Reference
+## 25. Error Codes Reference
 
 | Error Code | HTTP | Mô tả |
 |---|---|---|
@@ -1796,6 +1973,7 @@ Header `Retry-After: <seconds>` luôn có trong response 429.
 | `REVIEW_NOT_FOUND` | 404 | Đánh giá không tồn tại |
 | `INVALID_YEAR` | 400 | Năm ngoài phạm vi cho phép (2000–2100) |
 | `RATE_LIMIT_EXCEEDED` | 429 | Vượt giới hạn request |
+| `UNLINKED_ACCOUNT` | 400 | Tài khoản chưa được liên kết với hồ sơ nhân viên |
 | `INTERNAL_ERROR` | 500 | Lỗi server — kèm `correlationId` để trace |
 
 ---
@@ -1873,6 +2051,14 @@ Header `Retry-After: <seconds>` luôn có trong response 429.
 | POST | `/api/attendance/process-logs` | Admin, HR | Xử lý raw logs |
 | POST | `/api/attendance/admin/force-reprocess` | Admin | Xử lý lại tháng |
 | POST | `/api/attendance/admin/backfill-holidays` | Admin, HR | Cập nhật cờ ngày lễ |
+| POST | `/api/attendance/explanation` | Any | Gửi đơn giải trình |
+| GET | `/api/attendance/explanation/me` | Any | Đơn giải trình của tôi |
+| GET | `/api/attendance/explanation/pending` | Admin, HR, Mgr | Đơn chờ duyệt |
+| PUT | `/api/attendance/explanation/{id}/review` | Admin, HR, Mgr | Duyệt/từ chối giải trình |
+| POST | `/api/attendance/overtime-schedule` | Admin, HR | Tạo OT schedule |
+| POST | `/api/attendance/overtime-schedule/bulk` | Admin, HR | Tạo hàng loạt OT schedule |
+| DELETE | `/api/attendance/overtime-schedule/{id}` | Admin, HR | Xóa OT schedule |
+| GET | `/api/attendance/overtime-schedule` | Admin, HR, Mgr | Danh sách OT schedule |
 | GET | `/api/shifts` | Any | Danh sách ca làm việc |
 | GET | `/api/shifts/lookup` | Any | Dropdown ca làm việc |
 | GET | `/api/shifts/{id}` | Any | Chi tiết ca làm việc |
@@ -1898,6 +2084,7 @@ Header `Retry-After: <seconds>` luôn có trong response 429.
 | POST | `/api/leave-allocations` | Admin, HR | Phân bổ ngày phép |
 | DELETE | `/api/leave-allocations/{id}` | Admin | Thu hồi phân bổ |
 | POST | `/api/leave-allocations/initialize/{year}` | Admin, HR | Khởi tạo năm mới |
+| POST | `/api/leave-allocations/list` | Admin, HR | Danh sách số dư phép (POST body) |
 | POST | `/api/leave-allocations/carry-forward/{year}` | Admin | Chuyển tiếp phép |
 | POST | `/api/payroll-cycles/generate` | Admin, HR | Tạo chu kỳ lương |
 | POST | `/api/payroll-cycles/bulk-generate` | Admin, HR | Tạo hàng loạt chu kỳ |
@@ -1933,3 +2120,4 @@ Header `Retry-After: <seconds>` luôn có trong response 429.
 | GET | `/api/auditlogs` | Admin | Audit logs (offset) |
 | GET | `/api/auditlogs/cursor` | Admin | Audit logs (cursor) |
 | POST | `/api/files/upload` | Any | Upload file |
+| POST | `/api/dev/seed-attendance` | Admin (Dev only) | Seed dữ liệu chấm công mẫu |

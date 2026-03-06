@@ -20,8 +20,12 @@ namespace Employee.API.Endpoints.Leave
                     .WithName("GetPagedLeaveRequestList")
                  .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
 
-            // 1. Lấy danh sách của tôi
-            group.MapGet("/me", LeaveRequestHandlers.GetMyLeaves);
+               // GET /list via POST body (used by Angular)
+               group.MapPost("/list", LeaveRequestHandlers.GetPagedListFromBody)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
+
+               // 1. Lấy danh sách của tôi
+               group.MapGet("/me", LeaveRequestHandlers.GetMyLeaves);
 
             // 2. Lấy chi tiết đơn
             group.MapGet("/{id}", LeaveRequestHandlers.GetById);
@@ -53,6 +57,11 @@ namespace Employee.API.Endpoints.Leave
                group.MapPost("/{id}/review", LeaveRequestHandlers.Review)
                     .AddEndpointFilter<ValidationFilter<ReviewLeaveRequestDto>>()
                  .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
-        }
+
+               // 6a. Review via PUT (used by Angular)
+               group.MapPut("/{id}/review", LeaveRequestHandlers.Review)
+                    .AddEndpointFilter<ValidationFilter<ReviewLeaveRequestDto>>()
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
+          }
     }
 }

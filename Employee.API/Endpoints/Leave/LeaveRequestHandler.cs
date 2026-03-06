@@ -26,6 +26,14 @@ namespace Employee.API.Endpoints.Leave
       return ResultUtils.Success(result, "Retrieved paginated leave requests successfully.");
     }
 
+    public static async Task<IResult> GetPagedListFromBody(
+      [FromBody] PaginationParams? pagination,
+      ISender sender)
+    {
+      var result = await sender.Send(new GetLeaveRequestsPagedQuery(pagination ?? new PaginationParams()));
+      return ResultUtils.Success(result, "Retrieved paginated leave requests successfully.");
+    }
+
     // 1. GET MY LEAVES (View own leave request history)
     public static async Task<IResult> GetMyLeaves(
         ISender sender,
