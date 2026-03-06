@@ -59,6 +59,16 @@ namespace Employee.API.Endpoints.Attendance
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
                group.MapPut("/explanation/{id}/review", AttendanceHandlers.ReviewExplanation)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
+
+               // 9. OVERTIME SCHEDULE — Admin/HR setup approved OT dates
+               group.MapPost("/overtime-schedule", AttendanceHandlers.CreateOvertimeSchedule)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
+               group.MapPost("/overtime-schedule/bulk", AttendanceHandlers.CreateBulkOvertimeSchedule)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
+               group.MapDelete("/overtime-schedule/{id}", AttendanceHandlers.DeleteOvertimeSchedule)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
+               group.MapGet("/overtime-schedule", AttendanceHandlers.GetOvertimeSchedulesByMonth)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
           }
      }
 }

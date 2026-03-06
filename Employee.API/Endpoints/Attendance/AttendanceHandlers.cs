@@ -405,7 +405,58 @@ namespace Employee.API.Endpoints.Attendance
       });
       return ResultUtils.Success(result);
     }
+
+    // ── OVERTIME SCHEDULE ─────────────────────────────────────────────────
+
+    // 13. CREATE OT SCHEDULE (Admin/HR)
+    public static async Task<IResult> CreateOvertimeSchedule(
+        [FromBody] CreateOvertimeScheduleDto dto,
+        ISender sender)
+    {
+      var result = await sender.Send(
+          new Employee.Application.Features.Attendance.Commands.OvertimeSchedule
+              .CreateOvertimeScheduleCommand { Dto = dto });
+      return ResultUtils.Success(result);
+    }
+
+    // 14. CREATE BULK OT SCHEDULE (Admin/HR — multiple dates at once)
+    public static async Task<IResult> CreateBulkOvertimeSchedule(
+        [FromBody] CreateBulkOvertimeScheduleDto dto,
+        ISender sender)
+    {
+      var results = await sender.Send(
+          new Employee.Application.Features.Attendance.Commands.OvertimeSchedule
+              .CreateBulkOvertimeScheduleCommand { Dto = dto });
+      return ResultUtils.Success(results);
+    }
+
+    // 15. DELETE OT SCHEDULE (Admin/HR)
+    public static async Task<IResult> DeleteOvertimeSchedule(
+        string id,
+        ISender sender)
+    {
+      await sender.Send(
+          new Employee.Application.Features.Attendance.Commands.OvertimeSchedule
+              .DeleteOvertimeScheduleCommand { Id = id });
+      return ResultUtils.Success("Đã xoá lịch OT.");
+    }
+
+    // 16. GET OT SCHEDULES BY MONTH (Admin/HR)
+    public static async Task<IResult> GetOvertimeSchedulesByMonth(
+        [AsParameters] OvertimeScheduleQueryParams query,
+        ISender sender)
+    {
+      var results = await sender.Send(
+          new Employee.Application.Features.Attendance.Commands.OvertimeSchedule
+              .GetOvertimeSchedulesByMonthQuery
+              {
+                MonthKey   = query.Month ?? DateTime.UtcNow.ToString("MM-yyyy"),
+                EmployeeId = query.EmployeeId
+              });
+      return ResultUtils.Success(results);
+    }
   }
 
   public record BackfillHolidaysRequest(int Month, int Year);
+  public record OvertimeScheduleQueryParams(string? Month, string? EmployeeId);
 }

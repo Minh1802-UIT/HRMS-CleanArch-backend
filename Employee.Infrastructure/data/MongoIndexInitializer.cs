@@ -245,6 +245,19 @@ namespace Employee.Infrastructure.Data
                   .Ascending(x => x.UserId).Ascending(x => x.IsRead).Descending(x => x.CreatedAt),
               new CreateIndexOptions { Background = true, Name = "idx_notifications_userId_isRead_createdAt" }));
 
+            // 18. OvertimeSchedules — unique per employee per date
+            var otSchedules = context.GetCollection<OvertimeSchedule>("overtime_schedules");
+            await otSchedules.Indexes.CreateManyAsync(new[]
+            {
+          new CreateIndexModel<OvertimeSchedule>(
+              Builders<OvertimeSchedule>.IndexKeys
+                  .Ascending(x => x.EmployeeId).Ascending(x => x.Date),
+              new CreateIndexOptions { Unique = true, Background = true, Name = "idx_otschedules_employeeId_date" }),
+          new CreateIndexModel<OvertimeSchedule>(
+              Builders<OvertimeSchedule>.IndexKeys.Ascending(x => x.Date),
+              new CreateIndexOptions { Background = true, Name = "idx_otschedules_date" })
+            });
+
             // 17. AttendanceExplanations — supports GetByEmployeeIdAsync, GetPendingAsync, GetByEmployeeAndDateAsync
             var explanations = context.GetCollection<AttendanceExplanation>("attendance_explanations");
             await explanations.Indexes.CreateManyAsync(new[]

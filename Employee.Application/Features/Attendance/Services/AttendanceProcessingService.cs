@@ -18,6 +18,7 @@ namespace Employee.Application.Features.Attendance.Services
     private readonly IEmployeeRepository _employeeRepo;
     private readonly IShiftRepository _shiftRepo;
     private readonly IPublicHolidayRepository _holidayRepo;
+    private readonly IOvertimeScheduleRepository _otScheduleRepo;
     private readonly AttendanceCalculator _calculator;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<AttendanceProcessingService> _logger;
@@ -35,6 +36,7 @@ namespace Employee.Application.Features.Attendance.Services
         IEmployeeRepository employeeRepo,
         IShiftRepository shiftRepo,
         IPublicHolidayRepository holidayRepo,
+        IOvertimeScheduleRepository otScheduleRepo,
         AttendanceCalculator calculator,
         IUnitOfWork unitOfWork,
         ILogger<AttendanceProcessingService> logger,
@@ -45,6 +47,7 @@ namespace Employee.Application.Features.Attendance.Services
       _employeeRepo = employeeRepo;
       _shiftRepo = shiftRepo;
       _holidayRepo = holidayRepo;
+      _otScheduleRepo = otScheduleRepo;
       _calculator = calculator;
       _unitOfWork = unitOfWork;
       _logger = logger;
@@ -260,6 +263,31 @@ namespace Employee.Application.Features.Attendance.Services
 
         // --- STEP D: Calculate ---
         _calculator.CalculateDailyStatus(dailyLog, shift);
+
+        // --- STEP D0: Suppress OT if admin has not pre-approved this date ---
+        // By default, working beyond shift end does NOT count as overtime.
+        // Admin must create an OvertimeSchedule entry for the employee + date
+        // before OT hours are recognised.
+        if (dailyLog.OvertimeHours > 0)
+        {
+          bool otApproved = await _otScheduleRepo.ExistsAsync(employeeId, workDate);
+          if (!otApproved)
+          {
+            _logger.LogDebug(
+                "OT suppressed (no schedule): EmployeeId={Id} Date={Date} OT={OT}h",
+                employeeId, workDate.ToString("yyyy-MM-dd"), dailyLog.OvertimeHours);
+
+            dailyLog.UpdateCalculationResults(
+                dailyLog.WorkingHours,
+                dailyLog.LateMinutes,
+                dailyLog.EarlyLeaveMinutes,
+                overtimeHours: 0,
+                dailyLog.Status,
+                note: dailyLog.Note,
+                isLate: dailyLog.IsLate,
+                isEarlyLeave: dailyLog.IsEarlyLeave);
+          }
+        }
 
         // --- STEP D1: Flag missing check-in ---
         // Employee had a checkout but no check-in was found (not overnight, not recovered).

@@ -1,8 +1,7 @@
 using Employee.Application.Common.Interfaces;
 using Employee.Application.Common.Utils;
-using Employee.Application.Features.Auth.Commands.Register;
+using Employee.Application.Features.Auth.Dtos;
 using Hangfire;
-using MediatR;
 using Microsoft.Extensions.Logging;
 
 namespace Employee.Infrastructure.Services
@@ -14,19 +13,24 @@ namespace Employee.Infrastructure.Services
   /// Decorated with [AutomaticRetry] so Hangfire retries on transient failures
   /// (network lag, Identity server restart) with exponential back-off up to 5 attempts.
   /// This replaces the fragile fire-and-forget Task.Run in CreateUserEventHandler.
+  ///
+  /// NOTE: IIdentityService is called directly — NOT through ISender/RegisterCommand —
+  /// because RegisterCommand carries [Authorize(Roles = "Admin")] and Hangfire jobs
+  /// run outside any HTTP context (no ICurrentUser), which would cause
+  /// AuthorizationBehavior to throw UnauthorizedAccessException on every retry.
   /// </summary>
   public class AccountProvisioningJob
   {
-    private readonly ISender _sender;
+    private readonly IIdentityService _identityService;
     private readonly IEmailService _emailService;
     private readonly ILogger<AccountProvisioningJob> _logger;
 
     public AccountProvisioningJob(
-        ISender sender,
+        IIdentityService identityService,
         IEmailService emailService,
         ILogger<AccountProvisioningJob> logger)
     {
-      _sender = sender;
+      _identityService = identityService;
       _emailService = emailService;
       _logger = logger;
     }
@@ -38,7 +42,7 @@ namespace Employee.Infrastructure.Services
 
       var tempPassword = PasswordGenerator.Generate();
 
-      await _sender.Send(new RegisterCommand
+      var registerDto = new RegisterDto
       {
         Username = employeeId,
         Email = email,
@@ -46,7 +50,9 @@ namespace Employee.Infrastructure.Services
         Password = tempPassword,
         EmployeeId = employeeId,
         MustChangePassword = true
-      });
+      };
+
+      await _identityService.RegisterAsync(registerDto);
 
       var subject = "🎉 Chào mừng đến HRMS - Thông tin tài khoản của bạn";
       var body = $@"
