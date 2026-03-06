@@ -28,6 +28,7 @@ namespace Employee.Domain.Entities.HumanResource
       ContractCode = contractCode;
       StartDate = startDate;
       Status = ContractStatus.Draft;
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void UpdateSalary(SalaryComponents salary)

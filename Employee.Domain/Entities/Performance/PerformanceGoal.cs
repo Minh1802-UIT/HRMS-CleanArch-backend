@@ -26,6 +26,7 @@ namespace Employee.Domain.Entities.Performance
       TargetDate = targetDate;
       Progress = 0;
       Status = PerformanceGoalStatus.InProgress;
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void UpdateProgress(double progress)

@@ -36,6 +36,7 @@ namespace Employee.Domain.Entities.Leave
       LeaveTypeId = leaveTypeId;
       Year = year;
       NumberOfDays = initialDays;
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void AddAccrual(double days, string month)

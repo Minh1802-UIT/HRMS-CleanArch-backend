@@ -26,6 +26,7 @@ namespace Employee.Domain.Entities.Performance
       ReviewerId = reviewerId;
       PeriodStart = periodStart;
       PeriodEnd = periodEnd;
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void UpdateReview(double score, string notes, PerformanceReviewStatus status)

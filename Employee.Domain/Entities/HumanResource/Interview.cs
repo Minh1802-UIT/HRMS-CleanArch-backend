@@ -27,6 +27,7 @@ namespace Employee.Domain.Entities.HumanResource
       DurationMinutes = durationMinutes;
       Location = location;
       Status = InterviewStatus.Scheduled;
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void Complete(string feedback)

@@ -17,6 +17,7 @@ namespace Employee.Domain.Entities.Common
             Group = group;
             Value = value;
             Description = description;
+            CreatedAt = DateTime.UtcNow;
         }
 
         public void UpdateValue(string value, string description, DateTime updatedAt)

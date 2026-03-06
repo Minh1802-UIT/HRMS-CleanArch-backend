@@ -39,6 +39,7 @@ namespace Employee.Domain.Entities.Leave
       Name = name;
       Code = code;
       DefaultDaysPerYear = defaultDays;
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void UpdateSettings(bool isAccrual, double rate, bool allowCarryForward, int maxCarry, bool isSandwichRuleApplied = false)

@@ -36,6 +36,7 @@ namespace Employee.Domain.Entities.Attendance
       EmployeeId = employeeId;
       Month = month;
       DailyLogs = new List<DailyLog>();
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void AddOrUpdateDailyLog(DailyLog log)

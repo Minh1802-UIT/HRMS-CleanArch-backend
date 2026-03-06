@@ -31,6 +31,7 @@ namespace Employee.Domain.Entities.Leave
             ToDate = toDate;
             Reason = reason;
             Status = LeaveStatus.Pending; // Default status
+            CreatedAt = DateTime.UtcNow;
         }
 
         // Domain Methods

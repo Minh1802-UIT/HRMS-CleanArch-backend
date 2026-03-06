@@ -22,6 +22,7 @@ namespace Employee.Domain.Entities.Organization
 
       Name = name;
       Code = code;
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void UpdateInfo(string name, string description)

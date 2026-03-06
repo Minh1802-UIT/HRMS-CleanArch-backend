@@ -55,6 +55,7 @@ namespace Employee.Domain.Entities.Attendance
       IsOvernight = isOvernight;
       OvertimeThresholdMinutes = overtimeThresholdMinutes;
       IsActive = true;
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void UpdateDetails(

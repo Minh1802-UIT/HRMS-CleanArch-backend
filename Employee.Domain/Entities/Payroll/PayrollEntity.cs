@@ -61,6 +61,7 @@ namespace Employee.Domain.Entities.Payroll
       EmployeeId = employeeId;
       Month = month;
       Status = PayrollStatus.Draft;
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void UpdateAttendance(double total, double actual, double unpaid, double payable)

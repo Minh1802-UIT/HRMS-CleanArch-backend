@@ -26,6 +26,7 @@ namespace Employee.Domain.Entities.HumanResource
       Vacancies = vacancies;
       ExpiredDate = expiredDate;
       Status = JobVacancyStatus.Open;
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void UpdateStatus(JobVacancyStatus status)

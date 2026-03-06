@@ -21,6 +21,7 @@
       RecordId = recordId;
       OldValues = oldValues;
       NewValues = newValues;
+      CreatedAt = DateTime.UtcNow;
     }
     }
 }

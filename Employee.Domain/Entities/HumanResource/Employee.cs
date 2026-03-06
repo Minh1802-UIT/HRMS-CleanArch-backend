@@ -32,6 +32,7 @@ namespace Employee.Domain.Entities.HumanResource
       EmployeeCode = employeeCode;
       FullName = fullName;
       Email = email;
+      CreatedAt = DateTime.UtcNow;
     }
 
     // Domain Methods

@@ -46,6 +46,7 @@ namespace Employee.Domain.Entities.Notifications
       Type = type;
       ReferenceId = referenceId;
       ReferenceType = referenceType;
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void MarkRead(DateTime readAt)

@@ -27,6 +27,7 @@ namespace Employee.Domain.Entities.HumanResource
       JobVacancyId = jobVacancyId;
       Status = CandidateStatus.Applied;
       AppliedDate = appliedDate;
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void UpdateStatus(CandidateStatus status)

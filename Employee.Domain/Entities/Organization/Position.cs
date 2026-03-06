@@ -26,6 +26,7 @@ namespace Employee.Domain.Entities.Organization
       Title = title;
       Code = code;
       DepartmentId = departmentId;
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void UpdateInfo(string title, SalaryRange salaryRange)
