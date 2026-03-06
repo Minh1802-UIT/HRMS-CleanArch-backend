@@ -34,6 +34,9 @@ namespace Employee.Domain.Entities.ValueObjects
     // Set by Ghost-Log auto-close: employee checked in but never checked out.
     public bool IsMissingPunch { get; set; }
 
+    // Set when employee has a check-out but no check-in on that day after all recovery attempts.
+    public bool IsMissingCheckIn { get; set; }
+
     // Computed convenience — true when the employee was physically present.
     // Also matches legacy Late/EarlyLeave status values stored in old MongoDB documents
     // before the boolean-flag refactor (those records count as present too).
@@ -93,7 +96,8 @@ namespace Employee.Domain.Entities.ValueObjects
       string note = "",
       bool isLate = false,
       bool isEarlyLeave = false,
-      bool isMissingPunch = false)
+      bool isMissingPunch = false,
+      bool isMissingCheckIn = false)
     {
       WorkingHours = workingHours;
       LateMinutes = lateMinutes;
@@ -104,6 +108,7 @@ namespace Employee.Domain.Entities.ValueObjects
       IsLate = isLate;
       IsEarlyLeave = isEarlyLeave;
       IsMissingPunch = isMissingPunch;
+      IsMissingCheckIn = isMissingCheckIn;
     }
 
     /// <summary>

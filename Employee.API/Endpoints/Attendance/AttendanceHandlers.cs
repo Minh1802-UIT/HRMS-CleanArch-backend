@@ -320,6 +320,91 @@ namespace Employee.API.Endpoints.Attendance
         Year = dto.Year
       });
     }
+
+    // ── EXPLANATION ──────────────────────────────────────────────────────────
+
+    // 9. SUBMIT EXPLANATION (employee submits for a missing-punch day)
+    public static async Task<IResult> SubmitExplanation(
+        [FromBody] SubmitExplanationDto dto,
+        ISender sender,
+        ICurrentUser currentUser,
+        IIdentityService identityService)
+    {
+      var employeeId = await ResolveEmployeeIdAsync(currentUser, identityService);
+      if (string.IsNullOrEmpty(employeeId))
+        return ResultUtils.Fail(ErrorCodes.UnlinkedAccount, "Tài khoản chưa liên kết với hồ sơ nhân viên.");
+
+      var result = await sender.Send(new Employee.Application.Features.Attendance.Commands.Explanation.SubmitExplanationCommand
+      {
+        EmployeeId = employeeId,
+        Dto = dto
+      });
+      return ResultUtils.Success(result);
+    }
+
+    // 10. GET MY EXPLANATIONS (employee views their own explanation history)
+    public static async Task<IResult> GetMyExplanations(
+        IAttendanceExplanationRepository repo,
+        ICurrentUser currentUser,
+        IIdentityService identityService)
+    {
+      var employeeId = await ResolveEmployeeIdAsync(currentUser, identityService);
+      if (string.IsNullOrEmpty(employeeId))
+        return ResultUtils.Fail(ErrorCodes.UnlinkedAccount, "Tài khoản chưa liên kết với hồ sơ nhân viên.");
+
+      var list = await repo.GetByEmployeeIdAsync(employeeId);
+      var result = list.Select(e => new
+      {
+        e.Id,
+        e.EmployeeId,
+        WorkDate = e.WorkDate,
+        Reason = e.Reason,
+        Status = e.Status.ToString(),
+        ReviewedBy = e.ReviewedBy,
+        ReviewNote = e.ReviewNote,
+        ReviewedAt = e.ReviewedAt,
+        CreatedAt = e.CreatedAt
+      });
+      return ResultUtils.Success(result);
+    }
+
+    // 11. GET PENDING EXPLANATIONS (manager/HR approval queue)
+    public static async Task<IResult> GetPendingExplanations(
+        IAttendanceExplanationRepository repo,
+        IEmployeeRepository employeeRepo)
+    {
+      var pending = await repo.GetPendingAsync();
+      var employeeIds = pending.Select(e => e.EmployeeId).Distinct().ToList();
+      var nameMap = await employeeRepo.GetNamesByIdsAsync(employeeIds);
+
+      var result = pending.Select(e => new
+      {
+        e.Id,
+        e.EmployeeId,
+        EmployeeName = nameMap.TryGetValue(e.EmployeeId, out var info) ? info.Name : null,
+        WorkDate = e.WorkDate,
+        Reason = e.Reason,
+        Status = e.Status.ToString(),
+        CreatedAt = e.CreatedAt
+      });
+      return ResultUtils.Success(result);
+    }
+
+    // 12. REVIEW EXPLANATION (manager approves or rejects)
+    public static async Task<IResult> ReviewExplanation(
+        string id,
+        [FromBody] ReviewExplanationDto dto,
+        ISender sender,
+        ICurrentUser currentUser)
+    {
+      var result = await sender.Send(new Employee.Application.Features.Attendance.Commands.Explanation.ReviewExplanationCommand
+      {
+        ExplanationId = id,
+        ReviewerUserId = currentUser.UserId,
+        Dto = dto
+      });
+      return ResultUtils.Success(result);
+    }
   }
 
   public record BackfillHolidaysRequest(int Month, int Year);

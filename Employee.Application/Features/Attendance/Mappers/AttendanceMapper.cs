@@ -58,10 +58,11 @@ namespace Employee.Application.Features.Attendance.Mappers
         LateMinutes    = log.LateMinutes,
         EarlyLeaveMinutes = log.EarlyLeaveMinutes,
         Status         = log.Status.ToString(),
-        IsLate         = log.IsLate,
-        IsEarlyLeave   = log.IsEarlyLeave,
+        IsLate = log.IsLate,
+        IsEarlyLeave = log.IsEarlyLeave,
         IsMissingPunch = log.IsMissingPunch,
-        OvertimeHours  = Math.Round(log.OvertimeHours, 2),
+        IsMissingCheckIn = log.IsMissingCheckIn,
+        OvertimeHours = Math.Round(log.OvertimeHours, 2),
         IsWeekend      = log.IsWeekend,
         IsHoliday      = log.IsHoliday
       };

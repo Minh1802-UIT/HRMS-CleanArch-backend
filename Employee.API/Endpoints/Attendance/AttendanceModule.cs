@@ -51,6 +51,14 @@ namespace Employee.API.Endpoints.Attendance
                //    POST /api/attendance/admin/backfill-holidays  { month: 2, year: 2026 }
                group.MapPost("/admin/backfill-holidays", AttendanceHandlers.BackfillHolidays)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
+
+               // 8. EXPLANATION — nhân viên giải trình quên check-out
+               group.MapPost("/explanation", AttendanceHandlers.SubmitExplanation);
+               group.MapGet("/explanation/me", AttendanceHandlers.GetMyExplanations);
+               group.MapGet("/explanation/pending", AttendanceHandlers.GetPendingExplanations)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
+               group.MapPut("/explanation/{id}/review", AttendanceHandlers.ReviewExplanation)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
           }
      }
 }

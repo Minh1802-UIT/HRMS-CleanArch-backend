@@ -60,6 +60,7 @@ namespace Employee.Application.Features.Attendance.Dtos
     public bool IsLate { get; set; }
     public bool IsEarlyLeave { get; set; }
     public bool IsMissingPunch { get; set; }
+    public bool IsMissingCheckIn { get; set; }
 
     public double OvertimeHours { get; set; }
     public bool IsWeekend { get; set; }

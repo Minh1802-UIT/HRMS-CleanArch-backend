@@ -206,6 +206,8 @@ Các Value Objects được embed trực tiếp vào entity (không phải forei
 | `PersonalInfo` | `EmployeeEntity` (Dob, Phone, Gender, Address, ...) |
 | `JobDetails` | `EmployeeEntity` (DepartmentId, PositionId, BaseSalary, StartDate, ...) |
 | `BankDetails` | `EmployeeEntity` (BankName, AccountNumber, ...) |
+| `SalaryComponents` | `Contract` (BasicSalary, TransportAllowance, LunchAllowance, OtherAllowance) |
+| `SalaryRange` | `Position` (Min, Max, Currency — dùng để hiển thị range lương của chức vụ) |
 | `DailyLog` | `AttendanceBucket` (Date, CheckIn, CheckOut, Status, OvertimeHours) |
 | `EmployeeSnapshot` | `PayrollEntity` (FullName, Email, Department tại thời điểm tính lương) |
 
@@ -269,6 +271,18 @@ IBaseRepository<T>
 ├── IAuditLogRepository
 └── ISystemSettingRepository
 ```
+
+Ngoài ra còn có các **Query-specific interfaces** trong Application layer (tách biệt read/write):
+- `IEmployeeQueryRepository` — truy vấn phức tạp cho employee (implement bởi `EmployeeRepository`)
+- `IContractQueryRepository` — truy vấn phức tạp cho contract (implement bởi `ContractRepository`)
+
+#### 3.1.7 Domain Services
+
+Logic nghiệp vụ thuần túy không phụ thuộc vào infrastructure:
+
+| Service | Mô tả |
+|---|---|
+| `ITaxCalculator` / `VietnameseTaxCalculator` | Tính thuế TNCN (PIT) theo biểu thuế lũy tiến của Việt Nam — 5 bậc. Đặt trong Domain để business rule không bị ô nhiễm bởi framework. |
 
 ---
 
@@ -338,15 +352,18 @@ Các business service phức tạp được tách thành service riêng:
 | `ContractService` | HR | Lifecycle management của hợp đồng |
 | `AttendanceService` | Attendance | Tính toán chấm công |
 | `AttendanceProcessingService` | Attendance | Xử lý RawLog → AttendanceBucket |
-| `AttendanceCalculator` | Attendance | Tính overtime, late minutes (timezone-aware) |
+| `AttendanceCalculator` | Attendance | Tính overtime, late minutes (timezone-aware, inject `TimeZoneInfo` singleton) |
 | `ShiftService` | Attendance | Quản lý ca làm việc |
+| `WorkingDayCalculator` | Payroll | Tính số ngày làm việc thực tế trong chu kỳ (trừ lễ, cuối tuần) |
 | `LeaveTypeService` | Leave | Quản lý loại nghỉ phép |
 | `LeaveAllocationService` | Leave | Phân bổ ngày phép tự động |
 | `PayrollService` | Payroll | CRUD bảng lương |
 | `PayrollProcessingService` | Payroll | Tính toán lương tự động (PIT, BHXH, ...) |
 | `PayrollDataProvider` | Payroll | Cung cấp dữ liệu đầu vào cho tính lương |
+| `PayrollCycleService` | Payroll | Quản lý chu kỳ lương (tạo, đóng, xem trạng thái) |
 | `NotificationService` | Notifications | Gửi/đọc thông báo |
 | `AuditLogService` | System | Ghi audit log |
+| `SystemSettingService` | System | Đọc/ghi cài đặt hệ thống từ MongoDB |
 | `DashboardService` | Dashboard | Tổng hợp KPI từ nhiều provider |
 
 **Dashboard Providers** (Strategy Pattern):
@@ -359,9 +376,10 @@ Các business service phức tạp được tách thành service riêng:
 ```xml
 MediatR 12.4.1
 FluentValidation 11.9.0
-QuestPDF 2026.2.1        (xuất PDF bảng lương)
-ClosedXML               (xuất Excel báo cáo)
+Microsoft.Extensions.* abstractions (Configuration, DI, Logging)
 ```
+
+> **Lưu ý:** `QuestPDF` và `ClosedXML` **không** nằm ở Application layer — chúng nằm ở **Infrastructure** (xem mục 3.3). Application layer chỉ khai báo interface `IPayslipService` và `IExcelExportService`.
 
 ---
 
@@ -474,6 +492,8 @@ IFileService (interface)
 | `IdentityService` | Đăng ký user, đổi mật khẩu, reset mật khẩu |
 | `DateTimeProvider` | Abstraction cho `DateTime.UtcNow` (dễ mock trong test) |
 | `PasswordHasher` | BCrypt password hashing (`BCrypt.Net-Next`) |
+| `PayslipService` | Xuất PDF phiếu lương (dùng `QuestPDF 2026.2.1`) |
+| `ExcelExportService` | Xuất Excel báo cáo lương/attendance (dùng `ClosedXML 0.105.0`) |
 | `AccountProvisioningJob` | Tự động tạo tài khoản Identity khi nhân viên được tạo |
 
 ---
@@ -523,10 +543,11 @@ public class EmployeeEndpoints : ICarterModule
 
 #### 3.4.3 Middlewares
 
-| Middleware | Nhiệm vụ |
+| Middleware / Filter | Nhiệm vụ |
 |---|---|
 | `GlobalExceptionHandler` | Bắt toàn bộ unhandled exception, trả về chuẩn ProblemDetails |
 | `SecurityHeadersMiddleware` | Thêm security headers (X-Frame-Options, CSP, HSTS, ...) |
+| `HangfireAuthFilter` | Bảo vệ Hangfire Dashboard (`/hangfire`) — chỉ cho phép role `Admin` |
 
 #### 3.4.4 Cross-Cutting Infrastructure trong API
 
@@ -627,31 +648,41 @@ Routing sử dụng **lazy loading** cho toàn bộ page components (code splitt
 
 ```
 / (root)
-├── login                           (public)
-├── forgot-password                 (public)
-├── reset-password                  (public)
-└── [MainLayoutComponent]           [canActivate: authGuard]
+├── login                                   (public)
+├── forgot-password                         (public)
+├── reset-password                          (public)
+├── change-password                         [authGuard]
+└── [MainLayoutComponent]                   [canActivate: authGuard]
     ├── dashboard
-    ├── employees                   [all authenticated]
-    ├── employee-profile/:id        [Admin, HR, Manager]
-    ├── employees/add               [Admin, HR]
+    ├── employees                           [all authenticated]
+    ├── employees/add                       [Admin, HR]
+    ├── employees/:id                       [Admin, HR, Manager]  ← alias cho profile
+    ├── employee-profile/:id                [Admin, HR, Manager]
+    ├── profile                             [all authenticated]  ← self-service
     ├── directory
     ├── org-chart
-    ├── departments                 [Admin, HR]
-    ├── system/positions            [Admin, HR]
-    ├── system/users                [Admin]
-    ├── system/audit-logs           [Admin]
-    ├── recruitment                 [Admin, HR]
-    ├── attendance                  [Admin, HR, Manager]
-    ├── attendance/shifts           [Admin, HR, Manager]
-    ├── attendance/check-in         [all authenticated]
-    ├── attendance/my-history       [all authenticated]
-    ├── payroll                     [Admin, HR, Manager]
-    ├── payroll/tax-report          [Admin, HR]
-    ├── leaves                      [all authenticated]
-    ├── approvals                   [Admin, HR, Manager]
-    ├── admin/leave-reports         [Admin, HR]
-    └── performance                 [Admin, HR, Manager]
+    ├── departments                         [Admin, HR]
+    ├── system/positions                    [Admin, HR]
+    ├── system/users                        [Admin]
+    ├── system/audit-logs                   [Admin]
+    ├── recruitment                         [Admin, HR]
+    ├── recruitment/candidates/:id          [Admin, HR]  ← xem chi tiết ứng viên
+    ├── attendance                          [Admin, HR, Manager]
+    ├── attendance/shifts                   [Admin, HR, Manager]
+    ├── attendance/shifts/add               [Admin, HR, Manager]
+    ├── attendance/shifts/edit/:id          [Admin, HR, Manager]
+    ├── attendance/check-in                 [all authenticated]
+    ├── attendance/my-history               [all authenticated]
+    ├── payroll                             [Admin, HR, Manager]
+    ├── payroll/tax-report                  [Admin, HR]
+    ├── leaves                              [all authenticated]
+    ├── approvals                           [Admin, HR, Manager]
+    ├── admin/leave-reports                 [Admin, HR]
+    ├── performance                         [Admin, HR, Manager]
+    │
+    │  ── Navigation Aliases (redirect) ──
+    ├── time-tracking  →  attendance
+    └── tasks          →  approvals
 ```
 
 ### 4.4 HTTP Communication
@@ -984,14 +1015,20 @@ Employee.API
 | MediatR | 12.4.1 | Application |
 | FluentValidation | 11.9.0 | Application |
 | MongoDB.Driver | 3.6.0 | Infrastructure |
+| MongoDB.Bson | 3.6.0 | Domain |
 | AspNetCore.Identity.MongoDbCore | 7.0.0 | Infrastructure |
-| Hangfire | 1.8.17 | Infrastructure |
+| Hangfire | 1.8.17 | Infrastructure (API + Infrastructure) |
+| Hangfire.Redis.StackExchange | 1.9.0 | Infrastructure |
 | StackExchangeRedis | 8.0.8 | Infrastructure |
+| BCrypt.Net-Next | 4.0.3 | Infrastructure |
+| SendGrid | 9.29.3 | Infrastructure |
+| QuestPDF | 2026.2.1 | Infrastructure |
+| ClosedXML | 0.105.0 | Infrastructure |
+| System.IdentityModel.Tokens.Jwt | 8.15.0 | Infrastructure |
 | Serilog.AspNetCore | 10.0.0 | API |
-| QuestPDF | 2026.2.1 | Application |
-| ClosedXML | 0.105.0 | Application |
+| MiniValidation | 0.9.2 | API |
 | Angular | 17.3 | Frontend |
-| PrimeNG | 17 | Frontend |
+| PrimeNG | 17.18 | Frontend |
 | TailwindCSS | 3.4 | Frontend |
 
 ---
@@ -1008,4 +1045,4 @@ Employee.API
 | JSON | camelCase (cấu hình global) |
 | IDs | `string` trong Domain, MongoDB ObjectId trong DB |
 | Soft Delete | Luôn dùng `MarkDeleted()` — không gọi delete trực tiếp |
-| Timezone | `SE Asia Standard Time` (UTC+7) — cấu hình qua `SystemSettings:TimezoneId` |
+| Timezone | `Asia/Ho_Chi_Minh` (IANA, UTC+7) — cấu hình qua `SystemSettings:TimezoneId`. Fallback Windows: `SE Asia Standard Time`. Inject làm `TimeZoneInfo` singleton qua DI. |

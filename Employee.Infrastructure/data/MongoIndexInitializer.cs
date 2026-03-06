@@ -244,6 +244,25 @@ namespace Employee.Infrastructure.Data
               Builders<Employee.Domain.Entities.Notifications.Notification>.IndexKeys
                   .Ascending(x => x.UserId).Ascending(x => x.IsRead).Descending(x => x.CreatedAt),
               new CreateIndexOptions { Background = true, Name = "idx_notifications_userId_isRead_createdAt" }));
+
+            // 17. AttendanceExplanations — supports GetByEmployeeIdAsync, GetPendingAsync, GetByEmployeeAndDateAsync
+            var explanations = context.GetCollection<AttendanceExplanation>("attendance_explanations");
+            await explanations.Indexes.CreateManyAsync(new[]
+            {
+          new CreateIndexModel<AttendanceExplanation>(
+              Builders<AttendanceExplanation>.IndexKeys
+                  .Ascending(x => x.EmployeeId).Descending(x => x.WorkDate),
+              new CreateIndexOptions { Background = true, Name = "idx_explanations_employeeId_workDate" }),
+          new CreateIndexModel<AttendanceExplanation>(
+              Builders<AttendanceExplanation>.IndexKeys
+                  .Ascending(x => x.Status).Ascending(x => x.CreatedAt),
+              new CreateIndexOptions { Background = true, Name = "idx_explanations_status_createdAt" }),
+          // unique: one explanation per employee per work-date
+          new CreateIndexModel<AttendanceExplanation>(
+              Builders<AttendanceExplanation>.IndexKeys
+                  .Ascending(x => x.EmployeeId).Ascending(x => x.WorkDate),
+              new CreateIndexOptions { Background = true, Unique = true, Name = "idx_explanations_employeeId_workDate_unique" })
+      });
         }
     }
 }

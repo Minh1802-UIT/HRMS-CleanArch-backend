@@ -261,6 +261,20 @@ namespace Employee.Application.Features.Attendance.Services
         // --- STEP D: Calculate ---
         _calculator.CalculateDailyStatus(dailyLog, shift);
 
+        // --- STEP D1: Flag missing check-in ---
+        // Employee had a checkout but no check-in was found (not overnight, not recovered).
+        // Mark the day so the employee can submit an explanation.
+        if (!dailyLog.CheckIn.HasValue && dailyLog.CheckOut.HasValue)
+        {
+          dailyLog.UpdateCalculationResults(
+              dailyLog.WorkingHours, dailyLog.LateMinutes, dailyLog.EarlyLeaveMinutes,
+              dailyLog.OvertimeHours, dailyLog.Status,
+              note: "[Missing] Quên check-in — vui lòng gửi giải trình",
+              isLate: dailyLog.IsLate,
+              isEarlyLeave: dailyLog.IsEarlyLeave,
+              isMissingCheckIn: true);
+        }
+
         // --- STEP D2: Apply holiday flag ---
         // Must run AFTER the calculator so OT/working-hours are not erased.
         if (holidayMap != null && holidayMap.TryGetValue(workDate.Date, out var holidayName))

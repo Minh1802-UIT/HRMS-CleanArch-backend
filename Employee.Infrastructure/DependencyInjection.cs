@@ -117,6 +117,7 @@ namespace Employee.Infrastructure
             services.AddScoped<IShiftRepository, ShiftRepository>();
             services.AddScoped<IRawAttendanceLogRepository, Employee.Infrastructure.Repositories.Attendance.RawAttendanceLogRepository>();
             services.AddScoped<IAttendanceRepository, Employee.Infrastructure.Repositories.Attendance.AttendanceRepository>();
+            services.AddScoped<IAttendanceExplanationRepository, Employee.Infrastructure.Repositories.Attendance.AttendanceExplanationRepository>();
 
             // ==========================================
             // 6. LEAVE MANAGEMENT REPOSITORIES
