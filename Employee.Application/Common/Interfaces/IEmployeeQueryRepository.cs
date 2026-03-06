@@ -25,5 +25,6 @@ public interface IEmployeeQueryRepository
     Task<List<LookupDto>> GetLookupAsync(
         string? keyword = null,
         int limit = 20,
+        string? departmentId = null,
         CancellationToken cancellationToken = default);
 }
