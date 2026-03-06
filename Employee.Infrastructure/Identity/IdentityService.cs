@@ -42,7 +42,7 @@ namespace Employee.Infrastructure.Identity
         public async Task<string?> GetUserNameAsync(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
-            return user?.UserName;
+            return user?.FullName ?? user?.UserName;
         }
 
         public async Task<bool> IsInRoleAsync(string userId, string role)

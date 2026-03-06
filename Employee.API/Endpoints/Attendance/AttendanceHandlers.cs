@@ -353,6 +353,20 @@ namespace Employee.API.Endpoints.Attendance
         return ResultUtils.Fail(ErrorCodes.UnlinkedAccount, "Tài khoản chưa liên kết với hồ sơ nhân viên.");
 
       var list = await repo.GetByEmployeeIdAsync(employeeId);
+
+      // Resolve reviewer user IDs → display names
+      var reviewerIds = list
+        .Where(e => !string.IsNullOrEmpty(e.ReviewedBy))
+        .Select(e => e.ReviewedBy!)
+        .Distinct()
+        .ToList();
+      var reviewerNameMap = new Dictionary<string, string>();
+      foreach (var rid in reviewerIds)
+      {
+        var name = await identityService.GetUserNameAsync(rid);
+        if (name != null) reviewerNameMap[rid] = name;
+      }
+
       var result = list.Select(e => new
       {
         e.Id,
@@ -360,7 +374,7 @@ namespace Employee.API.Endpoints.Attendance
         WorkDate = e.WorkDate,
         Reason = e.Reason,
         Status = e.Status.ToString(),
-        ReviewedBy = e.ReviewedBy,
+        ReviewedBy = e.ReviewedBy != null && reviewerNameMap.TryGetValue(e.ReviewedBy, out var rn) ? rn : e.ReviewedBy,
         ReviewNote = e.ReviewNote,
         ReviewedAt = e.ReviewedAt,
         CreatedAt = e.CreatedAt
