@@ -160,7 +160,7 @@ namespace Employee.Infrastructure
             // ==========================================
             services.Configure<SupabaseStorageOptions>(configuration.GetSection(SupabaseStorageOptions.SectionName));
             services.AddHttpClient("SupabaseStorage");
-            services.AddScoped<IFileService, SupabaseFileService>();
+            services.AddScoped<IFileService, FileService>();
             services.AddScoped<ICacheService, CacheService>();
 
             // ==========================================
