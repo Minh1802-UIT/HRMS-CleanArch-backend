@@ -67,6 +67,24 @@ namespace Employee.Application.Features.Attendance.Services
 
         _logger.LogInformation("ProcessRawLogsAsync: Found {Count} unprocessed logs. Processing...", logs.Count);
 
+        // --- Guard: permanently discard records whose Timestamp is obviously invalid
+        //     (year < 2000 means DateTime.MinValue or corrupted data).
+        //     We set IsProcessed=true so they are never retried.
+        var invalidLogs = logs.Where(x => x.Timestamp.Year < 2000).ToList();
+        if (invalidLogs.Any())
+        {
+          _logger.LogWarning(
+              "ProcessRawLogsAsync: Discarding {Count} raw log(s) with invalid Timestamp (year < 2000). IDs: {Ids}",
+              invalidLogs.Count,
+              string.Join(", ", invalidLogs.Select(x => x.Id)));
+          await _rawRepo.MarkManyAsPermanentErrorAsync(
+              invalidLogs.Select(x => x.Id),
+              "INVALID_TIMESTAMP");
+          logs = logs.Where(x => x.Timestamp.Year >= 2000).ToList();
+          if (!logs.Any())
+            return $"Found 0 valid logs to process (discarded {invalidLogs.Count} with invalid timestamps).";
+        }
+
         int processedCount = 0;
         int failedCount    = 0;
 

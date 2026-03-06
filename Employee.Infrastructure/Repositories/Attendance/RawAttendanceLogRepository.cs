@@ -114,6 +114,30 @@ namespace Employee.Infrastructure.Repositories.Attendance
         await _collection.UpdateOneAsync(x => x.Id == id, update, cancellationToken: cancellationToken);
     }
 
+    public async Task MarkManyAsPermanentErrorAsync(IEnumerable<string> ids, string error, CancellationToken cancellationToken = default)
+    {
+      var idList = ids.ToList();
+      if (idList.Count == 0) return;
+
+      var now = DateTime.UtcNow;
+      var bulkOps = idList.Select(id =>
+      {
+        var filter = Builders<RawAttendanceLog>.Filter.Eq(x => x.Id, id);
+        var update = Builders<RawAttendanceLog>.Update
+            .Set(x => x.IsProcessed,    true)   // permanent — never retried
+            .Set(x => x.ProcessingError, error)
+            .Set(x => x.UpdatedAt,       now);
+        return (WriteModel<RawAttendanceLog>)new UpdateOneModel<RawAttendanceLog>(filter, update);
+      }).ToList();
+
+      var options = new BulkWriteOptions { IsOrdered = false };
+
+      if (_context.Session != null)
+        await _collection.BulkWriteAsync(_context.Session, bulkOps, options, cancellationToken);
+      else
+        await _collection.BulkWriteAsync(bulkOps, options, cancellationToken);
+    }
+
     public async Task<RawAttendanceLog?> GetLatestLogAsync(string employeeId, CancellationToken cancellationToken = default)
     {
       return await _collection.Find(x => x.EmployeeId == employeeId)

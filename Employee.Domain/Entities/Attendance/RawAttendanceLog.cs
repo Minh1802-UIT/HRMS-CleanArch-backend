@@ -47,6 +47,7 @@ namespace Employee.Domain.Entities.Attendance
       PhotoBase64 = photoBase64;
       Latitude = latitude;
       Longitude = longitude;
+      CreatedAt = DateTime.UtcNow;
     }
 
     public void MarkAsProcessed()

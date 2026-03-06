@@ -18,6 +18,12 @@ namespace Employee.Domain.Interfaces.Repositories
     Task MarkManyAsProcessedAsync(IEnumerable<string> ids, CancellationToken cancellationToken = default);
 
     Task MarkAsErrorAsync(string id, string error, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Permanently marks a batch of logs as failed (IsProcessed = true) so they are never retried.
+    /// Use for records that cannot be recovered (e.g., invalid/missing Timestamp).
+    /// </summary>
+    Task MarkManyAsPermanentErrorAsync(IEnumerable<string> ids, string error, CancellationToken cancellationToken = default);
     Task<RawAttendanceLog?> GetLatestLogAsync(string employeeId, CancellationToken cancellationToken = default);
 
     /// <summary>
