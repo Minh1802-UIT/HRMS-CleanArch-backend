@@ -390,7 +390,7 @@ builder.Services.AddHealthChecks()
     .AddRedis(
         redisConnectionString,
         name: "redis",
-        failureStatus: HealthStatus.Unhealthy,
+        failureStatus: HealthStatus.Degraded,  // Won't fail health check if Redis is down
         tags: ["cache", "redis"]);
 
 // Response Compression & Caching
@@ -525,18 +525,21 @@ app.MapGroup("")
 // Public liveness probe — safe for load balancers and Docker HEALTHCHECK
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
-  ResponseWriter = async (context, report) =>
-  {
-    context.Response.ContentType = MediaTypeNames.Application.Json;
-    var result = JsonSerializer.Serialize(new { status = report.Status.ToString() });
-    await context.Response.WriteAsync(result);
-  }
+    // Skip Redis health check - Redis is optional, app should still be considered healthy
+    Predicate = check => check.Name != "redis",
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = MediaTypeNames.Application.Json;
+        var result = JsonSerializer.Serialize(new { status = report.Status.ToString() });
+        await context.Response.WriteAsync(result);
+    }
 });
 
 // Detailed health endpoint — Admin-only, exposes service names and check durations
 app.MapHealthChecks("/health/detail", new HealthCheckOptions
 {
-  ResponseWriter = async (context, report) =>
+    Predicate = check => check.Name != "redis",
+    ResponseWriter = async (context, report) =>
   {
     context.Response.ContentType = MediaTypeNames.Application.Json;
     var result = JsonSerializer.Serialize(new
