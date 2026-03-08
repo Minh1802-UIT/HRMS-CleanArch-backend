@@ -1,0 +1,50 @@
+﻿---
+description: Security best practices for HRMS - authentication, authorization, data protection
+globs: 
+alwaysApply: true
+---
+
+# HRMS Security Rules
+
+## Authentication
+
+- JWT tokens for API authentication
+- Store tokens securely (httpOnly cookies preferred)
+- Implement refresh token rotation
+- Set appropriate token expiration
+
+## Authorization
+
+- Use role-based access control (RBAC)
+- Check permissions at API level
+- Validate user claims on each request
+- Implement policy-based authorization
+
+## Data Protection
+
+- Never log sensitive data (passwords, tokens)
+- Hash passwords with BCrypt/Argon2
+- Use HTTPS everywhere
+- Validate all inputs
+- Sanitize outputs to prevent XSS
+
+## API Security
+
+- Implement rate limiting
+- Use CORS properly
+- Add security headers (CSP, X-Frame-Options)
+- Validate content-type headers
+- Prevent SQL injection (use parameterized queries)
+
+## Secrets Management
+
+- Never commit secrets to git
+- Use environment variables or secret managers
+- Different configs for dev/staging/prod
+
+## Common Vulnerabilities
+
+- **SQL Injection**: Use EF Core parameterized queries
+- **XSS**: Sanitize user inputs
+- **CSRF**: Use anti-forgery tokens
+- **IDOR**: Verify ownership before operations

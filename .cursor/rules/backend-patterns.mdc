@@ -1,0 +1,65 @@
+﻿---
+description: Backend patterns for HRMS - CQRS, MediatR, Clean Architecture
+globs: **/*.cs
+alwaysApply: false
+---
+
+# HRMS Backend Patterns
+
+## Clean Architecture
+
+```
+Domain/           # Entities, Value Objects, Interfaces
+Application/      # Commands, Queries, Handlers, DTOs
+Infrastructure/   # EF Core, Repositories, Services
+API/              # Controllers, Middleware
+```
+
+## CQRS Pattern
+
+### Command Structure
+```csharp
+public record CreateEmployeeCommand(string Name, string Email) : IRequest<ApiResponse<Guid>>;
+
+public class CreateEmployeeHandler : IRequestHandler<CreateEmployeeCommand, ApiResponse<Guid>>
+{
+    public async Task<ApiResponse<Guid>> Handle(CreateEmployeeCommand request, CancellationToken ct)
+    {
+        // Implementation
+    }
+}
+```
+
+### Query Structure
+```csharp
+public record GetEmployeeByIdQuery(Guid Id) : IRequest<ApiResponse<EmployeeDto>>;
+
+public class GetEmployeeByIdHandler : IRequestHandler<GetEmployeeByIdQuery, ApiResponse<EmployeeDto>>
+{
+    public async Task<ApiResponse<EmployeeDto>> Handle(GetEmployeeByIdQuery request, CancellationToken ct)
+    {
+        // Implementation
+    }
+}
+```
+
+## Validation
+
+Use FluentValidation:
+```csharp
+public class CreateEmployeeValidator : AbstractValidator<CreateEmployeeCommand>
+{
+    public CreateEmployeeValidator()
+    {
+        RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
+        RuleFor(x => x.Email).EmailAddress();
+    }
+}
+```
+
+## Response Wrapper
+
+Always wrap responses in ApiResponse<T>:
+- Success: ApiResponse<T>.Ok(data)
+- Created: ApiResponse<T>.Created(data, location)
+- Error: ApiResponse<T>.BadRequest(message)

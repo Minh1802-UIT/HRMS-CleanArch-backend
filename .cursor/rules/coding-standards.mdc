@@ -1,0 +1,45 @@
+﻿---
+description: Coding standards and best practices for HRMS project
+globs:
+alwaysApply: true
+---
+
+# HRMS Coding Standards
+
+## General
+
+- Use English for all code, comments, variable names
+- PascalCase: Classes, Methods, Properties, Enums
+- camelCase: variables, parameters
+- Keep methods under 50 lines
+- Single responsibility principle
+
+## Backend (.NET 8)
+
+### Naming
+- Interfaces: I[Entity]Repository
+- Commands: [Action][Entity]Command
+- Queries: [Action][Entity]Query
+- Handlers: [Action][Entity]Handler
+
+### Structure
+- One class per file
+- Namespace matches folder structure
+- usings at top, sorted
+
+### Error Handling
+- Use try-catch in handlers
+- Return proper ApiResponse with error
+- Log exceptions
+
+## Frontend (Angular)
+
+### Components
+- Standalone components only
+- Use @if, @for instead of *ngIf, *ngFor
+- Signals for state management
+
+### Naming
+- Components: [feature]-[component].component.ts
+- Services: [feature].service.ts
+- Interfaces: [feature].model.ts

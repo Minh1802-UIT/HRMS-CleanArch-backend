@@ -1,0 +1,72 @@
+﻿---
+description: Frontend patterns for HRMS - Angular 17, Signals, PrimeNG
+globs: **/*.ts
+alwaysApply: false
+---
+
+# HRMS Frontend Patterns
+
+## Angular 17+
+
+### Standalone Components
+```typescript
+@Component({
+  selector: 'app-employee-list',
+  standalone: true,
+  imports: [CommonModule, TableModule],
+  templateUrl: './employee-list.component.html'
+})
+export class EmployeeListComponent {}
+```
+
+### Signals (Preferred)
+```typescript
+export class EmployeeListComponent {
+  employees = signal<Employee[]>([]);
+  loading = signal<boolean>(false);
+  
+  computedCount = computed(() => this.employees().length);
+  
+  loadEmployees() {
+    this.loading.set(true);
+    this.employeeService.getAll().subscribe({
+      next: (data) => this.employees.set(data),
+      complete: () => this.loading.set(false)
+    });
+  }
+}
+```
+
+### Control Flow (Angular 17+)
+```html
+@if (loading()) {
+  <p-progressSpinner />
+} @else {
+  <table>
+    @for (emp of employees(); track emp.id) {
+      <tr>{{ emp.name }}</tr>
+    }
+  </table>
+}
+```
+
+## Services
+
+```typescript
+@Injectable({ providedIn: 'root' })
+export class EmployeeService {
+  private http = inject(HttpClient);
+  private apiUrl = '/api/employees';
+  
+  getAll(): Observable<Employee[]> {
+    return this.http.get<Employee[]>(this.apiUrl);
+  }
+}
+```
+
+## PrimeNG Usage
+
+- Use p-table for data grids
+- Use p-dialog for modals
+- Use p-toast for notifications
+- Use p-confirmDialog for confirmations
