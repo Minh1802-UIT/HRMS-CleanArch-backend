@@ -11,6 +11,8 @@ using Employee.Application.Features.HumanResource.Queries.GetEmployeesPaged;
 using Employee.Application.Features.HumanResource.Queries.GetEmployeeLookup;
 using Employee.Application.Features.HumanResource.Queries.GetEmployeeById;
 using Employee.Application.Features.HumanResource.Queries.GetOrgChart;
+using Employee.Domain.Enums;
+using System.Collections.Generic;
 
 namespace Employee.API.Endpoints.HumanResource
 {
@@ -29,9 +31,24 @@ namespace Employee.API.Endpoints.HumanResource
       [FromQuery] string? keyword,
       [FromQuery] int? limit,
       [FromQuery] string? departmentId,
+      [FromQuery] string? statuses,
       ISender sender)
     {
-      var result = await sender.Send(new GetEmployeeLookupQuery(keyword, limit is > 0 ? limit.Value : 20, departmentId));
+      List<EmployeeStatus>? statusList = null;
+      if (!string.IsNullOrEmpty(statuses))
+      {
+        statusList = statuses.Split(',')
+            .Select(s => Enum.TryParse<EmployeeStatus>(s.Trim(), true, out var status) ? status : (EmployeeStatus?)null)
+            .Where(s => s.HasValue)
+            .Select(s => s!.Value)
+            .ToList();
+      }
+
+      var result = await sender.Send(new GetEmployeeLookupQuery(
+          keyword,
+          limit is > 0 ? limit.Value : 20,
+          departmentId,
+          statusList));
       return ResultUtils.Success(result, "Retrieved employee lookup successfully.");
     }
 

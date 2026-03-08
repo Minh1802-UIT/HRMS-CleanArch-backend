@@ -22,8 +22,11 @@ namespace Employee.Application.Features.HumanResource.Queries.GetEmployeeLookup
 
     public async Task<List<LookupDto>> Handle(GetEmployeeLookupQuery request, CancellationToken cancellationToken)
     {
-      // Only cache the unfiltered default lookup (no keyword, no department filter, default limit)
-      var useCache = string.IsNullOrEmpty(request.Keyword) && request.Limit == 20 && string.IsNullOrEmpty(request.DepartmentId);
+      // Only cache the unfiltered default lookup (no keyword, no department filter, no status filter, default limit)
+      var useCache = string.IsNullOrEmpty(request.Keyword)
+          && request.Limit == 20
+          && string.IsNullOrEmpty(request.DepartmentId)
+          && (request.Statuses == null || request.Statuses.Count == 0);
 
       if (useCache)
       {
@@ -31,7 +34,12 @@ namespace Employee.Application.Features.HumanResource.Queries.GetEmployeeLookup
         if (cached != null) return cached;
       }
 
-      var result = await _repo.GetLookupAsync(request.Keyword, limit: request.Limit, departmentId: request.DepartmentId, cancellationToken: cancellationToken);
+      var result = await _repo.GetLookupAsync(
+          request.Keyword,
+          limit: request.Limit,
+          departmentId: request.DepartmentId,
+          statuses: request.Statuses,
+          cancellationToken: cancellationToken);
 
       if (useCache)
       {

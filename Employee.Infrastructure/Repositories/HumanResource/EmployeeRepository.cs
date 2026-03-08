@@ -127,19 +127,33 @@ namespace Employee.Infrastructure.Repositories.HumanResource
               SoftDeleteFilter.GetActiveOnlyFilter<EmployeeEntity>()
             )).AnyAsync(cancellationToken);
 
-        public async Task<List<LookupDto>> GetLookupAsync(string? keyword = null, int limit = 20, string? departmentId = null, CancellationToken cancellationToken = default)
+        public async Task<List<LookupDto>> GetLookupAsync(
+            string? keyword = null,
+            int limit = 20,
+            string? departmentId = null,
+            List<EmployeeStatus>? statuses = null,
+            CancellationToken cancellationToken = default)
         {
             var filter = SoftDeleteFilter.GetActiveOnlyFilter<EmployeeEntity>();
+
             // Use $text search instead of $regex to leverage idx_employees_text index
             if (!string.IsNullOrEmpty(keyword))
             {
                 var textFilter = Builders<EmployeeEntity>.Filter.Text(keyword);
                 filter = Builders<EmployeeEntity>.Filter.And(filter, textFilter);
             }
+
             if (!string.IsNullOrEmpty(departmentId))
             {
                 filter = Builders<EmployeeEntity>.Filter.And(filter,
                     Builders<EmployeeEntity>.Filter.Eq("JobDetails.DepartmentId", departmentId));
+            }
+
+            // Filter by statuses if provided
+            if (statuses != null && statuses.Count > 0)
+            {
+                filter = Builders<EmployeeEntity>.Filter.And(filter,
+                    Builders<EmployeeEntity>.Filter.In("JobDetails.Status", statuses));
             }
 
             return await _collection
