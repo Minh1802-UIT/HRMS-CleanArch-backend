@@ -1,4 +1,4 @@
-﻿using AspNetCore.Identity.MongoDbCore.Extensions;
+using AspNetCore.Identity.MongoDbCore.Extensions;
 using AspNetCore.Identity.MongoDbCore.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Carter;
@@ -25,9 +25,11 @@ using System.Text.Json;
 using System.Threading.RateLimiting;
 
 using System.Security.Claims;
+using System.Reflection;
 using Hangfire;
 using Serilog;
 using Microsoft.AspNetCore.HttpOverrides;
+using OpenTelemetry.Trace;
 
 MongoClassMapConfig.Configure();
 
@@ -45,6 +47,15 @@ builder.Host.UseSerilog((context, parser, configuration) =>
 // 1.1. Minimal API (Carter) & Endpoint Explorer
 builder.Services.AddCarter();
 builder.Services.AddEndpointsApiExplorer();
+
+// 1.2. OpenTelemetry - Tracing
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddSource("Hangfire")
+        .SetSampler(new OpenTelemetry.Trace.AlwaysOnSampler())
+        .AddConsoleExporter());
 
 // Enforce camelCase JSON globally for ALL responses (Results.Ok, Results.Json, WriteAsJsonAsync)
 builder.Services.ConfigureHttpJsonOptions(options =>
@@ -141,7 +152,30 @@ builder.Services.AddAuthorization();
 // 1.7. Swagger with JWT Support
 builder.Services.AddSwaggerGen(c =>
 {
-  c.SwaggerDoc("v1", new OpenApiInfo { Title = "Employee API", Version = "v1" });
+  c.SwaggerDoc("v1", new OpenApiInfo 
+  { 
+    Title = "HRMS API", 
+    Version = "v1",
+    Description = "Human Resources Management System API\n\n## Features\n- Authentication & Authorization\n- Employee Management\n- Leave Management\n- Attendance Tracking\n- Payroll Processing\n- Performance Management\n- Recruitment",
+    Contact = new OpenApiContact 
+    {
+      Name = "HRMS Team",
+      Email = "support@hrms.com"
+    },
+    License = new OpenApiLicense 
+    {
+      Name = "MIT"
+    }
+  });
+  
+  // XML Comments
+  var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+  var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+  if (File.Exists(xmlPath))
+  {
+    c.IncludeXmlComments(xmlPath);
+  }
+  
   c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
   {
     Description = "JWT Authorization header using the Bearer scheme. Enter 'Bearer' [space] and then your token.",
@@ -346,12 +380,18 @@ builder.Services.AddRateLimiter(options =>
   });
 });
 
-// Health Checks — MongoDB + self
+// Health Checks — MongoDB + Redis + self
+var redisConnectionString = builder.Configuration.GetValue<string>("RedisSettings:ConnectionString") ?? "localhost:6379";
 builder.Services.AddHealthChecks()
     .AddMongoDb(
         name: "mongodb",
         failureStatus: HealthStatus.Unhealthy,
-        tags: ["db", "mongodb"]);
+        tags: ["db", "mongodb"])
+    .AddRedis(
+        redisConnectionString,
+        name: "redis",
+        failureStatus: HealthStatus.Degraded,  // Won't fail health check if Redis is down
+        tags: ["cache", "redis"]);
 
 // Response Compression & Caching
 builder.Services.AddResponseCaching();
@@ -485,18 +525,21 @@ app.MapGroup("")
 // Public liveness probe — safe for load balancers and Docker HEALTHCHECK
 app.MapHealthChecks("/health", new HealthCheckOptions
 {
-  ResponseWriter = async (context, report) =>
-  {
-    context.Response.ContentType = MediaTypeNames.Application.Json;
-    var result = JsonSerializer.Serialize(new { status = report.Status.ToString() });
-    await context.Response.WriteAsync(result);
-  }
+    // Skip Redis health check - Redis is optional, app should still be considered healthy
+    Predicate = check => check.Name != "redis",
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = MediaTypeNames.Application.Json;
+        var result = JsonSerializer.Serialize(new { status = report.Status.ToString() });
+        await context.Response.WriteAsync(result);
+    }
 });
 
 // Detailed health endpoint — Admin-only, exposes service names and check durations
 app.MapHealthChecks("/health/detail", new HealthCheckOptions
 {
-  ResponseWriter = async (context, report) =>
+    Predicate = check => check.Name != "redis",
+    ResponseWriter = async (context, report) =>
   {
     context.Response.ContentType = MediaTypeNames.Application.Json;
     var result = JsonSerializer.Serialize(new

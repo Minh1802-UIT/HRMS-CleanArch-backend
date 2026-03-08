@@ -198,28 +198,42 @@ namespace Employee.Infrastructure
             hangfireCfg.AbortOnConnectFail = false;
             hangfireCfg.ConnectTimeout = 5000;
             hangfireCfg.SyncTimeout = 5000;
+            hangfireCfg.ConnectRetry = 3;
+            hangfireCfg.AllowAdmin = true;
 
-            var hangfireMultiplexer = ConnectionMultiplexer.Connect(hangfireCfg);
-            services.AddSingleton<IConnectionMultiplexer>(hangfireMultiplexer);
-
-            services.AddHangfire(config => config
-                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-                .UseSimpleAssemblyNameTypeSerializer()
-                .UseRecommendedSerializerSettings()
-                .UseRedisStorage(hangfireMultiplexer, new RedisStorageOptions
-                {
-                    Prefix = "hangfire:",
-                    InvisibilityTimeout = TimeSpan.FromMinutes(30)
-                }));
-
-            services.AddHangfireServer(options =>
+            try
             {
-                options.WorkerCount = 2;   // small footprint — adjust as needed
-                options.ServerName = "hrms-worker";
-            });
+                var hangfireMultiplexer = ConnectionMultiplexer.Connect(hangfireCfg);
+                services.AddSingleton<IConnectionMultiplexer>(hangfireMultiplexer);
+
+                services.AddHangfire(config => config
+                    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                    .UseSimpleAssemblyNameTypeSerializer()
+                    .UseRecommendedSerializerSettings()
+                    .UseRedisStorage(hangfireMultiplexer, new RedisStorageOptions
+                    {
+                        Prefix = "hangfire:",
+                        InvisibilityTimeout = TimeSpan.FromMinutes(30)
+                    }));
+
+                services.AddHangfireServer(options =>
+                {
+                    options.WorkerCount = 2;
+                    options.ServerName = "hrms-worker";
+                });
+
+                services.AddScoped<IBackgroundJobService, HangfireBackgroundJobService>();
+            }
+            catch (Exception ex)
+            {
+                // Log warning but continue - Hangfire is optional
+                Console.WriteLine($"[WARNING] Failed to connect to Redis for Hangfire: {ex.Message}. Background jobs will be disabled.");
+                
+                // Register no-op implementation when Redis is unavailable
+                services.AddScoped<IBackgroundJobService, NoOpBackgroundJobService>();
+            }
 
             services.AddScoped<AccountProvisioningJob>();
-            services.AddScoped<IBackgroundJobService, HangfireBackgroundJobService>();
             services.AddScoped<IPayslipService, PayslipService>();
             services.AddScoped<IExcelExportService, ExcelExportService>();
 

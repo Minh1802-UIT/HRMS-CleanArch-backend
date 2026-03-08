@@ -1,5 +1,6 @@
 using Employee.Application.Common.Dtos;
 using Employee.Domain.Common.Models;
+using Employee.Domain.Enums;
 
 namespace Employee.Application.Common.Interfaces;
 
@@ -26,5 +27,6 @@ public interface IEmployeeQueryRepository
         string? keyword = null,
         int limit = 20,
         string? departmentId = null,
+        List<EmployeeStatus>? statuses = null,
         CancellationToken cancellationToken = default);
 }
