@@ -22,28 +22,21 @@ namespace Employee.Infrastructure.Repositories.HumanResource
     public async Task<List<ContractSalaryProjection>> GetActiveSalaryInfoAsync(CancellationToken cancellationToken = default)
     {
       var filter = Builders<ContractEntity>.Filter.Eq(c => c.Status, ContractStatus.Active);
-      var projection = Builders<ContractEntity>.Projection
-        .Include(c => (object)c.EmployeeId)
-        .Include(c => (object)c.Status)
-        .Include("Salary.BasicSalary")
-        .Include("Salary.TransportAllowance")
-        .Include("Salary.LunchAllowance")
-        .Include("Salary.OtherAllowance");
-
+      
       var results = await _collection
         .Find(filter)
-        .Project<ContractEntity>(projection)
+        .Project(c => new ContractSalaryProjection
+        {
+          EmployeeId = c.EmployeeId,
+          Status = c.Status.ToString(),
+          BasicSalary = c.Salary != null ? c.Salary.BasicSalary : 0m,
+          TransportAllowance = c.Salary != null ? c.Salary.TransportAllowance : 0m,
+          LunchAllowance = c.Salary != null ? c.Salary.LunchAllowance : 0m,
+          OtherAllowance = c.Salary != null ? c.Salary.OtherAllowance : 0m
+        })
         .ToListAsync(cancellationToken);
 
-      return results.Select(c => new ContractSalaryProjection
-      {
-        EmployeeId = c.EmployeeId,
-        Status = c.Status.ToString(),
-        BasicSalary = c.Salary?.BasicSalary ?? 0,
-        TransportAllowance = c.Salary?.TransportAllowance ?? 0,
-        LunchAllowance = c.Salary?.LunchAllowance ?? 0,
-        OtherAllowance = c.Salary?.OtherAllowance ?? 0
-      }).ToList();
+      return results;
     }
 
     public override async Task<PagedResult<ContractEntity>> GetPagedAsync(PaginationParams pagination, CancellationToken cancellationToken = default)
