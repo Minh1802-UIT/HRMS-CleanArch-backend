@@ -1,0 +1,126 @@
+{
+  "overtime": [
+    {
+      "_id": "69aee1bff5ddec1e6937eaee",
+      "EmployeeId": "69a06a7a3f2a5758a4364aa0",
+      "Date": "2026-03-05 00:00:00",
+      "Hours": 2,
+      "Status": "Approved",
+      "Reason": "Urgent release",
+      "CreatedAt": "2026-03-09 15:05:34.519000",
+      "CreatedBy": "System",
+      "Version": 1,
+      "IsDeleted": false
+    }
+  ],
+  "leave": [
+    {
+      "_id": "69aee1bff5ddec1e6937eaef",
+      "EmployeeId": "69a06a7b3f2a5758a4364aa1",
+      "LeaveType": "Unpaid",
+      "FromDate": "2026-03-10 00:00:00",
+      "ToDate": "2026-03-10 00:00:00",
+      "Reason": "Personal matters",
+      "Status": "Approved",
+      "ManagerComment": "Approved",
+      "ApprovedBy": "System",
+      "CreatedAt": "2026-03-09 15:05:34.519000",
+      "CreatedBy": "System",
+      "Version": 1,
+      "IsDeleted": false
+    },
+    {
+      "_id": "69aee1bff5ddec1e6937eaf0",
+      "EmployeeId": "69a06a7b3f2a5758a4364aa1",
+      "LeaveType": "Unpaid",
+      "FromDate": "2026-03-11 00:00:00",
+      "ToDate": "2026-03-11 00:00:00",
+      "Reason": "Personal matters",
+      "Status": "Approved",
+      "ManagerComment": "Approved",
+      "ApprovedBy": "System",
+      "CreatedAt": "2026-03-09 15:05:34.519000",
+      "CreatedBy": "System",
+      "Version": 1,
+      "IsDeleted": false
+    }
+  ],
+  "buckets": [
+    {
+      "_id": "69aee1c25b564b21f80df5ad",
+      "EmployeeId": "69a06a7a3f2a5758a4364aa0",
+      "Month": "03-2026",
+      "CreatedAt": "2026-03-09 15:05:34.519000",
+      "CreatedBy": "PayrollTestSeeder",
+      "IsDeleted": false,
+      "TotalLate": 1,
+      "TotalOvertime": 2,
+      "TotalPresent": 20,
+      "Version": 1
+    },
+    {
+      "_id": "69aee1c25b564b21f80df5ae",
+      "EmployeeId": "69a06a7b3f2a5758a4364aa1",
+      "Month": "03-2026",
+      "CreatedAt": "2026-03-09 15:05:34.519000",
+      "CreatedBy": "PayrollTestSeeder",
+      "IsDeleted": false,
+      "TotalLate": 0,
+      "TotalOvertime": 0,
+      "TotalPresent": 18,
+      "Version": 1
+    },
+    {
+      "_id": "69aee1c25b564b21f80df5af",
+      "EmployeeId": "69a06a7c3f2a5758a4364aa2",
+      "Month": "03-2026",
+      "CreatedAt": "2026-03-09 15:05:34.519000",
+      "CreatedBy": "PayrollTestSeeder",
+      "IsDeleted": false,
+      "TotalLate": 0,
+      "TotalOvertime": 0,
+      "TotalPresent": 19,
+      "Version": 1
+    },
+    {
+      "_id": "69aee1c25b564b21f80df5b0",
+      "Month": "03-2026",
+      "EmployeeId": "69a06a7d3f2a5758a4364aa3",
+      "CreatedAt": "2026-03-09 15:05:34.519000",
+      "CreatedBy": "PayrollTestSeeder",
+      "IsDeleted": false,
+      "TotalLate": 0,
+      "TotalOvertime": 0,
+      "TotalPresent": 19,
+      "Version": 1
+    },
+    {
+      "_id": "69aee1c25b564b21f80df5b1",
+      "EmployeeId": "69a06a7e3f2a5758a4364aa4",
+      "Month": "03-2026",
+      "CreatedAt": "2026-03-09 15:05:34.519000",
+      "CreatedBy": "PayrollTestSeeder",
+      "IsDeleted": false,
+      "TotalLate": 0,
+      "TotalOvertime": 0,
+      "TotalPresent": 20,
+      "Version": 1
+    },
+    {
+      "_id": "69aee1c25b564b21f80df5b2",
+      "EmployeeId": "69a06a793f2a5758a4364a9f",
+      "Month": "03-2026",
+      "CreatedAt": "2026-03-09 15:05:34.519000",
+      "CreatedBy": "PayrollTestSeeder",
+      "IsDeleted": false,
+      "TotalLate": 0,
+      "TotalOvertime": 0,
+      "TotalPresent": 20,
+      "Version": 1
+    }
+  ],
+  "ceo": {
+    "id": "69aee1c25b564b21f80df5b2",
+    "empId": "69a06a793f2a5758a4364a9f"
+  }
+}
