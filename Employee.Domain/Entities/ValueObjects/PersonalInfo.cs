@@ -1,4 +1,4 @@
-﻿using Employee.Domain.Enums;
+using Employee.Domain.Enums;
 using System;
 
 namespace Employee.Domain.Entities.ValueObjects

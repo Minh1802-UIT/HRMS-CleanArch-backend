@@ -53,6 +53,16 @@ namespace Employee.Infrastructure.Persistence
         cm.SetIgnoreExtraElements(true);
       });
 
+      // PersonalInfo value object: map stored field "DateOfBirth" → C# property Dob.
+      // Data was originally persisted as "DateOfBirth"; Dob is the clean-domain name.
+      // Handled here (Infrastructure) — no MongoDB attributes on the Domain class.
+      BsonClassMap.RegisterClassMap<PersonalInfo>(cm =>
+      {
+        cm.AutoMap();
+        cm.SetIgnoreExtraElements(true);
+        cm.MapMember(p => p.Dob).SetElementName("DateOfBirth");
+      });
+
       // Contract mapping
       BsonClassMap.RegisterClassMap<ContractEntity>(cm =>
       {
