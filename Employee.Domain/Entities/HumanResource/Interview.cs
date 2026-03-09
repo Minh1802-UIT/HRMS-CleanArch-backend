@@ -46,5 +46,15 @@ namespace Employee.Domain.Entities.HumanResource
         throw new InvalidOperationException("Interview is already cancelled.");
       Status = InterviewStatus.Cancelled;
     }
+
+    public void UpdateSchedule(DateTime scheduledTime, int durationMinutes, string location)
+    {
+      if (Status != InterviewStatus.Scheduled)
+        throw new InvalidOperationException($"Cannot update schedule for interview in '{Status}' status.");
+      
+      ScheduledTime = scheduledTime;
+      DurationMinutes = durationMinutes;
+      Location = location;
+    }
   }
 }

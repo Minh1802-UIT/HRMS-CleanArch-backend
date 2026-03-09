@@ -20,9 +20,8 @@ namespace Employee.Application.Features.Recruitment.Commands.Interview.UpdateInt
       var entity = await _repo.GetByIdAsync(request.Id, cancellationToken)
           ?? throw new NotFoundException($"Interview with ID {request.Id} not found.");
 
-      // TODO: Add UpdateSchedule(scheduledTime, location) to Interview domain entity,
-      // then call entity.UpdateSchedule(request.Dto.ScheduledTime, request.Dto.Location).
-      await Task.CompletedTask;
+      entity.UpdateSchedule(request.Dto.ScheduledTime, request.Dto.DurationMinutes, request.Dto.Location);
+      await _repo.UpdateAsync(entity, cancellationToken);
     }
   }
 }
