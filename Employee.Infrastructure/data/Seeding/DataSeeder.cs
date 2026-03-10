@@ -159,17 +159,17 @@ namespace Employee.Infrastructure.data.Seeding
       }
 
       // 3. DEPARTMENTS (HIERARCHICAL)
-      var hq = new Department("Headquarters", "HQ");
-      hq.UpdateInfo("Headquarters", "Main Office");
+      var hq = new Department("Trụ Sở Chính", "HQ");
+      hq.UpdateInfo("Trụ Sở Chính", "Văn Phòng Điều Hành");
       await deptRepo.CreateAsync(hq);
 
-      var it = new Department("Technology", "TECH"); it.SetParent(hq.Id);
-      var hr = new Department("Human Resources", "HR"); hr.SetParent(hq.Id);
-      var sales = new Department("Sales & Marketing", "SALES"); sales.SetParent(hq.Id);
-      var finance = new Department("Finance", "FIN"); finance.SetParent(hq.Id);
-      var prod = new Department("Product", "PROD"); prod.SetParent(hq.Id);
-      var sup = new Department("Support", "SUP"); sup.SetParent(hq.Id);
-      var log = new Department("Logistics", "LOG"); log.SetParent(hq.Id);
+      var it = new Department("Khối Công Nghệ", "TECH"); it.SetParent(hq.Id);
+      var hr = new Department("Khối Nhân Sự", "HR"); hr.SetParent(hq.Id);
+      var sales = new Department("Khối Kinh Doanh & Tiếp Thị", "SALES"); sales.SetParent(hq.Id);
+      var finance = new Department("Khối Tài Chính Kế Toán", "FIN"); finance.SetParent(hq.Id);
+      var prod = new Department("Khối Sản Phẩm", "PROD"); prod.SetParent(hq.Id);
+      var sup = new Department("Khối Chăm Sóc Khách Hàng", "SUP"); sup.SetParent(hq.Id);
+      var log = new Department("Khối Vận Hành & Hậu Cần", "LOG"); log.SetParent(hq.Id);
 
       await deptRepo.CreateAsync(it);
       await deptRepo.CreateAsync(hr);
@@ -180,19 +180,19 @@ namespace Employee.Infrastructure.data.Seeding
       await deptRepo.CreateAsync(log);
 
       // Level 2 (Sub-departments)
-      var soft = new Department("Software Development", "SOFT"); soft.SetParent(it.Id); await deptRepo.CreateAsync(soft);
-      var infra = new Department("Infrastructure", "INFRA"); infra.SetParent(it.Id); await deptRepo.CreateAsync(infra);
-      var qa = new Department("Quality Assurance", "QA"); qa.SetParent(it.Id); await deptRepo.CreateAsync(qa);
+      var soft = new Department("Ban Phần Mềm", "SOFT"); soft.SetParent(it.Id); await deptRepo.CreateAsync(soft);
+      var infra = new Department("Ban Hạ Tầng Công Nghệ", "INFRA"); infra.SetParent(it.Id); await deptRepo.CreateAsync(infra);
+      var qa = new Department("Ban Đảm Bảo Chất Lượng", "QA"); qa.SetParent(it.Id); await deptRepo.CreateAsync(qa);
 
-      var rec = new Department("Recruitment", "REC"); rec.SetParent(hr.Id); await deptRepo.CreateAsync(rec);
-      var ops = new Department("Operations", "OPS"); ops.SetParent(hr.Id); await deptRepo.CreateAsync(ops);
+      var rec = new Department("Phòng Tuyển Dụng", "REC"); rec.SetParent(hr.Id); await deptRepo.CreateAsync(rec);
+      var ops = new Department("Phòng Hành Chính & Tổng Hợp", "OPS"); ops.SetParent(hr.Id); await deptRepo.CreateAsync(ops);
 
-      var b2b = new Department("B2B Sales", "B2B"); b2b.SetParent(sales.Id); await deptRepo.CreateAsync(b2b);
-      var mkt = new Department("Digital Marketing", "MKT"); mkt.SetParent(sales.Id); await deptRepo.CreateAsync(mkt);
+      var b2b = new Department("Phòng Kinh Doanh B2B", "B2B"); b2b.SetParent(sales.Id); await deptRepo.CreateAsync(b2b);
+      var mkt = new Department("Phòng Truyền Thông & Marketing", "MKT"); mkt.SetParent(sales.Id); await deptRepo.CreateAsync(mkt);
 
-      var design = new Department("UI/UX Design", "DESIGN"); design.SetParent(prod.Id); await deptRepo.CreateAsync(design);
-      var cs = new Department("Customer Service", "CS"); cs.SetParent(sup.Id); await deptRepo.CreateAsync(cs);
-      var wh = new Department("Warehouse", "WH"); wh.SetParent(log.Id); await deptRepo.CreateAsync(wh);
+      var design = new Department("Phòng Thiết Kế (UI/UX)", "DESIGN"); design.SetParent(prod.Id); await deptRepo.CreateAsync(design);
+      var cs = new Department("Trung Tâm CSKH", "CS"); cs.SetParent(sup.Id); await deptRepo.CreateAsync(cs);
+      var wh = new Department("Trung Tâm Kho Bãi", "WH"); wh.SetParent(log.Id); await deptRepo.CreateAsync(wh);
 
       Console.WriteLine("[OK] Created Hierarchical Departments.");
       var depts = await deptRepo.GetAllAsync();
@@ -214,28 +214,28 @@ namespace Employee.Infrastructure.data.Seeding
       var whId = depts.First(d => d.Code == "WH").Id;
 
       // C-Level
-      var ceo = new Position("Chief Executive Officer", "CEO", hqId);
+      var ceo = new Position("Tổng Giám Đốc (CEO)", "CEO", hqId);
       ceo.UpdateSalaryRange(new SalaryRange { Min = 80000000, Max = 150000000 });
       await posRepo.CreateAsync(ceo);
 
       // ── Level 2: Direct reports to CEO ───────────────────────────────────
-      var cto = new Position("Chief Technology Officer", "CTO", techId);
+      var cto = new Position("Giám Đốc Công Nghệ (CTO)", "CTO", techId);
       cto.SetParent(ceo.Id);
       cto.UpdateSalaryRange(new SalaryRange { Min = 60000000, Max = 100000000 });
 
-      var cfo = new Position("Chief Financial Officer", "CFO", finId);
+      var cfo = new Position("Giám Đốc Tài Chính (CFO)", "CFO", finId);
       cfo.SetParent(ceo.Id);
       cfo.UpdateSalaryRange(new SalaryRange { Min = 60000000, Max = 100000000 });
 
-      var chro = new Position("Chief HR Officer", "CHRO", hrId);
+      var chro = new Position("Giám Đốc Nhân Sự (CHRO)", "CHRO", hrId);
       chro.SetParent(ceo.Id);
       chro.UpdateSalaryRange(new SalaryRange { Min = 50000000, Max = 90000000 });
 
-      var cco = new Position("Chief Commercial Officer", "CCO", salesId);
+      var cco = new Position("Giám Đốc Kinh Doanh (CCO)", "CCO", salesId);
       cco.SetParent(ceo.Id);
       cco.UpdateSalaryRange(new SalaryRange { Min = 60000000, Max = 100000000 });
 
-      var cpo = new Position("Chief Product Officer", "CPO", prodId);
+      var cpo = new Position("Giám Đốc Sản Phẩm (CPO)", "CPO", prodId);
       cpo.SetParent(ceo.Id);
       cpo.UpdateSalaryRange(new SalaryRange { Min = 60000000, Max = 100000000 });
 
@@ -247,43 +247,43 @@ namespace Employee.Infrastructure.data.Seeding
 
       // ── Level 3: Functional Managers ─────────────────────────────────────
       // Under CTO
-      var engMgr = new Position("Engineering Manager", "ENG-MGR", softId);
+      var engMgr = new Position("Trưởng Ban Phần Mềm", "ENG-MGR", softId);
       engMgr.SetParent(cto.Id);
       engMgr.UpdateSalaryRange(new SalaryRange { Min = 40000000, Max = 70000000 });
 
-      var qaMgr = new Position("QA Manager", "QA-MGR", qaId);
+      var qaMgr = new Position("Trưởng Ban QA", "QA-MGR", qaId);
       qaMgr.SetParent(cto.Id);
       qaMgr.UpdateSalaryRange(new SalaryRange { Min = 35000000, Max = 60000000 });
 
       // Under CHRO
-      var hrMgr = new Position("HR Manager", "HR-MGR", hrId);
+      var hrMgr = new Position("Trưởng Phòng Nhân Sự", "HR-MGR", hrId);
       hrMgr.SetParent(chro.Id);
       hrMgr.UpdateSalaryRange(new SalaryRange { Min = 30000000, Max = 50000000 });
 
       // Under CFO
-      var acctMgr = new Position("Accounting Manager", "ACCT-MGR", finId);
+      var acctMgr = new Position("Kế Toán Trưởng", "ACCT-MGR", finId);
       acctMgr.SetParent(cfo.Id);
       acctMgr.UpdateSalaryRange(new SalaryRange { Min = 30000000, Max = 55000000 });
 
       // Under CCO
-      var salesMgr = new Position("Sales Manager", "SALE-MGR", salesId);
+      var salesMgr = new Position("Trưởng Phòng Kinh Doanh", "SALE-MGR", salesId);
       salesMgr.SetParent(cco.Id);
       salesMgr.UpdateSalaryRange(new SalaryRange { Min = 30000000, Max = 60000000 });
 
-      var supMgr = new Position("Customer Support Manager", "CSUP-MGR", supId);
+      var supMgr = new Position("Trưởng Phòng CSKH", "CSUP-MGR", supId);
       supMgr.SetParent(cco.Id);
       supMgr.UpdateSalaryRange(new SalaryRange { Min = 25000000, Max = 45000000 });
 
-      var logMgr = new Position("Logistics Manager", "LOG-MGR", logId);
+      var logMgr = new Position("Trưởng Phòng Hậu Cần", "LOG-MGR", logId);
       logMgr.SetParent(cco.Id);
       logMgr.UpdateSalaryRange(new SalaryRange { Min = 25000000, Max = 45000000 });
 
       // Under CPO
-      var prodMgr = new Position("Product Manager", "PROD-MGR", prodId);
+      var prodMgr = new Position("Giám Đốc Quản Lý Sản Phẩm", "PROD-MGR", prodId);
       prodMgr.SetParent(cpo.Id);
       prodMgr.UpdateSalaryRange(new SalaryRange { Min = 35000000, Max = 65000000 });
 
-      var designMgr = new Position("Design Manager", "DES-MGR", designId);
+      var designMgr = new Position("Trưởng Ban Thiết Kế", "DES-MGR", designId);
       designMgr.SetParent(cpo.Id);
       designMgr.UpdateSalaryRange(new SalaryRange { Min = 30000000, Max = 55000000 });
 
@@ -298,72 +298,72 @@ namespace Employee.Infrastructure.data.Seeding
       await posRepo.CreateAsync(designMgr);
 
       // ── Level 4: Team Leads ───────────────────────────────────────────────
-      var techLead = new Position("Tech Lead", "TECH-LEAD", softId);
+      var techLead = new Position("Quản Lý Kỹ Thuật (Tech Lead)", "TECH-LEAD", softId);
       techLead.SetParent(engMgr.Id);
       techLead.UpdateSalaryRange(new SalaryRange { Min = 30000000, Max = 50000000 });
       await posRepo.CreateAsync(techLead);
 
-      var qaLead = new Position("QA Lead", "QA-LEAD", qaId);
+      var qaLead = new Position("Trưởng Nhóm Kiểm Thử", "QA-LEAD", qaId);
       qaLead.SetParent(qaMgr.Id);
       qaLead.UpdateSalaryRange(new SalaryRange { Min = 25000000, Max = 45000000 });
       await posRepo.CreateAsync(qaLead);
 
-      var salesLead = new Position("Sales Team Lead", "SALE-LEAD", salesId);
+      var salesLead = new Position("Trưởng Nhóm Kinh Doanh", "SALE-LEAD", salesId);
       salesLead.SetParent(salesMgr.Id);
       salesLead.UpdateSalaryRange(new SalaryRange { Min = 20000000, Max = 35000000 });
       await posRepo.CreateAsync(salesLead);
 
       // ── Level 5: Individual Contributors ─────────────────────────────────
-      var senDev = new Position("Senior Developer", "SEN-DEV", softId);
+      var senDev = new Position("Lập Trình Viên Đạt Chuẩn (Senior)", "SEN-DEV", softId);
       senDev.SetParent(techLead.Id);
       senDev.UpdateSalaryRange(new SalaryRange { Min = 25000000, Max = 45000000 });
       await posRepo.CreateAsync(senDev);
 
-      var junDev = new Position("Junior Developer", "JUN-DEV", softId);
+      var junDev = new Position("Lập Trình Viên Tiêu Chuẩn (Junior)", "JUN-DEV", softId);
       junDev.SetParent(techLead.Id);
-      junDev.UpdateSalaryRange(new SalaryRange { Min = 10000000, Max = 20000000 });
+      junDev.UpdateSalaryRange(new SalaryRange { Min = 12000000, Max = 20000000 });
       await posRepo.CreateAsync(junDev);
 
-      var intern = new Position("Intern", "INTERN", softId);
+      var intern = new Position("Thực Tập Sinh", "INTERN", softId);
       intern.SetParent(techLead.Id);
       intern.UpdateSalaryRange(new SalaryRange { Min = 3000000, Max = 7000000 });
       await posRepo.CreateAsync(intern);
 
-      var qaEng = new Position("QA Engineer", "QA-ENG", qaId);
+      var qaEng = new Position("Chuyên Viên Kiểm Thử (QA)", "QA-ENG", qaId);
       qaEng.SetParent(qaLead.Id);
-      qaEng.UpdateSalaryRange(new SalaryRange { Min = 15000000, Max = 25000000 });
+      qaEng.UpdateSalaryRange(new SalaryRange { Min = 14000000, Max = 25000000 });
       await posRepo.CreateAsync(qaEng);
 
-      var hrSpec = new Position("HR Specialist", "HR-SPEC", hrId);
+      var hrSpec = new Position("Chuyên Viên Nhân Sự", "HR-SPEC", hrId);
       hrSpec.SetParent(hrMgr.Id);
       hrSpec.UpdateSalaryRange(new SalaryRange { Min = 12000000, Max = 20000000 });
       await posRepo.CreateAsync(hrSpec);
 
       // Sales Executive → Sales Team Lead (not directly to Sales Manager)
-      var saleExec = new Position("Sales Executive", "SALE-EXEC", salesId);
+      var saleExec = new Position("Chuyên Viên Kinh Doanh", "SALE-EXEC", salesId);
       saleExec.SetParent(salesLead.Id);
       saleExec.UpdateSalaryRange(new SalaryRange { Min = 10000000, Max = 30000000 });
       await posRepo.CreateAsync(saleExec);
 
       // Accountant → Accounting Manager (not directly to CFO)
-      var acc = new Position("Accountant", "ACC", finId);
+      var acc = new Position("Kế Toán Viên", "ACC", finId);
       acc.SetParent(acctMgr.Id);
-      acc.UpdateSalaryRange(new SalaryRange { Min = 15000000, Max = 25000000 });
+      acc.UpdateSalaryRange(new SalaryRange { Min = 12000000, Max = 22000000 });
       await posRepo.CreateAsync(acc);
 
       // UI/UX Designer → Design Manager (not directly to Product Manager)
-      var uxDes = new Position("UI/UX Designer", "UX-DES", designId);
+      var uxDes = new Position("Chuyên Viên Thiết Kế Đồ Họa (UI/UX)", "UX-DES", designId);
       uxDes.SetParent(designMgr.Id);
-      uxDes.UpdateSalaryRange(new SalaryRange { Min = 18000000, Max = 35000000 });
+      uxDes.UpdateSalaryRange(new SalaryRange { Min = 15000000, Max = 30000000 });
       await posRepo.CreateAsync(uxDes);
 
       // Customer Service Agent → Customer Support Manager
-      var csStaff = new Position("Customer Service Agent", "CS-STAFF", csId);
+      var csStaff = new Position("Chuyên Viên Chăm Sóc Khách Hàng", "CS-STAFF", csId);
       csStaff.SetParent(supMgr.Id);
       csStaff.UpdateSalaryRange(new SalaryRange { Min = 8000000, Max = 15000000 });
       await posRepo.CreateAsync(csStaff);
 
-      var whWorker = new Position("Warehouse Worker", "WH-WORKER", whId);
+      var whWorker = new Position("Nhân Viên Kho", "WH-WORKER", whId);
       whWorker.SetParent(logMgr.Id);
       whWorker.UpdateSalaryRange(new SalaryRange { Min = 7000000, Max = 12000000 });
       await posRepo.CreateAsync(whWorker);
@@ -386,14 +386,14 @@ namespace Employee.Infrastructure.data.Seeding
 
       // 5. EMPLOYEES (GENERATION)
       var random = new Random();
-      var firstNames = new[] { "Nguyen", "Tran", "Le", "Pham", "Hoang", "Huynh", "Phan", "Vu", "Vo", "Dang", "Bui", "Do", "Ho", "Ngo", "Duong", "Ly" };
-      var midNames = new[] { "Van", "Thi", "Minh", "Huu", "Duc", "Thanh", "Quoc", "Hoang", "Ngoc", "Quang", "Tuan", "Anh", "My", "Bao" };
-      var lastNames = new[] { "An", "Binh", "Cuong", "Dung", "Em", "Giang", "Huy", "Hung", "Khanh", "Linh", "Minh", "Nam", "Ngan", "Phuc", "Quan", "Son", "Thao", "Thuy", "Tuan", "Uy", "Vinh", "Yen" };
+      var firstNames = new[] { "Nguyễn", "Trần", "Lê", "Phạm", "Hoàng", "Huỳnh", "Phan", "Vũ", "Võ", "Đặng", "Bùi", "Đỗ", "Hồ", "Ngô", "Dương", "Lý" };
+      var midNames = new[] { "Văn", "Thị", "Minh", "Hữu", "Đức", "Thanh", "Quốc", "Hoàng", "Ngọc", "Quang", "Tuấn", "Anh", "Mỹ", "Bảo" };
+      var lastNames = new[] { "An", "Bình", "Cường", "Dũng", "Em", "Giang", "Huy", "Hùng", "Khánh", "Linh", "Minh", "Nam", "Ngân", "Phúc", "Quân", "Sơn", "Thảo", "Thúy", "Tuấn", "Uy", "Vinh", "Yến" };
 
       var generatedEmps = new List<EmployeeEntity>();
 
       Console.WriteLine("[SEED] Generating CEO...");
-      var ceoEmp = CreateEmployee("CEO001", "Chief Executive Officer", "ceo@hrm.com", depts.First(d => d.Code == "HQ").Id, ceoPos.Id, null, new DateTime(2020, 1, 1));
+      var ceoEmp = CreateEmployee("CEO001", "Tổng Giám Đốc", "ceo@hrm.com", depts.First(d => d.Code == "HQ").Id, ceoPos.Id, null, new DateTime(2020, 1, 1));
       await empRepo.CreateAsync(ceoEmp);
       generatedEmps.Add(ceoEmp);
       await CreateUserForEmployee(userManager, ceoEmp.Email, defaultPassword, "Admin", ceoEmp.Id);
@@ -407,38 +407,38 @@ namespace Employee.Infrastructure.data.Seeding
       }
 
       // 5.2 Create Level-2 C-Suite (report to CEO)
-      var ctoEmp = CreateEmployee("CTO001", "Chief Technology Officer", "cto@hrm.com", depts.First(d => d.Code == "TECH").Id, ctoPos.Id, ceoEmp.Id, new DateTime(2020, 2, 1));
+      var ctoEmp = CreateEmployee("CTO001", "Giám Đốc Công Nghệ", "cto@hrm.com", depts.First(d => d.Code == "TECH").Id, ctoPos.Id, ceoEmp.Id, new DateTime(2020, 2, 1));
       await empRepo.CreateAsync(ctoEmp);
       generatedEmps.Add(ctoEmp);
       await CreateUserForEmployee(userManager, ctoEmp.Email, defaultPassword, "Manager", ctoEmp.Id);
 
-      var cfoEmp = CreateEmployee("CFO001", "Chief Financial Officer", "cfo@hrm.com", depts.First(d => d.Code == "FIN").Id, cfoPos.Id, ceoEmp.Id, new DateTime(2020, 3, 1));
+      var cfoEmp = CreateEmployee("CFO001", "Giám Đốc Tài Chính", "cfo@hrm.com", depts.First(d => d.Code == "FIN").Id, cfoPos.Id, ceoEmp.Id, new DateTime(2020, 3, 1));
       await empRepo.CreateAsync(cfoEmp);
       generatedEmps.Add(cfoEmp);
       await CreateUserForEmployee(userManager, cfoEmp.Email, defaultPassword, "Manager", cfoEmp.Id);
 
-      var chroEmp = CreateEmployee("CHRO001", "Chief HR Officer", "chro@hrm.com", depts.First(d => d.Code == "HR").Id, chroPos.Id, ceoEmp.Id, new DateTime(2020, 4, 1));
+      var chroEmp = CreateEmployee("CHRO001", "Giám Đốc Nhân Sự", "chro@hrm.com", depts.First(d => d.Code == "HR").Id, chroPos.Id, ceoEmp.Id, new DateTime(2020, 4, 1));
       await empRepo.CreateAsync(chroEmp);
       generatedEmps.Add(chroEmp);
       await CreateUserForEmployee(userManager, chroEmp.Email, defaultPassword, "HR", chroEmp.Id);
 
-      var ccoEmp = CreateEmployee("CCO001", "Chief Commercial Officer", "cco@hrm.com", depts.First(d => d.Code == "SALES").Id, ccoPos.Id, ceoEmp.Id, new DateTime(2020, 5, 1));
+      var ccoEmp = CreateEmployee("CCO001", "Giám Đốc Kinh Doanh", "cco@hrm.com", depts.First(d => d.Code == "SALES").Id, ccoPos.Id, ceoEmp.Id, new DateTime(2020, 5, 1));
       await empRepo.CreateAsync(ccoEmp);
       generatedEmps.Add(ccoEmp);
       await CreateUserForEmployee(userManager, ccoEmp.Email, defaultPassword, "Manager", ccoEmp.Id);
 
-      var cpoEmp = CreateEmployee("CPO001", "Chief Product Officer", "cpo@hrm.com", depts.First(d => d.Code == "PROD").Id, cpoPos.Id, ceoEmp.Id, new DateTime(2020, 6, 1));
+      var cpoEmp = CreateEmployee("CPO001", "Giám Đốc Sản Phẩm", "cpo@hrm.com", depts.First(d => d.Code == "PROD").Id, cpoPos.Id, ceoEmp.Id, new DateTime(2020, 6, 1));
       await empRepo.CreateAsync(cpoEmp);
       generatedEmps.Add(cpoEmp);
       await CreateUserForEmployee(userManager, cpoEmp.Email, defaultPassword, "Manager", cpoEmp.Id);
 
       // 5.3 Create Level-3 Functional Managers
-      var engMgrEmp = CreateEmployee("MGR001", "Engineering Manager", "eng.mgr@hrm.com", depts.First(d => d.Code == "SOFT").Id, engMgrPos.Id, ctoEmp.Id, new DateTime(2021, 1, 15));
+      var engMgrEmp = CreateEmployee("MGR001", "Trưởng Ban Kỹ Thuật", "eng.mgr@hrm.com", depts.First(d => d.Code == "SOFT").Id, engMgrPos.Id, ctoEmp.Id, new DateTime(2021, 1, 15));
       await empRepo.CreateAsync(engMgrEmp);
       generatedEmps.Add(engMgrEmp);
       await CreateUserForEmployee(userManager, engMgrEmp.Email, defaultPassword, "Manager", engMgrEmp.Id);
 
-      var qaMgrEmp = CreateEmployee("MGR002", "QA Manager", "qa.mgr@hrm.com", depts.First(d => d.Code == "QA").Id, qaMgrPos.Id, ctoEmp.Id, new DateTime(2021, 3, 1));
+      var qaMgrEmp = CreateEmployee("MGR002", "Trưởng Ban QA", "qa.mgr@hrm.com", depts.First(d => d.Code == "QA").Id, qaMgrPos.Id, ctoEmp.Id, new DateTime(2021, 3, 1));
       await empRepo.CreateAsync(qaMgrEmp);
       generatedEmps.Add(qaMgrEmp);
       await CreateUserForEmployee(userManager, qaMgrEmp.Email, defaultPassword, "Manager", qaMgrEmp.Id);
@@ -548,15 +548,26 @@ namespace Employee.Infrastructure.data.Seeding
       var r = new Random();
       var emp = new EmployeeEntity(code, name, email);
 
+      // Randomly pick a Vietnamese bank
+      var banks = new[] { "Techcombank", "MBBank", "Vietcombank", "VietinBank", "BIDV", "VPBank", "Sacombank", "ACB" };
+      var bankName = banks[r.Next(banks.Length)];
+
+      var cccdFirst = r.Next(10, 99).ToString("00");
+      var cccdMiddle = r.Next(0, 3).ToString();
+      var cccdLast = r.Next(100000000, 999999999).ToString();
+      
+      var phonePrefixes = new[] { "098", "097", "096", "086", "090", "093", "089", "091", "094", "088" };
+      var phonePrefix = phonePrefixes[r.Next(phonePrefixes.Length)];
+
       emp.UpdatePersonalInfo(new PersonalInfo
       {
         Dob = new DateTime(r.Next(1980, 2000), r.Next(1, 13), r.Next(1, 28)),
         Gender = r.NextDouble() > 0.5 ? "Male" : "Female",
-        Phone = $"090{r.Next(1000000, 9999999)}",
-        Address = "TP.HCM",
-        IdentityCard = r.Next(100000000, 999999999).ToString(),
-        City = "Ho Chi Minh",
-        Country = "Vietnam"
+        Phone = $"{phonePrefix}{r.Next(1000000, 9999999)}",
+        Address = "TP.Hồ Chí Minh",
+        IdentityCard = $"{cccdFirst}{cccdMiddle}{cccdLast}", // Standard 12-digit CCCD length simulation
+        City = "Hồ Chí Minh",
+        Country = "Viet Nam"
       });
 
       emp.UpdateJobDetails(new JobDetails
@@ -571,9 +582,9 @@ namespace Employee.Infrastructure.data.Seeding
 
       emp.UpdateBankDetails(new BankDetails
       {
-        BankName = "Vietcombank",
-        AccountNumber = r.Next(100000000, 999999999).ToString(),
-        AccountHolder = name
+        BankName = bankName,
+        AccountNumber = r.Next(1000000000, 2000000000).ToString(), // 10 digit accounts
+        AccountHolder = name.ToUpperInvariant()
       });
 
       return emp;
