@@ -127,7 +127,7 @@ namespace Employee.Infrastructure.Repositories.HumanResource
               SoftDeleteFilter.GetActiveOnlyFilter<EmployeeEntity>()
             )).AnyAsync(cancellationToken);
 
-        public async Task<List<LookupDto>> GetLookupAsync(string? keyword = null, int limit = 20, string? departmentId = null, CancellationToken cancellationToken = default)
+        public async Task<List<LookupDto>> GetLookupAsync(string? keyword = null, int limit = 20, string? departmentId = null, string? positionId = null, CancellationToken cancellationToken = default)
         {
             var filter = SoftDeleteFilter.GetActiveOnlyFilter<EmployeeEntity>();
             // Use $text search instead of $regex to leverage idx_employees_text index
@@ -140,6 +140,11 @@ namespace Employee.Infrastructure.Repositories.HumanResource
             {
                 filter = Builders<EmployeeEntity>.Filter.And(filter,
                     Builders<EmployeeEntity>.Filter.Eq("JobDetails.DepartmentId", departmentId));
+            }
+            if (!string.IsNullOrEmpty(positionId))
+            {
+                filter = Builders<EmployeeEntity>.Filter.And(filter,
+                    Builders<EmployeeEntity>.Filter.Eq("JobDetails.PositionId", positionId));
             }
 
             return await _collection

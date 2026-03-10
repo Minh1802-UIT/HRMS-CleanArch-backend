@@ -29,9 +29,10 @@ namespace Employee.API.Endpoints.HumanResource
       [FromQuery] string? keyword,
       [FromQuery] int? limit,
       [FromQuery] string? departmentId,
+      [FromQuery] string? positionId,
       ISender sender)
     {
-      var result = await sender.Send(new GetEmployeeLookupQuery(keyword, limit is > 0 ? limit.Value : 20, departmentId));
+      var result = await sender.Send(new GetEmployeeLookupQuery(keyword, limit is > 0 ? limit.Value : 20, departmentId, positionId));
       return ResultUtils.Success(result, "Retrieved employee lookup successfully.");
     }
 

@@ -26,5 +26,6 @@ public interface IEmployeeQueryRepository
         string? keyword = null,
         int limit = 20,
         string? departmentId = null,
+        string? positionId = null,
         CancellationToken cancellationToken = default);
 }
