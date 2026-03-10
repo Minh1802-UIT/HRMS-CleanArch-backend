@@ -4,7 +4,7 @@ namespace Employee.Application.Features.Payroll.Commands.MarkPayrollPaid
 {
   public class UpdatePayrollStatusCommandValidator : AbstractValidator<UpdatePayrollStatusCommand>
   {
-    private static readonly string[] ValidStatuses = { "Pending", "Paid", "Cancelled" };
+    private static readonly string[] ValidStatuses = { "Draft", "Approved", "Paid", "Rejected" };
 
     public UpdatePayrollStatusCommandValidator()
     {
