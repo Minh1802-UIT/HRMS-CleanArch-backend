@@ -8,7 +8,8 @@
         "mongodb-mcp-server@latest"
       ],
       "env": {
-        "MDB_MCP_CONNECTION_STRING": "mongodb+srv://nguyenvanminh180220_db_user:Pass-180220@cluster0.kfpckor.mongodb.net/"
+        "MDB_MCP_CONNECTION_STRING": "mongodb+srv://nguyenvanminh180220_db_user:Pass-180220@cluster0.kfpckor.mongodb.net/HRMS",
+        "MONGODB_CONNECTION_STRING": "mongodb+srv://nguyenvanminh180220_db_user:Pass-180220@cluster0.kfpckor.mongodb.net/HRMS"
       }
     }
   }

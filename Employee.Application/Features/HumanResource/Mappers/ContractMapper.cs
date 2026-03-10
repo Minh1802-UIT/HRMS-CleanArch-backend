@@ -21,11 +21,11 @@ namespace Employee.Application.Features.HumanResource.Mappers
         StartDate = entity.StartDate,
         EndDate = entity.EndDate,
         Status = entity.Status.ToString(),
-        Salary = new SalaryInfoDto
+        Salary = entity.Salary != null ? new SalaryInfoDto
         {
           BasicSalary = entity.Salary.BasicSalary,
           TotalSalary = entity.Salary.BasicSalary + entity.Salary.TransportAllowance + entity.Salary.LunchAllowance + entity.Salary.OtherAllowance
-        }
+        } : new SalaryInfoDto()
       };
     }
 
