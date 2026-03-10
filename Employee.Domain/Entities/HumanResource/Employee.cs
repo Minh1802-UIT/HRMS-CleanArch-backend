@@ -69,6 +69,12 @@ namespace Employee.Domain.Entities.HumanResource
     {
       if (string.IsNullOrWhiteSpace(fullName)) throw new ArgumentException("FullName cannot be empty.");
       if (string.IsNullOrWhiteSpace(email)) throw new ArgumentException("Email cannot be empty.");
+      
+      // Simple Email Regex Validation at the Domain level
+      if (!System.Text.RegularExpressions.Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$", System.Text.RegularExpressions.RegexOptions.IgnoreCase))
+      {
+          throw new ArgumentException("Email format is invalid.");
+      }
 
       FullName = fullName;
       Email = email;

@@ -41,23 +41,24 @@ namespace Employee.Application.Features.HumanResource.Commands.CreateEmployee
 
     public async Task<EmployeeDto> Handle(CreateEmployeeCommand request, CancellationToken cancellationToken)
     {
+      // 1. Check for duplicate employee code
+      var exists = await _repo.ExistsByCodeAsync(request.EmployeeCode, cancellationToken);
+      if (exists)
+        throw new ConflictException($"Employee code '{request.EmployeeCode}' already exists.");
+
+      // 2. Validate department
+      var dept = await _deptRepo.GetByIdAsync(request.JobDetails.DepartmentId, cancellationToken);
+      if (dept == null)
+        throw new NotFoundException($"Department with ID '{request.JobDetails.DepartmentId}' not found.");
+
+      // 3. Validate position
+      var pos = await _posRepo.GetByIdAsync(request.JobDetails.PositionId, cancellationToken);
+      if (pos == null)
+        throw new NotFoundException($"Position with ID '{request.JobDetails.PositionId}' not found.");
+
       await _unitOfWork.BeginTransactionAsync();
       try
       {
-        // 1. Check for duplicate employee code
-        var exists = await _repo.ExistsByCodeAsync(request.EmployeeCode, cancellationToken);
-        if (exists)
-          throw new ConflictException($"Employee code '{request.EmployeeCode}' already exists.");
-
-        // 2. Validate department
-        var dept = await _deptRepo.GetByIdAsync(request.JobDetails.DepartmentId, cancellationToken);
-        if (dept == null)
-          throw new NotFoundException($"Department with ID '{request.JobDetails.DepartmentId}' not found.");
-
-        // 3. Validate position
-        var pos = await _posRepo.GetByIdAsync(request.JobDetails.PositionId, cancellationToken);
-        if (pos == null)
-          throw new NotFoundException($"Position with ID '{request.JobDetails.PositionId}' not found.");
 
         // 4. Map command to entity
         var dto = new CreateEmployeeDto

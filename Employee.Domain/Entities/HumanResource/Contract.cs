@@ -9,7 +9,7 @@ namespace Employee.Domain.Entities.HumanResource
     {
     public string EmployeeId { get; private set; } = string.Empty; // FK
     public string ContractCode { get; private set; } = string.Empty;
-    public string Type { get; private set; } = "Fixed-Term";
+    public ContractType Type { get; private set; } = ContractType.FixedTerm;
     public DateTime StartDate { get; private set; }
     public DateTime? EndDate { get; private set; }
     public SalaryComponents Salary { get; private set; } = new();

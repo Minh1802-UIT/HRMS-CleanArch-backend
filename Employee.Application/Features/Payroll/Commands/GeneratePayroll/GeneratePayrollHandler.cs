@@ -22,21 +22,13 @@ namespace Employee.Application.Features.Payroll.Commands.GeneratePayroll
 
     public async Task<int> Handle(GeneratePayrollCommand request, CancellationToken cancellationToken)
     {
-      // 1. Validate & parse month format "MM-yyyy"
+      // 1. Parse month format "MM-yyyy" (Already validated by FluentValidation)
       var parts = request.Month.Split('-');
-      if (parts.Length != 2
-          || !int.TryParse(parts[0], out var month)
-          || !int.TryParse(parts[1], out var year)
-          || month < 1 || month > 12
-          || year < 2000 || year > 2100)
-      {
-        throw new ValidationException("Invalid month format. Expected MM-yyyy (e.g., 01-2026).",
-            new List<string> { $"Month: '{request.Month}' is not valid." });
-      }
+      var monthStr = int.Parse(parts[0]).ToString("D2"); // Ensure 2 digits
+      var yearStr = int.Parse(parts[1]).ToString();
 
       // 2. Delegate calculation to shared service (also used by PayrollBackgroundService)
-      return await _payrollService.CalculatePayrollAsync(
-          month.ToString("D2"), year.ToString());
+      return await _payrollService.CalculatePayrollAsync(monthStr, yearStr);
     }
   }
 }
