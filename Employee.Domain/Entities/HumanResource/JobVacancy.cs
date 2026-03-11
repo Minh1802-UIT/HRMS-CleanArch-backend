@@ -60,7 +60,5 @@ namespace Employee.Domain.Entities.HumanResource
       ExpiredDate = expiredDate;
       Description = description;
     }
-
-    }
   }
 }

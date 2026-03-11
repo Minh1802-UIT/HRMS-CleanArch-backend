@@ -19,7 +19,7 @@ namespace Employee.Application.Features.Recruitment.Commands.JobVacancy.UpdateJo
           ?? throw new NotFoundException($"Job vacancy with ID {request.Id} not found.");
 
       entity.UpdateInfo(request.Dto.Title, request.Dto.Vacancies, request.Dto.ExpiredDate, request.Dto.Description);
-      entity.SetRequirements(request.Dto.Requirements);
+      entity.Requirements = request.Dto.Requirements;
 
       await _repo.UpdateAsync(entity.Id, entity, cancellationToken);
     }
