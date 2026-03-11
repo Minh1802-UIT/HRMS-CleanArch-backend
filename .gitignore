@@ -101,3 +101,6 @@ leave_requests*.json
 package-lock.json
 
 appsettings.Development.json
+
+#node_modules
+node_modules/

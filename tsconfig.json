@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "CommonJS",
+    "lib": ["ESNext"],
+    "skipLibCheck": true,
+    "strict": true,
+    "noImplicitAny": false,
+    "baseUrl": ".",
+    "types": ["node"],
+    "allowJs": true,
+    "noEmit": true
+  },
+  "include": ["**/*.js"],
+  "exclude": ["node_modules"]
+}
