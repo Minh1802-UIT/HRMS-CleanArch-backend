@@ -46,6 +46,11 @@ namespace Employee.Domain.Entities.HumanResource
       EndDate = endDate;
     }
 
+    public void UpdateType(ContractType type)
+    {
+      Type = type;
+    }
+
     /// <summary>
     /// Schedules the contract for future activation when StartDate is in the future.
     /// Transitions: Draft → Pending.

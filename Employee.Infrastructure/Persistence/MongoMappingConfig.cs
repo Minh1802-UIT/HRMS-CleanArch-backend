@@ -26,6 +26,7 @@ namespace Employee.Infrastructure.Persistence
       BsonSerializer.RegisterSerializer(new EnumSerializer<AttendanceStatus>(BsonType.String));
       BsonSerializer.RegisterSerializer(new EnumSerializer<CandidateStatus>(BsonType.String));
       BsonSerializer.RegisterSerializer(new EnumSerializer<ContractStatus>(BsonType.String));
+      BsonSerializer.RegisterSerializer(new EnumSerializer<ContractType>(BsonType.String));
       BsonSerializer.RegisterSerializer(new EnumSerializer<EmployeeStatus>(BsonType.String));
       BsonSerializer.RegisterSerializer(new EnumSerializer<InterviewStatus>(BsonType.String));
       BsonSerializer.RegisterSerializer(new EnumSerializer<JobVacancyStatus>(BsonType.String));

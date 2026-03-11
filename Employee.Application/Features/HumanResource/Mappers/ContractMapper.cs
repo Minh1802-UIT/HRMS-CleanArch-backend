@@ -12,12 +12,19 @@ namespace Employee.Application.Features.HumanResource.Mappers
   {
     public static ContractDto ToDto(this ContractEntity entity)
     {
+      string contractTypeStr = entity.Type switch
+      {
+          ContractType.FixedTerm => "Fixed-Term",
+          ContractType.PartTime => "Part-Time",
+          _ => entity.Type.ToString()
+      };
+
       return new ContractDto
       {
         Id = entity.Id,
         EmployeeId = entity.EmployeeId,
         ContractCode = entity.ContractCode,
-        ContractType = entity.Type.ToString(),
+        ContractType = contractTypeStr,
         StartDate = entity.StartDate,
         EndDate = entity.EndDate,
         Status = entity.Status.ToString(),
@@ -33,6 +40,11 @@ namespace Employee.Application.Features.HumanResource.Mappers
     {
       // Use Factory Constructor
       var entity = new ContractEntity(dto.EmployeeId, dto.ContractCode, dto.StartDate);
+
+      if (Enum.TryParse<ContractType>(dto.ContractType.Replace("-", ""), true, out var parsedType))
+      {
+          entity.UpdateType(parsedType);
+      }
 
       // Map SalaryComponents (immutable record)
       var salary = new SalaryComponents
