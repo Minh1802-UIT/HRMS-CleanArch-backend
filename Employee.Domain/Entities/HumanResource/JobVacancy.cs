@@ -7,13 +7,12 @@ namespace Employee.Domain.Entities.HumanResource
 {
   public class JobVacancy : BaseEntity
   {
-    public string Title { get; private set; } = string.Empty;
-    public string Description { get; private set; } = string.Empty;
-    public int Vacancies { get; private set; }
-    public DateTime ExpiredDate { get; private set; }
-    public JobVacancyStatus Status { get; private set; } = JobVacancyStatus.Open;
-    private readonly List<string> _requirements = new();
-    public IReadOnlyCollection<string> Requirements => _requirements.AsReadOnly();
+    public string Title { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
+    public int Vacancies { get; set; }
+    public DateTime ExpiredDate { get; set; }
+    public JobVacancyStatus Status { get; set; } = JobVacancyStatus.Open;
+    public List<string> Requirements { get; set; } = new();
 
     private JobVacancy() { }
 
@@ -62,13 +61,6 @@ namespace Employee.Domain.Entities.HumanResource
       Description = description;
     }
 
-    public void SetRequirements(List<string> requirements)
-    {
-      _requirements.Clear();
-      if (requirements != null)
-      {
-        _requirements.AddRange(requirements);
-      }
     }
   }
 }

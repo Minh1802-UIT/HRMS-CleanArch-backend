@@ -15,7 +15,7 @@ namespace Employee.Application.Features.Recruitment.Mappers
       Vacancies = entity.Vacancies,
       ExpiredDate = entity.ExpiredDate,
       Status = entity.Status.ToString(), // Enum to String
-      Requirements = entity.Requirements.ToList(),
+      Requirements = entity.Requirements?.ToList() ?? new List<string>(),
       CreatedAt = entity.CreatedAt
     };
 
@@ -26,7 +26,7 @@ namespace Employee.Application.Features.Recruitment.Mappers
 
       // Update remaining fields via domain methods
       entity.UpdateInfo(dto.Title, dto.Vacancies, dto.ExpiredDate, dto.Description);
-      entity.SetRequirements(dto.Requirements);
+      entity.Requirements = dto.Requirements;
 
       return entity;
     }

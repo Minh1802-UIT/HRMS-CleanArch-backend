@@ -7,13 +7,13 @@ namespace Employee.Domain.Entities.Common
   {
     // We use string for Id in the Domain.
     // MongoDbConfig in the Infrastructure layer handles the mapping to ObjectId.
-    public string Id { get; private set; } = null!;
-    public bool IsDeleted { get; private set; } = false;
-    public DateTime CreatedAt { get; protected set; }
-    public string CreatedBy { get; private set; } = "System";
-    public DateTime? UpdatedAt { get; private set; }
-    public string? UpdatedBy { get; private set; }
-    public int Version { get; private set; } = 1;
+    public string Id { get; set; } = null!;
+    public bool IsDeleted { get; set; } = false;
+    public DateTime CreatedAt { get; set; }
+    public string CreatedBy { get; set; } = "System";
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedBy { get; set; }
+    public int Version { get; set; } = 1;
 
     private readonly List<IDomainEvent> _domainEvents = new();
     public IReadOnlyCollection<IDomainEvent> DomainEvents => _domainEvents.AsReadOnly();

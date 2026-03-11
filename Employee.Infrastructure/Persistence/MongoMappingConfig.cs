@@ -125,6 +125,25 @@ namespace Employee.Infrastructure.Persistence
 
       // Common
       BsonClassMap.RegisterClassMap<AuditLog>(cm => cm.AutoMap());
+
+      // Recruitment
+      BsonClassMap.RegisterClassMap<JobVacancy>(cm =>
+      {
+        cm.AutoMap();
+        cm.SetIgnoreExtraElements(true);
+      });
+
+      BsonClassMap.RegisterClassMap<Candidate>(cm =>
+      {
+        cm.AutoMap();
+        cm.SetIgnoreExtraElements(true);
+      });
+
+      BsonClassMap.RegisterClassMap<Interview>(cm =>
+      {
+        cm.AutoMap();
+        cm.SetIgnoreExtraElements(true);
+      });
     }
   }
 }

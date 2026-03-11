@@ -6,16 +6,16 @@ namespace Employee.Domain.Entities.HumanResource
 {
   public class Candidate : BaseEntity
   {
-    public string FullName { get; private set; } = string.Empty;
-    public string Email { get; private set; } = string.Empty;
-    public string Phone { get; private set; } = string.Empty;
-    public string JobVacancyId { get; private set; } = null!;
-    public CandidateStatus Status { get; private set; } = CandidateStatus.Applied;
-    public string ResumeUrl { get; private set; } = string.Empty;
-    public DateTime AppliedDate { get; private set; }
-    public int? AiScore { get; private set; }
-    public string? AiMatchingSummary { get; private set; }
-    public string? ExtractedSkills { get; private set; }
+    public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string JobVacancyId { get; set; } = null!;
+    public CandidateStatus Status { get; set; } = CandidateStatus.Applied;
+    public string ResumeUrl { get; set; } = string.Empty;
+    public DateTime AppliedDate { get; set; }
+    public int? AiScore { get; set; }
+    public string? AiMatchingSummary { get; set; }
+    public string? ExtractedSkills { get; set; }
 
     private Candidate() { }
 
