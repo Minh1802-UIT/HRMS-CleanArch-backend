@@ -161,6 +161,7 @@ namespace Employee.Infrastructure
             // 9. INFRASTRUCTURE SERVICES
             // ==========================================
             services.Configure<SupabaseStorageOptions>(configuration.GetSection(SupabaseStorageOptions.SectionName));
+            services.Configure<AiSettings>(configuration.GetSection(AiSettings.SectionName));
             
             var supabaseUrl = configuration["SupabaseStorage:ProjectUrl"] ?? "";
             var supabaseKey = configuration["SupabaseStorage:ServiceKey"] ?? "";
@@ -170,8 +171,11 @@ namespace Employee.Infrastructure
             }));
 
             services.AddHttpClient("SupabaseStorage");
+            services.AddHttpClient<IAiService, CandidateAiService>();
+
             services.AddScoped<IFileService, FileService>();
             services.AddScoped<ICacheService, CacheService>();
+            services.AddScoped<IPdfExtractorService, PdfExtractorService>();
 
             // ==========================================
             // 10. HANGFIRE (persistent background jobs)

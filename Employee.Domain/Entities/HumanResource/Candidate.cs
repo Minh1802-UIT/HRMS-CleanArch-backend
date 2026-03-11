@@ -13,6 +13,9 @@ namespace Employee.Domain.Entities.HumanResource
     public CandidateStatus Status { get; private set; } = CandidateStatus.Applied;
     public string ResumeUrl { get; private set; } = string.Empty;
     public DateTime AppliedDate { get; private set; }
+    public int? AiScore { get; private set; }
+    public string? AiMatchingSummary { get; private set; }
+    public string? ExtractedSkills { get; private set; }
 
     private Candidate() { }
 
@@ -74,6 +77,13 @@ namespace Employee.Domain.Entities.HumanResource
     public void UpdateResume(string url)
     {
       ResumeUrl = url;
+    }
+
+    public void UpdateAiScore(int score, string summary, string skills)
+    {
+      AiScore = score;
+      AiMatchingSummary = summary;
+      ExtractedSkills = skills;
     }
   }
 }

@@ -64,6 +64,26 @@ namespace Employee.API.Endpoints.Recruitment
         await sender.Send(new DeleteCandidateCommand(id));
         return ResultUtils.Success("Candidate deleted.");
       });
+
+      group.MapPost("/parse-cv", async (Microsoft.AspNetCore.Http.IFormFile file, ISender sender) => 
+      {
+        using var memoryStream = new MemoryStream();
+        await file.CopyToAsync(memoryStream);
+        var bytes = memoryStream.ToArray();
+        
+        var result = await sender.Send(new Employee.Application.Features.Recruitment.Commands.Candidate.ParseCv.ParseCvCommand(bytes));
+        return result.IsSuccess 
+            ? ResultUtils.Success(result.Value, "CV parsed successfully.")
+            : ResultUtils.Fail("PARSE_FAILED", result.ErrorMessage ?? "Unknown error");
+      }).DisableAntiforgery();
+
+      group.MapPost("/{id}/score", async (string id, ISender sender) =>
+      {
+        var result = await sender.Send(new Employee.Application.Features.Recruitment.Commands.Candidate.ScoreCandidate.ScoreCandidateCommand(id));
+        return result.IsSuccess 
+            ? ResultUtils.Success("Candidate scored successfully.")
+            : ResultUtils.Fail("SCORE_FAILED", result.ErrorMessage ?? "Unknown error");
+      });
     }
   }
 }
