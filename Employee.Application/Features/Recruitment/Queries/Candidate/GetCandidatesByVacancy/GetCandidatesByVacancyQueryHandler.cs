@@ -18,7 +18,15 @@ namespace Employee.Application.Features.Recruitment.Queries.Candidate.GetCandida
 
     public async Task<IEnumerable<CandidateResponseDto>> Handle(GetCandidatesByVacancyQuery request, CancellationToken cancellationToken)
     {
-      var entities = await _repo.GetByVacancyIdAsync(request.VacancyId, cancellationToken);
+      IEnumerable<Employee.Domain.Entities.HumanResource.Candidate> entities;
+      if (string.IsNullOrWhiteSpace(request.VacancyId))
+      {
+          entities = await _repo.GetAllAsync(cancellationToken);
+      }
+      else
+      {
+          entities = await _repo.GetByVacancyIdAsync(request.VacancyId, cancellationToken);
+      }
       return entities.Select(e => e.ToDto());
     }
   }
