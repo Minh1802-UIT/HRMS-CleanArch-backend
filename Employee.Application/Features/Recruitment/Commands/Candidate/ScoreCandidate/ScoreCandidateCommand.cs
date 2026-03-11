@@ -48,12 +48,17 @@ namespace Employee.Application.Features.Recruitment.Commands.Candidate.ScoreCand
                 byte[] resumeBytes;
                 using (var httpClient = new HttpClient())
                 {
-                    // Ensure the resume URL is an absolute URL or append base URL if needed
-                    resumeBytes = await httpClient.GetByteArrayAsync(candidate.ResumeUrl, cancellationToken);
+                    var response = await httpClient.GetAsync(candidate.ResumeUrl, cancellationToken);
+                    if (!response.IsSuccessStatusCode)
+                        return Result<bool>.Failure($"Could not download resume. The file at '{candidate.ResumeUrl}' returned HTTP {(int)response.StatusCode}. The file may have been deleted from storage.");
+
+                    resumeBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
                 }
 
                 // 4. Extract Text
                 var cvText = _pdfExtractor.ExtractTextFromPdf(resumeBytes);
+                if (string.IsNullOrWhiteSpace(cvText))
+                    return Result<bool>.Failure("Could not extract text from the resume PDF. The file may be empty or image-based.");
 
                 // 5. Call AI
                 var jdText = $"Title: {vacancy.Title}\nDescription: {vacancy.Description}\nRequirements: {vacancy.Requirements}";
