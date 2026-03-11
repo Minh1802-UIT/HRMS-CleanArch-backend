@@ -1,18 +1,18 @@
 using Employee.Application.Common.Dtos;
 using Employee.Application.Common.Interfaces;
 using Microsoft.Extensions.Options;
+using Supabase.Storage.Interfaces;
 using System.Text.RegularExpressions;
 
 namespace Employee.Infrastructure.Services
 {
     public class FileService : IFileService
     {
-        private readonly FileStorageOptions _options;
+        private readonly SupabaseStorageOptions _options;
+        private readonly Supabase.Client _supabaseClient;
         private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5MB limit
         private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".pdf", ".docx" };
 
-        // SECURITY: Magic bytes (file signatures) prevent attackers from renaming
-        // malicious files to an allowed extension (e.g. shell.php → shell.jpg).
         private static readonly Dictionary<string, byte[][]> MagicBytes = new()
         {
             { ".jpg",  [ [0xFF, 0xD8, 0xFF] ] },
@@ -31,9 +31,10 @@ namespace Employee.Infrastructure.Services
                 fileBytes.Take(sig.Length).SequenceEqual(sig));
         }
 
-        public FileService(IOptions<FileStorageOptions> options)
+        public FileService(IOptions<SupabaseStorageOptions> options, Supabase.Client supabaseClient)
         {
             _options = options.Value;
+            _supabaseClient = supabaseClient;
         }
 
         public async Task<string> UploadFileAsync(FileUploadRequest file, string folderName)
@@ -42,51 +43,34 @@ namespace Employee.Infrastructure.Services
                 return string.Empty;
 
             // 1. VALIDATION
-            // 1.1 Size check
             if (file.Length > MaxFileSizeBytes)
                 throw new InvalidOperationException($"File size exceeds limit of {MaxFileSizeBytes / (1024 * 1024)}MB.");
 
-            // 1.2 Extension check
             var extension = Path.GetExtension(file.FileName).ToLower();
             if (!AllowedExtensions.Contains(extension))
                 throw new InvalidOperationException("Invalid file extension. Only images, PDFs, and DOCX are allowed.");
 
-            // 1.3 Magic bytes check — validate file content matches the declared extension
             using var peekStream = new MemoryStream();
             await file.Content.CopyToAsync(peekStream);
             var fileBytes = peekStream.ToArray();
+            
             if (!HasValidMagicBytes(fileBytes, extension))
                 throw new InvalidOperationException("File content does not match the declared file type.");
 
-            // 1.4 Path Traversal Guard (Sanitize folderName)
-            folderName = Regex.Replace(folderName, @"[^a-zA-Z0-9_\-]", ""); // Only allow safe characters
+            folderName = Regex.Replace(folderName, @"[^a-zA-Z0-9_\-]", ""); 
 
-            // 2. PATH SETUP
-            var baseDir = string.IsNullOrWhiteSpace(_options.BaseDirectory)
-                          ? Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads")
-                          : Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", _options.BaseDirectory));
-            var uploadsBase = Path.GetFullPath(baseDir);
-            var uploadsFolder = Path.Combine(uploadsBase, folderName);
-
-            if (!Directory.Exists(uploadsFolder))
-            {
-                Directory.CreateDirectory(uploadsFolder);
-            }
-
-            // 3. SECURE FILENAME
+            // 2. SECURE FILENAME
             var safeOriginalName = Regex.Replace(Path.GetFileNameWithoutExtension(file.FileName), @"[^a-zA-Z0-9_\-]", "");
             var fileName = $"{Guid.NewGuid()}_{safeOriginalName}{extension}";
-            var filePath = Path.Combine(uploadsFolder, fileName);
+            var supabasePath = $"{folderName}/{fileName}";
 
-            // Double check the path is still within the expected base directory
-            if (!Path.GetFullPath(filePath).StartsWith(Path.GetFullPath(uploadsBase)))
-                throw new InvalidOperationException("Invalid upload path detected.");
+            // 3. UPLOAD TO SUPABASE
+            var storage = _supabaseClient.Storage.From(_options.BucketName);
+            var fileOptions = new Supabase.Storage.FileOptions { ContentType = file.ContentType ?? "application/octet-stream" };
+            await storage.Upload(fileBytes, supabasePath, fileOptions);
 
-            // 4. SAVE (use already-read fileBytes to avoid re-reading the stream)
-            await System.IO.File.WriteAllBytesAsync(filePath, fileBytes);
-
-            // 5. RETURN RELATIVE PATH
-            return $"/uploads/{folderName}/{fileName}";
+            // 4. RETURN PUBLIC URL
+            return storage.GetPublicUrl(supabasePath);
         }
     }
 }

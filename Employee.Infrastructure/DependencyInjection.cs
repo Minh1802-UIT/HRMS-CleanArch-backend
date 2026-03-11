@@ -161,6 +161,14 @@ namespace Employee.Infrastructure
             // 9. INFRASTRUCTURE SERVICES
             // ==========================================
             services.Configure<SupabaseStorageOptions>(configuration.GetSection(SupabaseStorageOptions.SectionName));
+            
+            var supabaseUrl = configuration["SupabaseStorage:ProjectUrl"] ?? "";
+            var supabaseKey = configuration["SupabaseStorage:ServiceKey"] ?? "";
+            services.AddScoped<Supabase.Client>(_ => new Supabase.Client(supabaseUrl, supabaseKey, new Supabase.SupabaseOptions {
+                AutoConnectRealtime = false,
+                AutoRefreshToken = false
+            }));
+
             services.AddHttpClient("SupabaseStorage");
             services.AddScoped<IFileService, FileService>();
             services.AddScoped<ICacheService, CacheService>();
