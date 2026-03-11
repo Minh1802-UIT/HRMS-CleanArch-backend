@@ -19,6 +19,9 @@ namespace Employee.Application.Features.Recruitment.Dtos
     public string Status { get; set; } = string.Empty;
     public string ResumeUrl { get; set; } = string.Empty;
     public DateTime AppliedDate { get; set; }
+    public int? AiScore { get; set; }
+    public string? AiMatchingSummary { get; set; }
+    public string? ExtractedSkills { get; set; }
   }
 
   public class UpdateCandidateStatusDto

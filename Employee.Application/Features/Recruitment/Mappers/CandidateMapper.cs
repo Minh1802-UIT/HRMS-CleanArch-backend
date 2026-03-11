@@ -16,7 +16,10 @@ namespace Employee.Application.Features.Recruitment.Mappers
             JobVacancyId = entity.JobVacancyId,
             Status = entity.Status.ToString(), // Enum to String
             ResumeUrl = entity.ResumeUrl,
-            AppliedDate = entity.AppliedDate
+            AppliedDate = entity.AppliedDate,
+            AiScore = entity.AiScore,
+            AiMatchingSummary = entity.AiMatchingSummary,
+            ExtractedSkills = entity.ExtractedSkills
         };
 
         public static Candidate ToEntity(this CandidateDto dto, DateTime appliedDate)
