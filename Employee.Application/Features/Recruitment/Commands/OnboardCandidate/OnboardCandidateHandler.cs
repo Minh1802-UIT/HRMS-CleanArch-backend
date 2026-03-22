@@ -83,9 +83,30 @@ namespace Employee.Application.Features.Recruitment.Commands.OnboardCandidate
         candidate.UpdateStatus(CandidateStatus.Onboarded);
         await _candidateRepo.UpdateAsync(candidate.Id, candidate, cancellationToken);
 
-        // 5. Publish Event
-        await _publisher.Publish(new DomainEventNotification<EmployeeCreatedEvent>(
-            new EmployeeCreatedEvent(employee.Id, employee.FullName, employee.Email, employee.PersonalInfo?.Phone ?? string.Empty)), cancellationToken);
+        // 5. Publish EmployeeCreatedEvent (fire-and-forget — non-critical)
+        // The employee is already committed; this event is for side-effects (e.g., sending welcome email).
+        // We deliberately do NOT await or re-throw here. Failure to publish must not roll back the transaction.
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                var domainEvent = new EmployeeCreatedEvent(
+                    employee.Id,
+                    employee.FullName,
+                    employee.Email,
+                    employee.PersonalInfo?.Phone ?? string.Empty);
+                await _publisher.Publish(
+                    new DomainEventNotification<EmployeeCreatedEvent>(domainEvent),
+                    CancellationToken.None);
+            }
+            catch (Exception publishEx)
+            {
+                // Log but never propagate — employee record is already committed.
+                // Use Console.Error since we're in a fire-and-forget task without DI-scoped logger.
+                Console.Error.WriteLine(
+                    $"[WARNING] Failed to publish EmployeeCreatedEvent for employee {employee.Id}: {publishEx.Message}");
+            }
+        });
 
         await _unitOfWork.CommitTransactionAsync();
         return employee.Id;

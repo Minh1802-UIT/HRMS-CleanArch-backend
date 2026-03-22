@@ -35,11 +35,10 @@ namespace Employee.API.Endpoints.Notifications
         [FromServices] ICurrentUser currentUser,
         [FromServices] INotificationService service)
     {
-      // Notifications are keyed by EmployeeId; fall back to UserId for admin/non-employee users
       var targetId = currentUser.EmployeeId ?? currentUser.UserId;
       var success = await service.MarkReadAsync(id, targetId);
       if (!success)
-        return ResultUtils.Fail("NOT_FOUND", "Notification not found or does not belong to you.");
+        return ResultUtils.Fail("FORBIDDEN", "You do not have permission to access this notification.");
 
       return ResultUtils.Success("Notification marked as read.");
     }

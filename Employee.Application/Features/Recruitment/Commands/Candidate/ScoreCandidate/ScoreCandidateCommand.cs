@@ -14,17 +14,20 @@ namespace Employee.Application.Features.Recruitment.Commands.Candidate.ScoreCand
         private readonly IJobVacancyRepository _vacancyRepository;
         private readonly IPdfExtractorService _pdfExtractor;
         private readonly IAiService _aiService;
+        private readonly IHttpClientFactory _httpClientFactory;
 
         public ScoreCandidateCommandHandler(
-            ICandidateRepository candidateRepository, 
+            ICandidateRepository candidateRepository,
             IJobVacancyRepository vacancyRepository,
             IPdfExtractorService pdfExtractor,
-            IAiService aiService)
+            IAiService aiService,
+            IHttpClientFactory httpClientFactory)
         {
             _candidateRepository = candidateRepository;
             _vacancyRepository = vacancyRepository;
             _pdfExtractor = pdfExtractor;
             _aiService = aiService;
+            _httpClientFactory = httpClientFactory;
         }
 
         public async Task<Result<bool>> Handle(ScoreCandidateCommand request, CancellationToken cancellationToken)
@@ -44,21 +47,21 @@ namespace Employee.Application.Features.Recruitment.Commands.Candidate.ScoreCand
 
             try
             {
-                // 3. Download the resume from the URL
-                byte[] resumeBytes;
-                using (var httpClient = new HttpClient())
-                {
-                    var response = await httpClient.GetAsync(candidate.ResumeUrl, cancellationToken);
-                    if (!response.IsSuccessStatusCode)
-                        return Result<bool>.Failure($"Could not download resume. The file at '{candidate.ResumeUrl}' returned HTTP {(int)response.StatusCode}. The file may have been deleted from storage.");
+                // 3. Download the resume using IHttpClientFactory (prevents socket exhaustion)
+                var httpClient = _httpClientFactory.CreateClient("ResumeDownloader");
+                var response = await httpClient.GetAsync(candidate.ResumeUrl, cancellationToken);
+                if (!response.IsSuccessStatusCode)
+                    return Result<bool>.Failure(
+                        $"Could not download resume. The file at '{candidate.ResumeUrl}' returned " +
+                        $"HTTP {(int)response.StatusCode}. The file may have been deleted from storage.");
 
-                    resumeBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
-                }
+                var resumeBytes = await response.Content.ReadAsByteArrayAsync(cancellationToken);
 
                 // 4. Extract Text
                 var cvText = _pdfExtractor.ExtractTextFromPdf(resumeBytes);
                 if (string.IsNullOrWhiteSpace(cvText))
-                    return Result<bool>.Failure("Could not extract text from the resume PDF. The file may be empty or image-based.");
+                    return Result<bool>.Failure(
+                        "Could not extract text from the resume PDF. The file may be empty or image-based.");
 
                 // 5. Call AI
                 var jdText = $"Title: {vacancy.Title}\nDescription: {vacancy.Description}\nRequirements: {vacancy.Requirements}";
@@ -66,10 +69,18 @@ namespace Employee.Application.Features.Recruitment.Commands.Candidate.ScoreCand
 
                 // 6. Update Entity & Database
                 candidate.UpdateAiScore(scoreResult.AiScore, scoreResult.AiMatchingSummary, scoreResult.ExtractedSkills);
-
                 await _candidateRepository.UpdateAsync(candidate.Id, candidate, cancellationToken);
 
                 return Result<bool>.Success(true);
+            }
+            catch (HttpRequestException httpEx)
+            {
+                return Result<bool>.Failure(
+                    $"Network error while downloading resume: {httpEx.Message}. Please check the file URL.");
+            }
+            catch (TaskCanceledException)
+            {
+                return Result<bool>.Failure("The request timed out while downloading the resume. Please try again.");
             }
             catch (Exception ex)
             {

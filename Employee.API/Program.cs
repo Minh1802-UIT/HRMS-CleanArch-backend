@@ -1,7 +1,8 @@
-﻿using AspNetCore.Identity.MongoDbCore.Extensions;
+using AspNetCore.Identity.MongoDbCore.Extensions;
 using AspNetCore.Identity.MongoDbCore.Infrastructure;
 using Microsoft.AspNetCore.Identity;
 using Carter;
+using Employee.API.Common;
 using Employee.API.Middlewares;
 using Employee.API.Services;
 using Employee.Application;
@@ -23,7 +24,6 @@ using System.Net.Mime;
 using System.Text;
 using System.Text.Json;
 using System.Threading.RateLimiting;
-
 using System.Security.Claims;
 using Hangfire;
 using Serilog;
@@ -385,6 +385,9 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
 
 var app = builder.Build();
 
+// Wire ResultUtils with a logger so unknown error codes are logged at startup
+ResultUtils.SetLogger(app.Services.GetRequiredService<ILoggerFactory>().CreateLogger("ResultUtils"));
+
 // =========================================================================
 // 2. MIDDLEWARE PIPELINE
 // =========================================================================
@@ -395,19 +398,19 @@ app.UseForwardedHeaders();
 
 app.UseExceptionHandler();
 
-// HSTS + HTTPS Redirect — production only
+// HSTS — production only (never send HSTS headers on localhost/self-signed certs)
 if (!app.Environment.IsDevelopment())
 {
   app.UseHsts();
+  app.UseHttpsRedirection();
 }
-app.UseHttpsRedirection();
 
 // Security headers — CSP, X-Frame-Options, X-Content-Type-Options, etc.
 app.UseSecurityHeaders();
 
 app.UseSerilogRequestLogging();
 
-// 2.1. Data Seeding (Consolidated)
+// 2.1. Data Seeding + MongoDB Indexes
 using (var scope = app.Services.CreateScope())
 {
   var services = scope.ServiceProvider;
@@ -417,12 +420,15 @@ using (var scope = app.Services.CreateScope())
     // Initialize MongoDB indexes on startup
     var context = services.GetRequiredService<Employee.Infrastructure.Persistence.IMongoContext>();
     await Employee.Infrastructure.Data.MongoIndexInitializer.CreateIndexesAsync(context);
+    seedLogger.LogInformation("MongoDB index initialization completed.");
 
-    seedLogger.LogInformation("Startup initialization completed.");
+    // Seed essential roles and admin user (idempotent in Production, fresh data in Development)
+    await Employee.Infrastructure.data.Seeding.DbSeeder.SeedUsersAndRolesAsync(services);
+    seedLogger.LogInformation("Database seeding completed.");
   }
   catch (Exception ex)
   {
-    seedLogger.LogError(ex, "An error occurred while seeding the database");
+    seedLogger.LogError(ex, "An error occurred while seeding the database. The application will continue.");
   }
 }
 

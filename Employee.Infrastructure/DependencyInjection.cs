@@ -173,6 +173,12 @@ namespace Employee.Infrastructure
             services.AddHttpClient("SupabaseStorage");
             services.AddHttpClient<IAiService, CandidateAiService>();
 
+            // Named HttpClient for resume file downloads — uses IHttpClientFactory to prevent socket exhaustion
+            services.AddHttpClient("ResumeDownloader", client =>
+            {
+                client.Timeout = TimeSpan.FromSeconds(30);
+            });
+
             services.AddScoped<IFileService, FileService>();
             services.AddScoped<ICacheService, CacheService>();
             services.AddScoped<IPdfExtractorService, PdfExtractorService>();

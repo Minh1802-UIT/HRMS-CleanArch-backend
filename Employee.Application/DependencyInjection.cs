@@ -82,6 +82,7 @@ namespace Employee.Application
       services.AddScoped<Employee.Domain.Services.Payroll.ITaxCalculator, Employee.Domain.Services.Payroll.VietnameseTaxCalculator>();
       services.AddScoped<IWorkingDayCalculator, WorkingDayCalculator>();
 
+      services.AddHttpClient();
       return services;
     }
   }

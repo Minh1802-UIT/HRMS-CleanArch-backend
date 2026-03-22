@@ -20,17 +20,30 @@ namespace Employee.Application.Features.Attendance.Commands.Explanation
   {
     private readonly IAttendanceExplanationRepository _repo;
     private readonly IAttendanceRepository _attendanceRepo;
+    private readonly ICurrentUser _currentUser;
 
     public SubmitExplanationHandler(
         IAttendanceExplanationRepository repo,
-        IAttendanceRepository attendanceRepo)
+        IAttendanceRepository attendanceRepo,
+        ICurrentUser currentUser)
     {
       _repo = repo;
       _attendanceRepo = attendanceRepo;
+      _currentUser = currentUser;
     }
 
     public async Task<AttendanceExplanationDto> Handle(SubmitExplanationCommand request, CancellationToken cancellationToken)
     {
+      // Ownership check: only the employee or HR/Admin can submit an explanation for a given employeeId
+      var currentEmployeeId = _currentUser.EmployeeId;
+      var currentUserId = _currentUser.UserId;
+      var isOwner = request.EmployeeId == currentEmployeeId || request.EmployeeId == currentUserId;
+      var isHrOrAdmin = _currentUser.IsInRole("HR") || _currentUser.IsInRole("Admin");
+
+      if (!isOwner && !isHrOrAdmin)
+        throw new ForbiddenException(
+            "You do not have permission to add an attendance explanation for this employee.");
+
       if (string.IsNullOrWhiteSpace(request.Dto.Reason))
         throw new ValidationException("Reason is required.");
 

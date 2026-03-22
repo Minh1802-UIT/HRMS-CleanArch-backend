@@ -37,40 +37,54 @@ namespace Employee.Infrastructure.Services
             _supabaseClient = supabaseClient;
         }
 
-        public async Task<string> UploadFileAsync(FileUploadRequest file, string folderName)
+    public async Task<string> UploadFileAsync(FileUploadRequest file, string folderName)
+    {
+        if (file == null || file.Length == 0)
+            return string.Empty;
+
+        // 1. VALIDATION
+        if (file.Length > MaxFileSizeBytes)
+            throw new InvalidOperationException($"File size exceeds limit of {MaxFileSizeBytes / (1024 * 1024)}MB.");
+
+        var extension = Path.GetExtension(file.FileName).ToLower();
+        if (!AllowedExtensions.Contains(extension))
+            throw new InvalidOperationException("Invalid file extension. Only images, PDFs, and DOCX are allowed.");
+
+        // 1b. Content-Type validation — reject unexpected MIME types
+        var allowedContentTypes = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
-            if (file == null || file.Length == 0)
-                return string.Empty;
+            "image/jpeg",
+            "image/png",
+            "image/webp",
+            "application/pdf",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        };
+        var contentType = file.ContentType ?? "application/octet-stream";
+        if (!allowedContentTypes.Contains(contentType))
+            throw new InvalidOperationException($"File type '{contentType}' is not allowed. Allowed types: JPEG, PNG, WebP, PDF, DOCX.");
 
-            // 1. VALIDATION
-            if (file.Length > MaxFileSizeBytes)
-                throw new InvalidOperationException($"File size exceeds limit of {MaxFileSizeBytes / (1024 * 1024)}MB.");
+        using var peekStream = new MemoryStream();
+        await file.Content.CopyToAsync(peekStream);
+        var fileBytes = peekStream.ToArray();
 
-            var extension = Path.GetExtension(file.FileName).ToLower();
-            if (!AllowedExtensions.Contains(extension))
-                throw new InvalidOperationException("Invalid file extension. Only images, PDFs, and DOCX are allowed.");
+        if (!HasValidMagicBytes(fileBytes, extension))
+            throw new InvalidOperationException("File content does not match the declared file type.");
 
-            using var peekStream = new MemoryStream();
-            await file.Content.CopyToAsync(peekStream);
-            var fileBytes = peekStream.ToArray();
-            
-            if (!HasValidMagicBytes(fileBytes, extension))
-                throw new InvalidOperationException("File content does not match the declared file type.");
+        folderName = Regex.Replace(folderName, @"[^a-zA-Z0-9_\-]", "");
 
-            folderName = Regex.Replace(folderName, @"[^a-zA-Z0-9_\-]", ""); 
+        // 2. SECURE FILENAME
+        var safeOriginalName = Regex.Replace(Path.GetFileNameWithoutExtension(file.FileName), @"[^a-zA-Z0-9_\-]", "");
+        var fileName = $"{Guid.NewGuid()}_{safeOriginalName}{extension}";
+        var supabasePath = $"{folderName}/{fileName}";
 
-            // 2. SECURE FILENAME
-            var safeOriginalName = Regex.Replace(Path.GetFileNameWithoutExtension(file.FileName), @"[^a-zA-Z0-9_\-]", "");
-            var fileName = $"{Guid.NewGuid()}_{safeOriginalName}{extension}";
-            var supabasePath = $"{folderName}/{fileName}";
+        // 3. UPLOAD TO SUPABASE
+        var storage = _supabaseClient.Storage.From(_options.BucketName);
+        var fileOptions = new Supabase.Storage.FileOptions { ContentType = contentType };
+        await storage.Upload(fileBytes, supabasePath, fileOptions);
 
-            // 3. UPLOAD TO SUPABASE
-            var storage = _supabaseClient.Storage.From(_options.BucketName);
-            var fileOptions = new Supabase.Storage.FileOptions { ContentType = file.ContentType ?? "application/octet-stream" };
-            await storage.Upload(fileBytes, supabasePath, fileOptions);
-
-            // 4. RETURN PUBLIC URL
-            return storage.GetPublicUrl(supabasePath);
-        }
+        // 4. RETURN SIGNED URL (valid for 1 hour) — not a public URL
+        var signedUrl = await storage.CreateSignedUrl(supabasePath, 3600);
+        return signedUrl;
+    }
     }
 }

@@ -1,4 +1,4 @@
-﻿using Employee.Domain.Entities.Common;
+using Employee.Domain.Entities.Common;
 using Employee.Domain.Entities.ValueObjects;
 
 namespace Employee.Domain.Entities.HumanResource
@@ -79,5 +79,5 @@ namespace Employee.Domain.Entities.HumanResource
       FullName = fullName;
       Email = email;
     }
-    }
+}
 }

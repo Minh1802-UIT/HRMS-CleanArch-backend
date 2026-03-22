@@ -7,6 +7,8 @@ namespace Employee.Application.Features.Recruitment.Dtos
         public string Email { get; set; } = string.Empty;
         public string PhoneNumber { get; set; } = string.Empty;
         public string ExtractedSkills { get; set; } = string.Empty;
+        public string? ParseError { get; set; }
+        public bool IsSuccess => string.IsNullOrEmpty(ParseError);
     }
 
     public class CandidateScoreDto

@@ -1,10 +1,11 @@
 using Employee.Application.Common.Models;
 using MediatR;
-using Employee.Application.Common.Interfaces; // ICurrentUser
-using Employee.Application.Common.Interfaces.Organization.IService; // IAuditLogService
-using Employee.Domain.Interfaces.Repositories; // IMP-3
+using Employee.Application.Common.Interfaces;
+using Employee.Application.Common.Interfaces.Organization.IService;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Domain.Events;
 using Employee.Application.Features.Auth.Commands.DeleteUser;
+using Microsoft.Extensions.Logging;
 
 namespace Employee.Application.Features.HumanResource.EventHandlers
 {
@@ -19,6 +20,7 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
     private readonly ILeaveRequestRepository _leaveRepo;
     private readonly ILeaveAllocationRepository _allocationRepo;
     private readonly IPayrollRepository _payrollRepo;
+    private readonly ILogger<EmployeeDeletedEventHandler> _logger;
 
     public EmployeeDeletedEventHandler(
         ISender sender,
@@ -29,7 +31,8 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
         IRawAttendanceLogRepository rawAttendanceRepo,
         ILeaveRequestRepository leaveRepo,
         ILeaveAllocationRepository allocationRepo,
-        IPayrollRepository payrollRepo)
+        IPayrollRepository payrollRepo,
+        ILogger<EmployeeDeletedEventHandler> logger)
     {
       _sender = sender;
       _auditService = auditService;
@@ -40,6 +43,7 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
       _leaveRepo = leaveRepo;
       _allocationRepo = allocationRepo;
       _payrollRepo = payrollRepo;
+      _logger = logger;
     }
 
     public async Task Handle(DomainEventNotification<EmployeeDeletedEvent> notificationWrapper, CancellationToken cancellationToken)
@@ -51,18 +55,34 @@ namespace Employee.Application.Features.HumanResource.EventHandlers
       //    does not leave the rest of the data uncleaned.
       var errors = new List<Exception>();
 
-      async Task TryDelete(Func<Task> step)
+      async Task TryDelete(Func<Task> step, string stepName)
       {
         try { await step(); }
-        catch (Exception ex) { errors.Add(ex); }
+        catch (Exception ex)
+        {
+          errors.Add(ex);
+          _logger.LogWarning(ex,
+            "Failed to cleanup {StepName} for deleted employee {EmployeeId}. " +
+            "Manual cleanup may be required.",
+            stepName, notificationWrapper.DomainEvent.EmployeeId);
+        }
       }
 
-      await TryDelete(() => _contractRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken));
-      await TryDelete(() => _attendanceRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken));
-      await TryDelete(() => _rawAttendanceRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken));
-      await TryDelete(() => _leaveRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken));
-      await TryDelete(() => _allocationRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken));
-      await TryDelete(() => _payrollRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken));
+      await TryDelete(() => _contractRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken), "Contracts");
+      await TryDelete(() => _attendanceRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken), "AttendanceBuckets");
+      await TryDelete(() => _rawAttendanceRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken), "RawAttendanceLogs");
+      await TryDelete(() => _leaveRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken), "LeaveRequests");
+      await TryDelete(() => _allocationRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken), "LeaveAllocations");
+      await TryDelete(() => _payrollRepo.DeleteByEmployeeIdAsync(notificationWrapper.DomainEvent.EmployeeId, cancellationToken), "Payrolls");
+
+      if (errors.Count > 0)
+      {
+        _logger.LogError(
+          "Employee deletion cleanup completed with {ErrorCount} error(s) for employee {EmployeeId}. " +
+          "Related data may remain orphaned. Errors: {Errors}",
+          errors.Count, notificationWrapper.DomainEvent.EmployeeId,
+          string.Join("; ", errors.Select(e => e.Message)));
+      }
 
       // 3. Ghi Log (Decoupled)
       await _auditService.LogAsync(
