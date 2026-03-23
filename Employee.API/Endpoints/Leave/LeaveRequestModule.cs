@@ -1,4 +1,4 @@
-﻿using Carter;
+using Carter;
 using Employee.API.Common;
 using Employee.Application.Features.Leave.Dtos;
 
@@ -20,7 +20,12 @@ namespace Employee.API.Endpoints.Leave
                     .WithName("GetPagedLeaveRequestList")
                  .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
 
-               // GET /list via POST body (used by Angular)
+               // Literal route before /{id} so "list" is never parsed as a leave request id (Mongo ObjectId).
+               group.MapGet("/list", LeaveRequestHandlers.GetPagedList)
+                    .WithName("GetPagedLeaveRequestListByPath")
+                 .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
+
+               // POST body variant (same data as GET)
                group.MapPost("/list", LeaveRequestHandlers.GetPagedListFromBody)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
 
