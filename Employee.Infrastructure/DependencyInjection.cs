@@ -144,6 +144,7 @@ namespace Employee.Infrastructure
             // ==========================================
             services.AddScoped<IPerformanceReviewRepository, PerformanceReviewRepository>();
             services.AddScoped<IPerformanceGoalRepository, PerformanceGoalRepository>();
+            services.AddScoped<IPIPRepository, PIPRepository>();
 
             // ==========================================
             // 9. BACKGROUND SERVICES

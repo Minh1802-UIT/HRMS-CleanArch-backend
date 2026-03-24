@@ -7,6 +7,9 @@ namespace Employee.Application.Features.Recruitment.Dtos
     public string Phone { get; set; } = string.Empty;
     public string JobVacancyId { get; set; } = string.Empty;
     public string ResumeUrl { get; set; } = string.Empty;
+    public List<string> Experience { get; set; } = new();
+    public List<string> Education { get; set; } = new();
+    public List<string> Notes { get; set; } = new();
   }
 
   public class CandidateResponseDto
@@ -22,6 +25,9 @@ namespace Employee.Application.Features.Recruitment.Dtos
     public int? AiScore { get; set; }
     public string? AiMatchingSummary { get; set; }
     public string? ExtractedSkills { get; set; }
+    public List<string> Experience { get; set; } = new();
+    public List<string> Education { get; set; } = new();
+    public List<string> Notes { get; set; } = new();
   }
 
   public class UpdateCandidateStatusDto

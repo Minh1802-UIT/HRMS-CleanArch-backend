@@ -32,11 +32,23 @@ namespace Employee.Domain.Entities.Performance
     public void UpdateProgress(double progress)
     {
       if (progress < 0 || progress > 100) throw new ArgumentException("Progress must be between 0 and 100.");
-      
+
       Progress = progress;
       if (Progress == 100)
       {
         Status = PerformanceGoalStatus.Completed;
+      }
+    }
+
+    /// <summary>
+    /// Marks the goal as Overdue if the target date has passed and it is still InProgress.
+    /// Call this whenever goals are queried to keep the status current.
+    /// </summary>
+    public void MarkAsOverdueIfPastDue()
+    {
+      if (Status == PerformanceGoalStatus.InProgress && TargetDate.Date < DateTime.UtcNow.Date)
+      {
+        Status = PerformanceGoalStatus.Overdue;
       }
     }
 

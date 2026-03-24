@@ -32,25 +32,42 @@ namespace Employee.Application.Common.Services.DashboardProviders
         ColorScheme = "green"
       });
 
-      // Interviews Today (Simplified)
+      var interviewsToday = await _interviewRepo.GetByDateAsync(DateTime.Today);
+      var interviewsTodayCount = interviewsToday.Count();
+
       dto.SummaryCards.Add(new SummaryCardDto
       {
         Title = "Interviews Today",
-        Value = "0", // Logic would go here if we had date-based interview fetching
+        Value = interviewsTodayCount.ToString(),
         Icon = "calendar_today",
         ColorScheme = "purple"
       });
 
+      var statusCounts = await _candidateRepo.GetStatusCountsAsync();
+
+      var newStatuses = new[] { "New", "Applied", "CV Applied" };
+      var interviewStatuses = new[] { "Screening", "Interview", "1st Interview", "2nd Interview", "Technical Test", "Task sent" };
+      var offerStatuses = new[] { "Offer" };
+
+      var newCandidatesCount = statusCounts
+        .Where(kv => newStatuses.Contains(kv.Key, StringComparer.OrdinalIgnoreCase))
+        .Sum(kv => kv.Value);
+      var interviewedCount = statusCounts
+        .Where(kv => interviewStatuses.Contains(kv.Key, StringComparer.OrdinalIgnoreCase))
+        .Sum(kv => kv.Value);
+      var pendingFeedbackCount = statusCounts
+        .Where(kv => offerStatuses.Contains(kv.Key, StringComparer.OrdinalIgnoreCase))
+        .Sum(kv => kv.Value);
+
       dto.RecruitmentStats = new RecruitmentStatsDto
       {
         JobOpenings = (int)activeJobsCount,
-        NewCandidates = 0,
-        Interviewed = 0,
-        PendingFeedback = 0
+        NewCandidates = newCandidatesCount,
+        Interviewed = interviewedCount,
+        PendingFeedback = pendingFeedbackCount
       };
 
-      // Recruitment Funnel — SERVER-SIDE AGGREGATION
-      var statusCounts = await _candidateRepo.GetStatusCountsAsync();
+      // Recruitment Funnel — from statusCounts already fetched above
       foreach (var (status, count) in statusCounts.OrderByDescending(x => x.Value))
       {
         dto.Analytics.RecruitmentFunnel.Labels.Add(status);

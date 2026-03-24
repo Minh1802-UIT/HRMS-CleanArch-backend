@@ -7,6 +7,8 @@ using Employee.Application.Features.Recruitment.Commands.JobVacancy.DeleteJobVac
 using Employee.Application.Features.Recruitment.Commands.JobVacancy.CloseJobVacancy;
 using Employee.Application.Features.Recruitment.Queries.GetAllJobVacancies;
 using Employee.Application.Features.Recruitment.Queries.GetJobVacancyById;
+using Employee.Application.Features.Recruitment.Queries.GetVacanciesPaged;
+using Employee.Domain.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 
@@ -20,10 +22,24 @@ namespace Employee.API.Endpoints.Recruitment
                      .WithTags("Recruitment - Job Vacancies")
                      .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-      group.MapGet("/", async (ISender sender) =>
+      // Static segments must be registered before /{id}, otherwise "options" is captured as an id (wrong handler, errors).
+      // GET /api/recruitment/vacancies/options — static filter options for frontend dropdowns
+      group.MapGet("/options", () =>
       {
-        var result = await sender.Send(new GetAllJobVacanciesQuery());
-        return ResultUtils.Success(result, "Retrieved vacancies successfully.");
+        return ResultUtils.Success(new RecruitmentOptionsDto(), "Retrieved recruitment options.");
+      });
+
+      group.MapGet("/", async (
+        [AsParameters] PaginationParams pagination,
+        ISender sender) =>
+      {
+        if (pagination.PageSize.HasValue || !string.IsNullOrEmpty(pagination.SearchTerm))
+        {
+          var paged = await sender.Send(new GetVacanciesPagedQuery(pagination));
+          return ResultUtils.Success(paged, "Retrieved paginated vacancies.");
+        }
+        var vacancies = await sender.Send(new GetAllJobVacanciesQuery());
+        return ResultUtils.Success(vacancies, "Retrieved vacancies successfully.");
       });
 
       group.MapGet("/{id}", async (string id, ISender sender) =>

@@ -7,7 +7,9 @@ using Employee.Application.Features.Recruitment.Commands.Candidate.UpdateCandida
 using Employee.Application.Features.Recruitment.Commands.Candidate.DeleteCandidate;
 using Employee.Application.Features.Recruitment.Commands.OnboardCandidate;
 using Employee.Application.Features.Recruitment.Queries.Candidate.GetCandidatesByVacancy;
+using Employee.Application.Features.Recruitment.Queries.Candidate.GetCandidatesPaged;
 using Employee.Application.Features.Recruitment.Queries.Candidate.GetCandidateById;
+using Employee.Domain.Common.Models;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 
@@ -21,8 +23,16 @@ namespace Employee.API.Endpoints.Recruitment
                      .WithTags("Recruitment - Candidates")
                      .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
 
-      group.MapGet("/", async ([FromQuery] string? vacancyId, ISender sender) =>
+      group.MapGet("/", async (
+        [AsParameters] PaginationParams pagination,
+        [FromQuery] string? vacancyId,
+        ISender sender) =>
       {
+        if (pagination.PageSize.HasValue || !string.IsNullOrEmpty(pagination.SearchTerm))
+        {
+          var paged = await sender.Send(new GetCandidatesPagedQuery(pagination));
+          return ResultUtils.Success(paged, "Retrieved paginated candidates.");
+        }
         var result = await sender.Send(new GetCandidatesByVacancyQuery(vacancyId ?? string.Empty));
         return ResultUtils.Success(result, "Retrieved candidates successfully.");
       });

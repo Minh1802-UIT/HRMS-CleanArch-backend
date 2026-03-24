@@ -17,6 +17,10 @@ namespace Employee.Domain.Entities.HumanResource
     public string? AiMatchingSummary { get; set; }
     public string? ExtractedSkills { get; set; }
 
+    public List<string> Experience { get; set; } = new();
+    public List<string> Education { get; set; } = new();
+    public List<string> Notes { get; set; } = new();
+
     private Candidate() { }
 
     public Candidate(string fullName, string email, string phone, string jobVacancyId, DateTime appliedDate)

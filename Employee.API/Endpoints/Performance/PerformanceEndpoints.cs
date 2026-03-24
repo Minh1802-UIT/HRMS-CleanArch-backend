@@ -7,6 +7,8 @@ using Employee.Application.Features.Performance.Commands.UpdatePerformanceGoalPr
 using Employee.Application.Features.Performance.Commands.UpdatePerformanceReview;
 using Employee.Application.Features.Performance.Queries.GetEmployeeGoals;
 using Employee.Application.Features.Performance.Queries.GetEmployeeReviews;
+using Employee.Application.Features.Performance.Queries.GetAllGoals;
+using Employee.Application.Features.Performance.Queries.GetAllReviews;
 using Microsoft.AspNetCore.Mvc;
 using MediatR;
 
@@ -27,6 +29,12 @@ namespace Employee.API.Endpoints.Performance
         return ResultUtils.Success(result, "Retrieved employee goals successfully.");
       }).RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
 
+      group.MapGet("/goals/all", async (ISender sender) =>
+      {
+        var result = await sender.Send(new GetAllGoalsQuery());
+        return ResultUtils.Success(result, "Retrieved all goals successfully.");
+      }).RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
+
       group.MapPost("/goals", async ([FromBody] PerformanceGoalDto dto, ISender sender) =>
       {
         var id = await sender.Send(new CreatePerformanceGoalCommand(dto));
@@ -44,6 +52,12 @@ namespace Employee.API.Endpoints.Performance
       {
         var result = await sender.Send(new GetEmployeeReviewsQuery(employeeId));
         return ResultUtils.Success(result, "Retrieved employee reviews successfully.");
+      }).RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
+
+      group.MapGet("/reviews/all", async (ISender sender) =>
+      {
+        var result = await sender.Send(new GetAllReviewsQuery());
+        return ResultUtils.Success(result, "Retrieved all reviews successfully.");
       }).RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
 
       group.MapPost("/reviews", async ([FromBody] PerformanceReviewDto dto, ISender sender) =>

@@ -20,6 +20,9 @@ namespace Employee.Application.Features.Recruitment.Commands.Candidate.UpdateCan
 
       entity.UpdateInfo(request.Dto.FullName, request.Dto.Email, request.Dto.Phone ?? string.Empty);
       entity.UpdateResume(request.Dto.ResumeUrl ?? string.Empty);
+      entity.Experience = request.Dto.Experience ?? new List<string>();
+      entity.Education = request.Dto.Education ?? new List<string>();
+      entity.Notes = request.Dto.Notes ?? new List<string>();
 
       await _repo.UpdateAsync(entity.Id, entity, cancellationToken);
     }

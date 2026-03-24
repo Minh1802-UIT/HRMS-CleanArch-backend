@@ -7,35 +7,31 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Employee.Application.Features.Performance.Queries.GetEmployeeReviews
+namespace Employee.Application.Features.Performance.Queries.GetAllReviews
 {
-  public class GetEmployeeReviewsQueryHandler : IRequestHandler<GetEmployeeReviewsQuery, List<PerformanceReviewResponseDto>>
+  public class GetAllReviewsQueryHandler : IRequestHandler<GetAllReviewsQuery, List<PerformanceReviewResponseDto>>
   {
     private readonly IPerformanceReviewRepository _reviewRepo;
     private readonly IEmployeeRepository _employeeRepo;
 
-    public GetEmployeeReviewsQueryHandler(IPerformanceReviewRepository reviewRepo, IEmployeeRepository employeeRepo)
+    public GetAllReviewsQueryHandler(IPerformanceReviewRepository reviewRepo, IEmployeeRepository employeeRepo)
     {
       _reviewRepo = reviewRepo;
       _employeeRepo = employeeRepo;
     }
 
-    public async Task<List<PerformanceReviewResponseDto>> Handle(GetEmployeeReviewsQuery request, CancellationToken cancellationToken)
+    public async Task<List<PerformanceReviewResponseDto>> Handle(GetAllReviewsQuery request, CancellationToken cancellationToken)
     {
-      var reviews = await _reviewRepo.GetByEmployeeIdAsync(request.EmployeeId, cancellationToken);
+      var reviews = await _reviewRepo.GetAllAsync(cancellationToken);
+      var reviewList = reviews.ToList();
 
-      if (!reviews.Any())
+      if (!reviewList.Any())
         return new List<PerformanceReviewResponseDto>();
 
-      // Bulk-load all employee/reviewer names in a single round-trip (avoids N+1)
-      var allIds = reviews
-        .SelectMany(r => new[] { r.EmployeeId, r.ReviewerId })
-        .Distinct()
-        .ToList();
-
+      var allIds = reviewList.SelectMany(r => new[] { r.EmployeeId, r.ReviewerId }).Distinct().ToList();
       var names = await _employeeRepo.GetNamesByIdsAsync(allIds, cancellationToken);
 
-      return reviews.Select(review =>
+      return reviewList.Select(review =>
         review.ToDto(
           names.TryGetValue(review.EmployeeId, out var emp) ? emp.Name : "Unknown",
           names.TryGetValue(review.ReviewerId, out var rev) ? rev.Name : "Unknown"

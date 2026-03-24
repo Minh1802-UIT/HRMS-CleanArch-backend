@@ -20,7 +20,7 @@ namespace Employee.Application.Features.Performance.Commands.CreatePerformanceRe
           .GreaterThan(x => x.Dto.PeriodStart).WithMessage("Period end must be after period start.");
 
       RuleFor(x => x.Dto.OverallScore)
-          .InclusiveBetween(0.0, 5.0).WithMessage("Overall score must be between 0 and 5.");
+          .InclusiveBetween(0.0, 100.0).WithMessage("Overall score must be between 0 and 100.");
     }
   }
 }

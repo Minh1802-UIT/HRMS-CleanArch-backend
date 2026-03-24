@@ -19,16 +19,20 @@ namespace Employee.Application.Features.Recruitment.Mappers
             AppliedDate = entity.AppliedDate,
             AiScore = entity.AiScore,
             AiMatchingSummary = entity.AiMatchingSummary,
-            ExtractedSkills = entity.ExtractedSkills
+            ExtractedSkills = entity.ExtractedSkills,
+            Experience = entity.Experience,
+            Education = entity.Education,
+            Notes = entity.Notes
         };
 
         public static Candidate ToEntity(this CandidateDto dto, DateTime appliedDate)
         {
-            // Use Factory Constructor with all required fields
             var entity = new Candidate(dto.FullName, dto.Email, dto.Phone ?? string.Empty, dto.JobVacancyId, appliedDate);
 
-            // Update optional fields via domain methods
             entity.UpdateResume(dto.ResumeUrl ?? string.Empty);
+            entity.Experience = dto.Experience ?? new List<string>();
+            entity.Education = dto.Education ?? new List<string>();
+            entity.Notes = dto.Notes ?? new List<string>();
 
             return entity;
         }

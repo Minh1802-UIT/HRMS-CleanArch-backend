@@ -179,12 +179,29 @@ namespace Employee.Infrastructure.Data
                     new CreateIndexOptions { Background = true, Name = "idx_auditlogs_text" })
             });
 
-            // 9. Candidates
+            // 9. Candidates — existing index on JobVacancyId; add supporting indexes for dashboard + paged queries
             var candidates = context.GetCollection<Candidate>("candidates");
-            await candidates.Indexes.CreateOneAsync(
+            await candidates.Indexes.CreateManyAsync(new[]
+            {
+                // Supports GetCandidatesByVacancyQuery and GetByVacancyIdAsync
                 new CreateIndexModel<Candidate>(
                     Builders<Candidate>.IndexKeys.Ascending(x => x.JobVacancyId),
-                    new CreateIndexOptions { Background = true }));
+                    new CreateIndexOptions { Background = true }),
+                // Supports GetStatusCountsAsync (dashboard) and stage-based filters
+                new CreateIndexModel<Candidate>(
+                    Builders<Candidate>.IndexKeys.Ascending(x => x.Status),
+                    new CreateIndexOptions { Background = true, Name = "idx_candidates_status" }),
+                // Supports default sort by AppliedDate DESC in GetPagedAsync
+                new CreateIndexModel<Candidate>(
+                    Builders<Candidate>.IndexKeys
+                        .Ascending(x => x.IsDeleted)
+                        .Descending(x => x.AppliedDate),
+                    new CreateIndexOptions { Background = true, Name = "idx_candidates_isDeleted_appliedDate_desc" }),
+                // Text search on FullName for SearchTerm in PaginationParams
+                new CreateIndexModel<Candidate>(
+                    Builders<Candidate>.IndexKeys.Text(x => x.FullName),
+                    new CreateIndexOptions { Background = true, Name = "idx_candidates_text_fullName" })
+            });
 
             // 10. RawAttendanceLogs (moved from repository constructor)
             var rawLogs = context.GetCollection<RawAttendanceLog>("raw_attendance_logs");
@@ -217,12 +234,30 @@ namespace Employee.Infrastructure.Data
                   .Ascending(x => x.EmployeeId).Ascending(x => x.IsDeleted),
               new CreateIndexOptions { Background = true, Name = "idx_perfgoals_employeeId_isDeleted" }));
 
-      // 13. JobVacancies — supports GetAllAsync, CountActiveAsync
+      // 13. JobVacancies — existing index on IsDeleted; add Status + Title text for paginated queries
       var jobVacancies = context.GetCollection<JobVacancy>("job_vacancies");
-      await jobVacancies.Indexes.CreateOneAsync(
+      await jobVacancies.Indexes.CreateManyAsync(new[]
+      {
           new CreateIndexModel<JobVacancy>(
               Builders<JobVacancy>.IndexKeys.Ascending(x => x.IsDeleted),
-              new CreateIndexOptions { Background = true, Name = "idx_jobvacancies_isDeleted" }));
+              new CreateIndexOptions { Background = true, Name = "idx_jobvacancies_isDeleted" }),
+          // Supports CountActiveAsync (filters by Status = Open)
+          new CreateIndexModel<JobVacancy>(
+              Builders<JobVacancy>.IndexKeys
+                  .Ascending(x => x.IsDeleted)
+                  .Ascending(x => x.Status),
+              new CreateIndexOptions { Background = true, Name = "idx_jobvacancies_isDeleted_status" }),
+          // Supports default sort by CreatedAt DESC in GetPagedAsync
+          new CreateIndexModel<JobVacancy>(
+              Builders<JobVacancy>.IndexKeys
+                  .Ascending(x => x.IsDeleted)
+                  .Descending(x => x.CreatedAt),
+              new CreateIndexOptions { Background = true, Name = "idx_jobvacancies_isDeleted_createdAt_desc" }),
+          // Text search on Title for SearchTerm in PaginationParams
+          new CreateIndexModel<JobVacancy>(
+              Builders<JobVacancy>.IndexKeys.Text(x => x.Title),
+              new CreateIndexOptions { Background = true, Name = "idx_jobvacancies_text_title" })
+      });
 
       // 14. Payrolls — supports GetByMonthAsync, FinalizePayrollAsync
       await payrolls.Indexes.CreateOneAsync(
@@ -244,6 +279,24 @@ namespace Employee.Infrastructure.Data
               Builders<Employee.Domain.Entities.Notifications.Notification>.IndexKeys
                   .Ascending(x => x.UserId).Ascending(x => x.IsRead).Descending(x => x.CreatedAt),
               new CreateIndexOptions { Background = true, Name = "idx_notifications_userId_isRead_createdAt" }));
+
+            // 9f. Interviews — supports GetByDateAsync (Interviews Today), GetByCandidateIdAsync, paged queries
+            var interviews = context.GetCollection<Interview>("interviews");
+            await interviews.Indexes.CreateManyAsync(new[]
+            {
+                // Supports RecruitmentDashboardProvider.GetByDateAsync (Interviews Today)
+                new CreateIndexModel<Interview>(
+                    Builders<Interview>.IndexKeys.Ascending(x => x.ScheduledTime),
+                    new CreateIndexOptions { Background = true, Name = "idx_interviews_scheduledTime" }),
+                // Supports GetInterviewsByCandidateQuery
+                new CreateIndexModel<Interview>(
+                    Builders<Interview>.IndexKeys.Ascending(x => x.CandidateId),
+                    new CreateIndexOptions { Background = true, Name = "idx_interviews_candidateId" }),
+                // Supports default sort by ScheduledTime DESC in GetPagedAsync
+                new CreateIndexModel<Interview>(
+                    Builders<Interview>.IndexKeys.Descending(x => x.ScheduledTime),
+                    new CreateIndexOptions { Background = true, Name = "idx_interviews_scheduledTime_desc" })
+            });
 
             // 18. OvertimeSchedules — unique per employee per date
             var otSchedules = context.GetCollection<OvertimeSchedule>("overtime_schedules");
