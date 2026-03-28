@@ -13,7 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Employee.Domain.Enums;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using MongoDB.Driver;
+
 
 namespace Employee.Infrastructure.data.Seeding
 {
@@ -133,11 +133,8 @@ namespace Employee.Infrastructure.data.Seeding
           // Auto-link admin to CEO employee if not yet linked
           if (string.IsNullOrEmpty(prodAdminUser.EmployeeId))
           {
-            var database = serviceProvider.GetRequiredService<IMongoDatabase>();
-            var empCollection = database.GetCollection<EmployeeEntity>("employees");
-            var ceoEmployee = await empCollection
-                .Find(e => e.EmployeeCode == "CEO001" && !e.IsDeleted)
-                .FirstOrDefaultAsync();
+            var activeEmployees = await empRepo.GetAllActiveAsync();
+            var ceoEmployee = activeEmployees.FirstOrDefault(e => e.EmployeeCode == "CEO001");
             if (ceoEmployee != null)
             {
               prodAdminUser.EmployeeId = ceoEmployee.Id;
