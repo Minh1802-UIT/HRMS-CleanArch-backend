@@ -5,6 +5,7 @@ using Employee.Domain.Entities.Payroll;
 using Employee.Domain.Entities.Attendance;
 using Employee.Domain.Entities.Common;
 using Employee.Domain.Entities.ValueObjects;
+using Employee.Domain.Entities.Simulation;
 using Employee.Domain.Enums;
 using Employee.Infrastructure.Identity.Models;
 using MongoDB.Bson.Serialization;
@@ -39,6 +40,9 @@ namespace Employee.Infrastructure.Persistence
         BsonSerializer.RegisterSerializer(new EnumSerializer<PayrollStatus>(BsonType.String));
         BsonSerializer.RegisterSerializer(new EnumSerializer<PayrollCycleStatus>(BsonType.String));
         BsonSerializer.RegisterSerializer(new EnumSerializer<RawLogType>(BsonType.String));
+        BsonSerializer.RegisterSerializer(new EnumSerializer<SimulationBotStatus>(BsonType.String));
+        BsonSerializer.RegisterSerializer(new EnumSerializer<SimulationActionType>(BsonType.String));
+        BsonSerializer.RegisterSerializer(new EnumSerializer<SimulationLogResult>(BsonType.String));
 
         // BaseEntity mapping
         if (!BsonClassMap.IsClassMapRegistered(typeof(BaseEntity)))
@@ -144,6 +148,19 @@ namespace Employee.Infrastructure.Persistence
         });
 
         BsonClassMap.RegisterClassMap<Interview>(cm =>
+        {
+          cm.AutoMap();
+          cm.SetIgnoreExtraElements(true);
+        });
+
+        // Simulation Engine
+        BsonClassMap.RegisterClassMap<SimulationBot>(cm =>
+        {
+          cm.AutoMap();
+          cm.SetIgnoreExtraElements(true);
+        });
+
+        BsonClassMap.RegisterClassMap<SimulationLog>(cm =>
         {
           cm.AutoMap();
           cm.SetIgnoreExtraElements(true);

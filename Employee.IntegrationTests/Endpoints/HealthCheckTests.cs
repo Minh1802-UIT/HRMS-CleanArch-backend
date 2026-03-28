@@ -7,20 +7,15 @@ namespace Employee.IntegrationTests.Endpoints;
 /// Tests that the /health endpoint is accessible and returns expected status.
 /// </summary>
 [Collection("Api")]
-public class HealthCheckTests
+public class HealthCheckTests : IntegrationTestBase
 {
-  private readonly HttpClient _client;
-
-  public HealthCheckTests(EmployeeApiFactory factory)
-  {
-    _client = factory.CreateClient();
-  }
+  public HealthCheckTests(IntegrationTestFixture fixture) : base(fixture) { }
 
   [Fact]
   public async Task HealthCheck_ReturnsOkOrDegraded()
   {
     // Act
-    var response = await _client.GetAsync("/health");
+    var response = await Client.GetAsync("/health");
 
     // Assert — Health check should return 200 (healthy) or 503 (degraded/unhealthy)
     Assert.True(
@@ -33,7 +28,7 @@ public class HealthCheckTests
   public async Task HealthCheck_ReturnsContent()
   {
     // Act
-    var response = await _client.GetAsync("/health");
+    var response = await Client.GetAsync("/health");
     var content = await response.Content.ReadAsStringAsync();
 
     // Assert — Should return some status content

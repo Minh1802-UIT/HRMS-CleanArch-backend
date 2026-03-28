@@ -21,6 +21,16 @@ namespace Employee.API.Endpoints.Dev
       // Seeds full Mon-Fri attendance data for all active employees for the given month.
       group.MapPost("/seed-attendance", DevHandlers.SeedAttendance)
            .RequireAuthorization(p => p.RequireRole("Admin"));
+
+      // ── Simulation Engine (Dev shortcuts) ──────────────────────────────────
+      group.MapPost("/simulation/provision", DevHandlers.ProvisionSimulation)
+           .RequireAuthorization(p => p.RequireRole("Admin"));
+
+      group.MapPost("/simulation/run", DevHandlers.RunSimulation)
+           .RequireAuthorization(p => p.RequireRole("Admin"));
+
+      group.MapGet("/simulation/dashboard", DevHandlers.GetSimulationDashboard)
+           .RequireAuthorization(p => p.RequireRole("Admin"));
     }
   }
 }

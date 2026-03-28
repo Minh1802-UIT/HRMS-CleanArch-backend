@@ -329,6 +329,38 @@ namespace Employee.Infrastructure.Data
                   .Ascending(x => x.EmployeeId).Ascending(x => x.WorkDate),
               new CreateIndexOptions { Background = true, Unique = true, Name = "idx_explanations_employeeId_workDate_unique" })
       });
+
+            // 19. SimulationBots — supports GetActiveBotsAsync, GetByEmployeeIdAsync
+            var simBots = context.GetCollection<Employee.Domain.Entities.Simulation.SimulationBot>("simulation_bots");
+            await simBots.Indexes.CreateManyAsync(new[]
+            {
+          new CreateIndexModel<Employee.Domain.Entities.Simulation.SimulationBot>(
+              Builders<Employee.Domain.Entities.Simulation.SimulationBot>.IndexKeys
+                  .Ascending("Status").Ascending("IsDeleted"),
+              new CreateIndexOptions { Background = true, Name = "idx_simbots_status_isDeleted" }),
+          new CreateIndexModel<Employee.Domain.Entities.Simulation.SimulationBot>(
+              Builders<Employee.Domain.Entities.Simulation.SimulationBot>.IndexKeys
+                  .Ascending("EmployeeId"),
+              new CreateIndexOptions { Unique = true, Background = true, Name = "idx_simbots_employeeId" })
+      });
+
+            // 20. SimulationLogs — supports GetByDateAsync, GetByDateRangeAsync, GetActionStatsAsync
+            var simLogs = context.GetCollection<Employee.Domain.Entities.Simulation.SimulationLog>("simulation_logs");
+            await simLogs.Indexes.CreateManyAsync(new[]
+            {
+          new CreateIndexModel<Employee.Domain.Entities.Simulation.SimulationLog>(
+              Builders<Employee.Domain.Entities.Simulation.SimulationLog>.IndexKeys
+                  .Ascending("BotId").Descending(x => x.SimulatedAtUtc),
+              new CreateIndexOptions { Background = true, Name = "idx_simlogs_botId_simulatedAt" }),
+          new CreateIndexModel<Employee.Domain.Entities.Simulation.SimulationLog>(
+              Builders<Employee.Domain.Entities.Simulation.SimulationLog>.IndexKeys
+                  .Ascending("SimulatedDateUtc").Ascending("Result"),
+              new CreateIndexOptions { Background = true, Name = "idx_simlogs_date_result" }),
+          new CreateIndexModel<Employee.Domain.Entities.Simulation.SimulationLog>(
+              Builders<Employee.Domain.Entities.Simulation.SimulationLog>.IndexKeys
+                  .Ascending("ActionType").Descending(x => x.SimulatedAtUtc),
+              new CreateIndexOptions { Background = true, Name = "idx_simlogs_actionType_simulatedAt" })
+      });
         }
     }
 }

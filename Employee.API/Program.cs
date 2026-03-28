@@ -104,7 +104,7 @@ var mongoConfig = new MongoDbIdentityConfiguration
 
 // 1.3. Clean Architecture Layers
 builder.Services.AddApplication(builder.Configuration);
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 builder.Services.AddEmailService(builder.Configuration, builder.Environment.IsDevelopment());
 
 // 1.4. Core Services (Http, User, Exception)
@@ -447,9 +447,11 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Hangfire dashboard — Admin-only, restricted to /hangfire path
-// Skipped in Testing environment (no Redis connection available)
-if (!app.Environment.IsEnvironment("Testing"))
+// Hangfire dashboard — Admin-only, restricted to /hangfire path.
+// Skipped in Testing environment (no Redis).
+// Skipped in Development (Hangfire not configured in Dev mode).
+// Only shown in Production/Staging when Redis is available.
+if (!app.Environment.IsEnvironment("Testing") && !app.Environment.IsDevelopment())
 {
   app.UseHangfireDashboard("/hangfire", new Hangfire.DashboardOptions
   {

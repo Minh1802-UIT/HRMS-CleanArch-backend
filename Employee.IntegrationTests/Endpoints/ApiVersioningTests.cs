@@ -11,21 +11,16 @@ namespace Employee.IntegrationTests.Endpoints;
 /// 3. Swagger v1 spec availability
 /// </summary>
 [Collection("Api")]
-public class ApiVersioningTests
+public class ApiVersioningTests : IntegrationTestBase
 {
-  private readonly HttpClient _client;
-
-  public ApiVersioningTests(EmployeeApiFactory factory)
-  {
-    _client = factory.CreateClient();
-  }
+  public ApiVersioningTests(IntegrationTestFixture fixture) : base(fixture) { }
 
   [Fact]
   public async Task DefaultPath_IsImplicitlyV1()
   {
     // Act — Hit default path without version
     // POST /api/auth/login with empty body -> Should be 400 (Validation) if routed
-    var response = await _client.PostAsJsonAsync("/api/auth/login", new { });
+    var response = await Client.PostAsJsonAsync("/api/auth/login", new { });
 
     // Assert
     Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -47,7 +42,7 @@ public class ApiVersioningTests
     request.Content = JsonContent.Create(new { });
 
     // Act
-    var response = await _client.SendAsync(request);
+    var response = await Client.SendAsync(request);
 
     // Assert
     Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -62,7 +57,7 @@ public class ApiVersioningTests
     request.Content = JsonContent.Create(new { });
 
     // Act
-    var response = await _client.SendAsync(request);
+    var response = await Client.SendAsync(request);
 
     // Assert - Should be Client Error (400 or 404)
     Assert.False(response.IsSuccessStatusCode);
@@ -75,7 +70,7 @@ public class ApiVersioningTests
     // Swagger UI is at /swagger, specs at /swagger/v1/swagger.json
     // Note: In minimal API, group name might be "v1" or "v1.0"
     // My config says options.GroupNameFormat = "'v'V"; -> "v1"
-    var response = await _client.GetAsync("/swagger/v1/swagger.json");
+    var response = await Client.GetAsync("/swagger/v1/swagger.json");
 
     // Assert
     // Enabled in Testing environment via Program.cs fix

@@ -2,6 +2,7 @@ using Employee.Domain.Entities.Attendance;
 using Employee.Domain.Entities.ValueObjects;
 using Employee.Domain.Enums;
 using Employee.Domain.Interfaces.Repositories;
+using Employee.Infrastructure.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Hosting;
@@ -88,6 +89,51 @@ namespace Employee.API.Endpoints.Dev
         bucketsSkipped = skipped,
         message = $"Seeded {created} new attendance buckets for {targetMonth} ({workingDays.Count} working days each). Skipped {skipped} (already existed)."
       });
+    }
+
+    // =========================================================================
+    // SIMULATION ENGINE (Dev)
+    // =========================================================================
+
+    /// <summary>
+    /// POST /api/dev/simulation/provision
+    /// Seeds simulation bot accounts for all active employees.
+    /// </summary>
+    public static async Task<IResult> ProvisionSimulation(
+        [FromServices] ISimulationService simulationService)
+    {
+      var result = await simulationService.ProvisionBotsAsync();
+      return Results.Ok(new
+      {
+        message = $"Provisioned simulation bots: {result.BotsCreated} created, {result.BotsSkipped} already existed",
+        result
+      });
+    }
+
+    /// <summary>
+    /// POST /api/dev/simulation/run
+    /// Runs the daily simulation for all active bots.
+    /// </summary>
+    public static async Task<IResult> RunSimulation(
+        [FromServices] ISimulationService simulationService)
+    {
+      var result = await simulationService.RunDailySimulationAsync();
+      return Results.Ok(new
+      {
+        message = $"Simulation completed: {result.SuccessCount} ok, {result.FailureCount} failed, {result.SkippedCount} skipped in {result.DurationMs}ms",
+        result
+      });
+    }
+
+    /// <summary>
+    /// GET /api/dev/simulation/dashboard
+    /// Returns simulation engine dashboard stats.
+    /// </summary>
+    public static async Task<IResult> GetSimulationDashboard(
+        [FromServices] ISimulationService simulationService)
+    {
+      var stats = await simulationService.GetDashboardStatsAsync();
+      return Results.Ok(stats);
     }
   }
 }

@@ -8,16 +8,9 @@ namespace Employee.IntegrationTests.Endpoints;
 /// Tests the full HTTP pipeline: routing → middleware → handler → response.
 /// </summary>
 [Collection("Api")]
-public class AuthEndpointTests
+public class AuthEndpointTests : IntegrationTestBase
 {
-  private readonly HttpClient _client;
-  private readonly EmployeeApiFactory _factory;
-
-  public AuthEndpointTests(EmployeeApiFactory factory)
-  {
-    _factory = factory;
-    _client = factory.CreateClient();
-  }
+  public AuthEndpointTests(IntegrationTestFixture fixture) : base(fixture) { }
 
   // ============================================================
   // LOGIN TESTS
@@ -27,7 +20,7 @@ public class AuthEndpointTests
   public async Task Login_WithEmptyBody_Returns400()
   {
     // Act
-    var response = await _client.PostAsJsonAsync("/api/auth/login", new { });
+    var response = await Client.PostAsJsonAsync("/api/auth/login", new { });
 
     // Assert — Validation should reject empty body
     Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -40,7 +33,7 @@ public class AuthEndpointTests
     var loginDto = new { Username = "nonexistent@test.com", Password = "WrongPassword123" };
 
     // Act
-    var response = await _client.PostAsJsonAsync("/api/auth/login", loginDto);
+    var response = await Client.PostAsJsonAsync("/api/auth/login", loginDto);
 
     // Assert — Should be 400 (validation) or 401 (unauthorized)
     Assert.True(
@@ -56,7 +49,7 @@ public class AuthEndpointTests
     var content = new StringContent("{ invalid json", System.Text.Encoding.UTF8, "application/json");
 
     // Act
-    var response = await _client.PostAsync("/api/auth/login", content);
+    var response = await Client.PostAsync("/api/auth/login", content);
 
     // Assert
     Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -79,7 +72,7 @@ public class AuthEndpointTests
     };
 
     // Act
-    var response = await _client.PostAsJsonAsync("/api/auth/register", registerDto);
+    var response = await Client.PostAsJsonAsync("/api/auth/register", registerDto);
 
     // Assert — Should be 401 because no JWT token provided
     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -96,7 +89,7 @@ public class AuthEndpointTests
     var roleDto = new { RoleName = "TestRole" };
 
     // Act
-    var response = await _client.PostAsJsonAsync("/api/auth/role", roleDto);
+    var response = await Client.PostAsJsonAsync("/api/auth/role", roleDto);
 
     // Assert
     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -106,7 +99,7 @@ public class AuthEndpointTests
   public async Task GetAllUsers_WithoutAuth_Returns401()
   {
     // Act
-    var response = await _client.GetAsync("/api/auth/users");
+    var response = await Client.GetAsync("/api/auth/users");
 
     // Assert
     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -116,7 +109,7 @@ public class AuthEndpointTests
   public async Task GetRoles_WithoutAuth_Returns401()
   {
     // Act
-    var response = await _client.GetAsync("/api/auth/roles");
+    var response = await Client.GetAsync("/api/auth/roles");
 
     // Assert
     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -130,7 +123,7 @@ public class AuthEndpointTests
   public async Task ForgotPassword_WithEmptyBody_Returns400()
   {
     // Act
-    var response = await _client.PostAsJsonAsync("/api/auth/forgot-password", new { });
+    var response = await Client.PostAsJsonAsync("/api/auth/forgot-password", new { });
 
     // Assert
     Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -140,7 +133,7 @@ public class AuthEndpointTests
   public async Task ResetPassword_WithEmptyBody_Returns400()
   {
     // Act
-    var response = await _client.PostAsJsonAsync("/api/auth/reset-password", new { });
+    var response = await Client.PostAsJsonAsync("/api/auth/reset-password", new { });
 
     // Assert
     Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -157,7 +150,7 @@ public class AuthEndpointTests
     var dto = new { CurrentPassword = "old", NewPassword = "new" };
 
     // Act
-    var response = await _client.PostAsJsonAsync("/api/auth/change-password", dto);
+    var response = await Client.PostAsJsonAsync("/api/auth/change-password", dto);
 
     // Assert
     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -179,7 +172,7 @@ public class AuthEndpointTests
     // Deliberately omit "refreshToken" cookie
 
     // Act
-    var response = await _client.SendAsync(request);
+    var response = await Client.SendAsync(request);
 
     // Assert — handler returns 401 because cookie is missing
     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -200,7 +193,7 @@ public class AuthEndpointTests
     request.Headers.Add("Cookie", "refreshToken=valid-refresh-token");
 
     // Act
-    var response = await _client.SendAsync(request);
+    var response = await Client.SendAsync(request);
 
     // Assert
     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -227,7 +220,7 @@ public class AuthEndpointTests
     request.Headers.Add("Cookie", "refreshToken=revoked-refresh-token");
 
     // Act
-    var response = await _client.SendAsync(request);
+    var response = await Client.SendAsync(request);
 
     // Assert — global exception handler converts UnauthorizedAccessException → 401
     Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
@@ -242,7 +235,7 @@ public class AuthEndpointTests
   {
     // Arrange — logout is AllowAnonymous, no auth header needed
     // Act
-    var response = await _client.PostAsync("/api/auth/logout", null);
+    var response = await Client.PostAsync("/api/auth/logout", null);
 
     // Assert
     Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -259,7 +252,7 @@ public class AuthEndpointTests
     request.Headers.Add("Cookie", "refreshToken=some-token");
 
     // Act
-    var response = await _client.SendAsync(request);
+    var response = await Client.SendAsync(request);
 
     // Assert — response should delete the cookie (Set-Cookie with empty value / expired date)
     Assert.Equal(HttpStatusCode.OK, response.StatusCode);

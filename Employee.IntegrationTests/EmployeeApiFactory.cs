@@ -12,34 +12,50 @@ namespace Employee.IntegrationTests;
 
 /// <summary>
 /// Custom WebApplicationFactory for integration testing.
-/// Overrides configuration to use a test database,
-/// disables background services for clean tests.
-/// Rate limiter is set to very high values via config.
+/// Uses Testcontainers (via <see cref="IntegrationTestFixture"/>) to spin up an
+/// isolated MongoDB and Redis for the full test session.
+///
+/// Overrides:
+/// - Database connection strings → Testcontainers MongoDB + Redis
+/// - Background services → removed (not needed in tests)
+/// - Hangfire / background jobs → no-op mock
+/// - Rate limiter → set to 1000 req/min (effectively disabled in tests)
 /// </summary>
 public class EmployeeApiFactory : WebApplicationFactory<Program>
 {
   /// <summary>
-  /// Exposes the mocked IIdentityService so individual test classes
-  /// can add extra .Setup() calls for their specific scenarios.
+  /// Injected by xUnit via <see cref="ApiCollection"/> / <see cref="IntegrationTestFixture"/>.
+  /// </summary>
+  private readonly IntegrationTestFixture _fixture;
+
+  /// <summary>
+  /// Exposes the mocked IIdentityService so individual test classes can add extra
+  /// <c>.Setup()</c> calls for their specific scenarios.
   /// </summary>
   public Mock<IIdentityService> MockIdentity { get; } = new Mock<IIdentityService>();
+
+  public EmployeeApiFactory(IntegrationTestFixture fixture)
+  {
+    _fixture = fixture;
+  }
 
   protected override void ConfigureWebHost(IWebHostBuilder builder)
   {
     builder.UseEnvironment("Testing");
 
-    // ─────────────────────────────────────────────
-    // 1. Configuration — injected BEFORE Program.cs reads it
-    // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
+    // 1. Configuration — override app settings with testcontainer values
+    // ─────────────────────────────────────────────────────────────────
     builder.UseSetting("JwtSettings:Key", "IntegrationTestSecretKey_AtLeast32Characters_Long!!");
     builder.UseSetting("JwtSettings:Issuer", "EmployeeAPI");
     builder.UseSetting("JwtSettings:Audience", "EmployeeClient");
     builder.UseSetting("JwtSettings:DurationInMinutes", "60");
 
-    builder.UseSetting("EmployeeDatabaseSettings:ConnectionString", "mongodb://localhost:27017");
-    builder.UseSetting("EmployeeDatabaseSettings:DatabaseName", "EmployeeCleanDB_IntegrationTest");
+    // ← Testcontainers-backed connections (no localhost dependency)
+    builder.UseSetting("EmployeeDatabaseSettings:ConnectionString", _fixture.MongoConnectionString);
+    builder.UseSetting("EmployeeDatabaseSettings:DatabaseName", _fixture.DatabaseName);
+    builder.UseSetting("RedisSettings:ConnectionString", _fixture.RedisConnectionString);
 
-    builder.UseSetting("RedisSettings:ConnectionString", "localhost:6379");
     builder.UseSetting("CorsSettings:AllowedOrigins:0", "http://localhost:4200");
 
     builder.UseSetting("BackgroundJobs:LeaveAccrualIntervalHours", "9999");
@@ -50,28 +66,29 @@ public class EmployeeApiFactory : WebApplicationFactory<Program>
     builder.UseSetting("EmailSettings:SenderEmail", "test@test.com");
     builder.UseSetting("EmailSettings:Password", "test");
 
-    // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
     // 2. Service Overrides for Test Environment
-    // ─────────────────────────────────────────────
+    // ─────────────────────────────────────────────────────────────────
     builder.ConfigureServices(services =>
     {
-      // Remove background services (they need real MongoDB)
+      // Remove background hosted services (they need a running MongoDB/Redis in prod).
+      // Testcontainers already provides these, but we don't need the hosted-service wrappers.
       services.RemoveAll<IHostedService>();
 
-      // Replace Hangfire background job service with a no-op mock — prevents
-      // any attempt to connect to Redis for job enqueueing during integration tests.
+      // Replace Hangfire / background job service with a no-op mock.
       var mockJobService = new Mock<IBackgroundJobService>();
       services.Replace(ServiceDescriptor.Singleton(mockJobService.Object));
 
-      // Setup default behavior for "invalid credentials" test
+      // ── Default IIdentityService mock setups ─────────────────────────
+      // "invalid credentials" → throw UnauthorizedAccessException
       MockIdentity.Setup(x => x.LoginAsync("nonexistent@test.com", "WrongPassword123"))
                   .ThrowsAsync(new UnauthorizedAccessException("Invalid credentials"));
 
-      // Default: RevokeAllRefreshTokensAsync succeeds silently (used by Logout handler)
+      // RevokeAllRefreshTokensAsync succeeds silently (used by Logout handler)
       MockIdentity.Setup(x => x.RevokeAllRefreshTokensAsync(It.IsAny<string>()))
                   .Returns(Task.CompletedTask);
 
-      // Default: RefreshTokenAsync with "valid-refresh-token" returns a rotated token
+      // RefreshTokenAsync with "valid-refresh-token" → return a rotated token
       MockIdentity.Setup(x => x.RefreshTokenAsync(It.IsAny<string>(), "valid-refresh-token"))
                   .ReturnsAsync(new LoginResponseDto
                   {
@@ -82,7 +99,7 @@ public class EmployeeApiFactory : WebApplicationFactory<Program>
                     User = new UserDto { Username = "testuser", Email = "test@test.com" }
                   });
 
-      // Default: RefreshTokenAsync with "revoked-refresh-token" simulates reuse detection
+      // RefreshTokenAsync with "revoked-refresh-token" → simulate token reuse detection
       MockIdentity.Setup(x => x.RefreshTokenAsync(It.IsAny<string>(), "revoked-refresh-token"))
                   .ThrowsAsync(new UnauthorizedAccessException("Token reuse detected — all sessions have been revoked."));
 

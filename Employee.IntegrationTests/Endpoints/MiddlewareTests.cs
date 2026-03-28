@@ -9,14 +9,9 @@ namespace Employee.IntegrationTests.Endpoints;
 /// accept 429 (TooManyRequests) as a valid response.
 /// </summary>
 [Collection("Api")]
-public class MiddlewareTests
+public class MiddlewareTests : IntegrationTestBase
 {
-  private readonly HttpClient _client;
-
-  public MiddlewareTests(EmployeeApiFactory factory)
-  {
-    _client = factory.CreateClient();
-  }
+  public MiddlewareTests(IntegrationTestFixture fixture) : base(fixture) { }
 
   // ============================================================
   // ROUTING TESTS
@@ -26,7 +21,7 @@ public class MiddlewareTests
   public async Task NonExistentEndpoint_Returns404()
   {
     // Act
-    var response = await _client.GetAsync("/api/this-does-not-exist");
+    var response = await Client.GetAsync("/api/this-does-not-exist");
 
     // Assert
     Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
@@ -40,7 +35,7 @@ public class MiddlewareTests
   public async Task PublicAuthEndpoints_AcceptPost(string endpoint)
   {
     // Act — POST with empty JSON body
-    var response = await _client.PostAsJsonAsync(endpoint, new { });
+    var response = await Client.PostAsJsonAsync(endpoint, new { });
 
     // Assert — Should NOT be 404 or 405
     // Note: 429 (TooManyRequests) is acceptable — means the rate limiter is working
@@ -54,7 +49,7 @@ public class MiddlewareTests
   public async Task ProtectedGetEndpoints_ReturnUnauthorizedOr429(string endpoint)
   {
     // Act
-    var response = await _client.GetAsync(endpoint);
+    var response = await Client.GetAsync(endpoint);
 
     // Assert — Should return 401 (route exists, needs auth) or 429 (rate limited)
     Assert.True(
@@ -77,7 +72,7 @@ public class MiddlewareTests
       "application/json");
 
     // Act
-    var response = await _client.PostAsync("/api/auth/login", content);
+    var response = await Client.PostAsync("/api/auth/login", content);
 
     // Assert — 400 (bad request) or 429 (rate limited by auth policy)
     Assert.True(
@@ -90,7 +85,7 @@ public class MiddlewareTests
   public async Task GetAuth_WrongMethod_ReturnsMethodNotAllowedOr404Or429()
   {
     // Act — GET on a POST-only endpoint
-    var response = await _client.GetAsync("/api/auth/login");
+    var response = await Client.GetAsync("/api/auth/login");
 
     // Assert — 405, 404, or 429 (rate limited)
     Assert.True(

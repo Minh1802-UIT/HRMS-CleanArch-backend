@@ -16,6 +16,7 @@ using Hangfire;
 using Hangfire.Redis.StackExchange;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
 using StackExchange.Redis;
 
@@ -23,8 +24,11 @@ namespace Employee.Infrastructure
 {
     public static class DependencyInjection
     {
-        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration, IHostEnvironment hostEnvironment)
         {
+            var isDevelopment = hostEnvironment.IsDevelopment();
+            var isTesting = hostEnvironment.IsEnvironment("Testing");
+
             // ==========================================
             // 1. DATABASE CONFIGURATION
             // ==========================================
@@ -185,62 +189,93 @@ namespace Employee.Infrastructure
             services.AddScoped<IPdfExtractorService, PdfExtractorService>();
 
             // ==========================================
-            // 10. HANGFIRE (persistent background jobs)
+            // 10. BACKGROUND JOBS
             // ==========================================
-            // Uses the same Redis instance as the app cache — no new infrastructure needed.
-            // Jobs survive app restarts and are retried automatically on failure.
-            // We reuse the same URI-parsing logic as the cache block above so that
-            // rediss:// URIs (Upstash) work correctly and AbortOnConnectFail=false
-            // prevents a hard crash when Redis is temporarily unreachable at startup.
-            var rawHangfireCs = redisConnectionString ?? "localhost:6379";
-            ConfigurationOptions hangfireCfg;
+            // In Development: use BackgroundService-based simulation (no Redis needed).
+            // In Production/Staging: use Hangfire + Redis for persistent job storage.
 
-            if (rawHangfireCs.StartsWith("rediss://", StringComparison.OrdinalIgnoreCase) ||
-                rawHangfireCs.StartsWith("redis://", StringComparison.OrdinalIgnoreCase))
+            if (isTesting)
             {
-                var uri = new Uri(rawHangfireCs);
-                var password = Uri.UnescapeDataString(uri.UserInfo.Split(':', 2).LastOrDefault() ?? "");
-                hangfireCfg = new ConfigurationOptions
-                {
-                    EndPoints = { $"{uri.Host}:{uri.Port}" },
-                    Password = password,
-                    Ssl = uri.Scheme.Equals("rediss", StringComparison.OrdinalIgnoreCase),
-                    SslProtocols = System.Security.Authentication.SslProtocols.Tls12
-                                 | System.Security.Authentication.SslProtocols.Tls13,
-                };
+                // No background jobs in Testing
+                goto ServicesAdded;
+            }
+
+            if (isDevelopment)
+            {
+                // SimulationBackgroundService: runs daily simulation using PeriodicTimer.
+                // DevBackgroundJobService: no-op stub for background job enqueuing (no Redis/Hangfire).
+                services.AddScoped<IBackgroundJobService, DevBackgroundJobService>();
+                services.AddHostedService<SimulationBackgroundService>();
+                Console.WriteLine("[Hangfire] Development mode: Hangfire skipped. Simulation powered by BackgroundService (no Redis).");
+                goto ServicesAdded;
             }
             else
             {
-                hangfireCfg = ConfigurationOptions.Parse(rawHangfireCs);
+                // Production / Staging — requires Redis
+                var rawHangfireCs = redisConnectionString ?? "localhost:6379";
+                ConfigurationOptions hangfireCfg;
+
+                if (rawHangfireCs.StartsWith("rediss://", StringComparison.OrdinalIgnoreCase) ||
+                    rawHangfireCs.StartsWith("redis://", StringComparison.OrdinalIgnoreCase))
+                {
+                    var uri = new Uri(rawHangfireCs);
+                    var password = Uri.UnescapeDataString(uri.UserInfo.Split(':', 2).LastOrDefault() ?? "");
+                    hangfireCfg = new ConfigurationOptions
+                    {
+                        EndPoints = { $"{uri.Host}:{uri.Port}" },
+                        Password = password,
+                        Ssl = uri.Scheme.Equals("rediss", StringComparison.OrdinalIgnoreCase),
+                        SslProtocols = System.Security.Authentication.SslProtocols.Tls12
+                                     | System.Security.Authentication.SslProtocols.Tls13,
+                    };
+                }
+                else
+                {
+                    hangfireCfg = ConfigurationOptions.Parse(rawHangfireCs);
+                }
+
+                hangfireCfg.AbortOnConnectFail = false;
+                hangfireCfg.ConnectTimeout = 5000;
+                hangfireCfg.SyncTimeout = 5000;
+
+                var hangfireMultiplexer = ConnectionMultiplexer.Connect(hangfireCfg);
+                services.AddSingleton<IConnectionMultiplexer>(hangfireMultiplexer);
+
+                services.AddHangfire(config => config
+                    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+                    .UseSimpleAssemblyNameTypeSerializer()
+                    .UseRecommendedSerializerSettings()
+                    .UseRedisStorage(hangfireMultiplexer, new RedisStorageOptions
+                    {
+                        Prefix = "hangfire:",
+                        InvisibilityTimeout = TimeSpan.FromMinutes(30)
+                    }));
+
+                services.AddHangfireServer(options =>
+                {
+                    options.WorkerCount = 2;
+                    options.ServerName = "hrms-worker";
+                });
+
+                // Bootstrap Hangfire recurring jobs in production
+                services.AddHostedService<SimulationBootstrapService>();
+
+                // Also run the BackgroundService as a backup scheduler
+                services.AddHostedService<SimulationBackgroundService>();
+
+                services.AddScoped<IBackgroundJobService, HangfireBackgroundJobService>();
             }
 
-            hangfireCfg.AbortOnConnectFail = false;
-            hangfireCfg.ConnectTimeout = 5000;
-            hangfireCfg.SyncTimeout = 5000;
-
-            var hangfireMultiplexer = ConnectionMultiplexer.Connect(hangfireCfg);
-            services.AddSingleton<IConnectionMultiplexer>(hangfireMultiplexer);
-
-            services.AddHangfire(config => config
-                .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
-                .UseSimpleAssemblyNameTypeSerializer()
-                .UseRecommendedSerializerSettings()
-                .UseRedisStorage(hangfireMultiplexer, new RedisStorageOptions
-                {
-                    Prefix = "hangfire:",
-                    InvisibilityTimeout = TimeSpan.FromMinutes(30)
-                }));
-
-            services.AddHangfireServer(options =>
-            {
-                options.WorkerCount = 2;   // small footprint — adjust as needed
-                options.ServerName = "hrms-worker";
-            });
+            ServicesAdded:
 
             services.AddScoped<AccountProvisioningJob>();
-            services.AddScoped<IBackgroundJobService, HangfireBackgroundJobService>();
             services.AddScoped<IPayslipService, PayslipService>();
             services.AddScoped<IExcelExportService, ExcelExportService>();
+
+            // ── Simulation Engine ────────────────────────────────────────────
+            services.AddScoped<ISimulationBotRepository, Employee.Infrastructure.Repositories.Simulation.SimulationBotRepository>();
+            services.AddScoped<ISimulationLogRepository, Employee.Infrastructure.Repositories.Simulation.SimulationLogRepository>();
+            services.AddScoped<ISimulationService, SimulationService>();
 
             return services;
         }
