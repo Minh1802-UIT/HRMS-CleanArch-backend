@@ -4,12 +4,16 @@ namespace Employee.IntegrationTests;
 /// Base class for all integration test classes that use the "Api" collection.
 /// Automatically skips all tests if Docker is not available (e.g., on developer machines
 /// without Docker Desktop, or in CI environments without Docker).
+///
+/// Before each test: drops all collections (Linux MongoDB is case-sensitive; this clears
+/// stray PascalCase collections) then starts the API host so startup seeding runs on a
+/// clean database.
 /// </summary>
-public abstract class IntegrationTestBase : IDisposable
+public abstract class IntegrationTestBase : IAsyncLifetime, IDisposable
 {
   protected readonly IntegrationTestFixture Fixture;
   protected readonly EmployeeApiFactory Factory;
-  protected readonly HttpClient Client;
+  protected HttpClient Client { get; private set; } = null!;
 
   protected IntegrationTestBase(IntegrationTestFixture fixture)
   {
@@ -23,7 +27,6 @@ public abstract class IntegrationTestBase : IDisposable
           "or run only unit tests when Docker is unavailable.");
 
     Factory = new EmployeeApiFactory(fixture);
-    Client = Factory.CreateClient();
   }
 
   /// <summary>Resets the database between tests for isolation.</summary>
@@ -32,9 +35,17 @@ public abstract class IntegrationTestBase : IDisposable
     await Fixture.ResetDatabaseAsync();
   }
 
+  public virtual async Task InitializeAsync()
+  {
+    await Fixture.ResetDatabaseAsync();
+    Client = Factory.CreateClient();
+  }
+
+  public virtual Task DisposeAsync() => Task.CompletedTask;
+
   public void Dispose()
   {
-    Client.Dispose();
+    Client?.Dispose();
     Factory.Dispose();
   }
 }

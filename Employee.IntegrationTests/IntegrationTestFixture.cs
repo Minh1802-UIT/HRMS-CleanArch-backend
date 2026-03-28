@@ -16,8 +16,9 @@ namespace Employee.IntegrationTests;
 ///   pipeline as production (no in-memory mock gaps).
 /// - No local MongoDB/Redis installation required → CI-friendly.
 ///
-/// Drop-all behavior: after each individual test, <see cref="ResetDatabaseAsync"/>
-/// is called to wipe all collections so tests are fully isolated from each other.
+/// Drop-all behavior: <see cref="IntegrationTestBase.InitializeAsync"/> calls
+/// <see cref="ResetDatabaseAsync"/> before each test so collections match app expectations
+/// on case-sensitive hosts (e.g. Linux CI) and no stale data triggers flaky attendance rules.
 ///
 /// xUnit integration: xUnit requires collection fixtures to have a public parameterless
 /// constructor. Initialization is triggered lazily on first property access.

@@ -24,9 +24,9 @@ public class BaseRepositoryTests : IntegrationTestBase
   // Helper: create a minimal employee entity directly in MongoDB
   // so we can test the repository layer without going through HTTP.
   // ─────────────────────────────────────────────────────────────────
-  private IMongoCollection<EmployeeEntity> Employees => Fixture.Database.GetCollection<EmployeeEntity>("Employees");
-  private IMongoCollection<Department> Departments => Fixture.Database.GetCollection<Department>("Departments");
-  private IMongoCollection<Position> Positions => Fixture.Database.GetCollection<Position>("Positions");
+  private IMongoCollection<EmployeeEntity> Employees => Fixture.Database.GetCollection<EmployeeEntity>("employees");
+  private IMongoCollection<Department> Departments => Fixture.Database.GetCollection<Department>("departments");
+  private IMongoCollection<Position> Positions => Fixture.Database.GetCollection<Position>("positions");
 
   private async Task SeedDepartmentAndPositionAsync(string deptId, string posId)
   {
