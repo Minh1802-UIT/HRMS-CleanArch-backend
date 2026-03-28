@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Employee.Domain.Enums;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
+using MongoDB.Driver;
 
 namespace Employee.Infrastructure.data.Seeding
 {
@@ -126,6 +127,26 @@ namespace Employee.Infrastructure.data.Seeding
               await userManager.AddToRoleAsync(prodAdminUser, "Admin");
               await userManager.AddToRoleAsync(prodAdminUser, "HR");
               Console.WriteLine("[OK] Created missing Admin User.");
+            }
+          }
+
+          // Auto-link admin to CEO employee if not yet linked
+          if (string.IsNullOrEmpty(prodAdminUser.EmployeeId))
+          {
+            var database = serviceProvider.GetRequiredService<IMongoDatabase>();
+            var empCollection = database.GetCollection<EmployeeEntity>("employees");
+            var ceoEmployee = await empCollection
+                .Find(e => e.EmployeeCode == "CEO001" && !e.IsDeleted)
+                .FirstOrDefaultAsync();
+            if (ceoEmployee != null)
+            {
+              prodAdminUser.EmployeeId = ceoEmployee.Id;
+              await userManager.UpdateAsync(prodAdminUser);
+              Console.WriteLine($"[OK] Linked Admin account to CEO employee ({ceoEmployee.Id}).");
+            }
+            else
+            {
+              Console.WriteLine("[WARN] Admin account has no EmployeeId and CEO001 employee not found.");
             }
           }
 

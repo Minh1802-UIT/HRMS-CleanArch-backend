@@ -42,6 +42,7 @@ namespace Employee.API.Common
       if (code.EndsWith("_UNAUTHORIZED") || code.EndsWith("_REQUIRED")) return 401;
       if (code.EndsWith("_FORBIDDEN") || code.EndsWith("_DENIED")) return 403;
       if (code.EndsWith("_INTERNAL_ERROR") || code.EndsWith("_SERVER_ERROR")) return 500;
+      if (code.Contains("_UNLINKED")) return 403;
       if (code.EndsWith("_INVALID") || code.EndsWith("_MISSING") ||
           code.EndsWith("_FAILED") || code.EndsWith("_BAD_REQUEST"))
       {
