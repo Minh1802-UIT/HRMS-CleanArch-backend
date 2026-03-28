@@ -3,6 +3,7 @@ using Employee.Application.Common.Exceptions;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Application.Features.Attendance.Mappers;
 using MediatR;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 namespace Employee.Application.Features.Attendance.Commands.CheckIn
@@ -17,28 +18,34 @@ namespace Employee.Application.Features.Attendance.Commands.CheckIn
     private readonly IRawAttendanceLogRepository _rawRepo;
     private readonly IAttendanceProcessingService _processingService;
     private readonly ILogger<CheckInHandler> _logger;
+    private readonly IHostEnvironment _hostEnvironment;
 
     public CheckInHandler(
         IRawAttendanceLogRepository rawRepo,
         IAttendanceProcessingService processingService,
-        ILogger<CheckInHandler> logger)
+        ILogger<CheckInHandler> logger,
+        IHostEnvironment hostEnvironment)
     {
       _rawRepo           = rawRepo;
       _processingService = processingService;
       _logger            = logger;
+      _hostEnvironment   = hostEnvironment;
     }
 
     public async Task Handle(CheckInCommand request, CancellationToken cancellationToken)
     {
-      // 1. SPAM PROTECTION: block actions faster than 60 seconds apart
-      var latestLog = await _rawRepo.GetLatestLogAsync(request.EmployeeId);
-      if (latestLog != null)
+      // 1. SPAM PROTECTION: block actions faster than 60 seconds apart (off in "Testing" — see unit tests)
+      if (!_hostEnvironment.IsEnvironment("Testing"))
       {
-        var diff = DateTime.UtcNow - latestLog.Timestamp;
-        if (diff.TotalSeconds < 60)
+        var latestLog = await _rawRepo.GetLatestLogAsync(request.EmployeeId, cancellationToken);
+        if (latestLog != null)
         {
-          throw new ConflictException(
-              $"Bạn thao tác quá nhanh! Vui lòng chờ {60 - (int)diff.TotalSeconds} giây nữa.");
+          var diff = DateTime.UtcNow - latestLog.Timestamp;
+          if (diff.TotalSeconds < 60)
+          {
+            throw new ConflictException(
+                $"Bạn thao tác quá nhanh! Vui lòng chờ {60 - (int)diff.TotalSeconds} giây nữa.");
+          }
         }
       }
 

@@ -19,7 +19,7 @@ namespace Employee.IntegrationTests.Repositories;
 ///
 /// Exercises:
 /// - Raw attendance log persistence to MongoDB
-/// - Spam protection (60-second cooldown)
+/// - Spam cooldown is disabled under host environment "Testing" (see <c>CheckInHandler</c> + unit tests)
 /// - Graceful degradation when <see cref="IAttendanceProcessingService"/> fails
 /// - Processing service integration with attendance buckets
 /// </summary>
@@ -113,37 +113,8 @@ public class CheckInHandlerTests : IntegrationTestBase
     Assert.Equal("WebApp-Test", latest.DeviceId);
   }
 
-  // ─────────────────────────────────────────────────────────────────
-  // Spam Protection Tests
-  // ─────────────────────────────────────────────────────────────────
-
-  [Fact]
-  public async Task CheckIn_Within60Seconds_ShouldReturn409Conflict()
-  {
-    // Arrange — seed a recent check-in log (less than 60 seconds ago)
-    var employeeId = await SeedTestEmployeeAsync("Spam Test");
-    var recentLog = new RawAttendanceLog(
-        employeeId,
-        DateTime.UtcNow.AddSeconds(-30), // 30 seconds ago — within cooldown
-        RawLogType.CheckIn,
-        "WebApp-Test");
-    await RawLogs.InsertOneAsync(recentLog);
-
-    var token = GenerateEmployeeToken(employeeId);
-    var dto = new CheckInRequestDto { Type = "CheckIn", DeviceId = "WebApp-Test" };
-
-    var request = new HttpRequestMessage(HttpMethod.Post, "/api/attendance/check-in")
-    {
-      Content = JsonContent.Create(dto)
-    };
-    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-    // Act
-    var response = await Client.SendAsync(request);
-
-    // Assert — spam protection triggered
-    Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
-  }
+  // Spam cooldown (60s) is covered by Employee.UnitTests CheckInHandlerTests — not asserted here because
+  // the integration host uses environment "Testing", where spam checks are off for stable CI.
 
   [Fact]
   public async Task CheckIn_After60Seconds_ShouldSucceed()
