@@ -185,7 +185,7 @@ public class CreateEmployeeHandlerTests : IntegrationTestBase
       },
       JobDetails = new JobDetailsDto
       {
-        DepartmentId = "non-existent-dept-id",
+        DepartmentId = ObjectId.GenerateNewId().ToString(), // valid format but doesn't exist
         PositionId = posId,
         JoinDate = DateTime.UtcNow
       }
@@ -226,7 +226,7 @@ public class CreateEmployeeHandlerTests : IntegrationTestBase
       JobDetails = new JobDetailsDto
       {
         DepartmentId = deptId,
-        PositionId = "non-existent-pos-id",
+        PositionId = ObjectId.GenerateNewId().ToString(), // valid format but doesn't exist
         JoinDate = DateTime.UtcNow
       }
     };
