@@ -66,7 +66,7 @@ public class CreateEmployeeHandlerTests : IntegrationTestBase
 
     var command = new CreateEmployeeCommand
     {
-      EmployeeCode = $"E-{Guid.NewGuid():N}".Substring(0, 12),
+      EmployeeCode = $"E-{Guid.NewGuid():N}".Substring(0, 12).ToUpper(),
       FullName = "Nguyen Van A",
       Email = $"test-{Guid.NewGuid():N}@company.com",
       PersonalInfo = new PersonalInfoDto
@@ -120,7 +120,7 @@ public class CreateEmployeeHandlerTests : IntegrationTestBase
   {
     // Arrange
     var (deptId, posId) = await SeedDepartmentAndPositionAsync();
-    var duplicateCode = $"E-DUP-{Guid.NewGuid():N}".Substring(0, 10);
+    var duplicateCode = $"E-DUP-{Guid.NewGuid():N}".Substring(0, 10).ToUpper();
     var token = GetAdminToken();
 
     var makeCommand = () => new CreateEmployeeCommand
@@ -173,7 +173,7 @@ public class CreateEmployeeHandlerTests : IntegrationTestBase
 
     var command = new CreateEmployeeCommand
     {
-      EmployeeCode = $"E-{Guid.NewGuid():N}".Substring(0, 10),
+      EmployeeCode = $"E-{Guid.NewGuid():N}".Substring(0, 10).ToUpper(),
       FullName = "Missing Dept User",
       Email = $"test-{Guid.NewGuid():N}@company.com",
       PersonalInfo = new PersonalInfoDto
@@ -213,7 +213,7 @@ public class CreateEmployeeHandlerTests : IntegrationTestBase
 
     var command = new CreateEmployeeCommand
     {
-      EmployeeCode = $"E-{Guid.NewGuid():N}".Substring(0, 10),
+      EmployeeCode = $"E-{Guid.NewGuid():N}".Substring(0, 10).ToUpper(),
       FullName = "Missing Position User",
       Email = $"test-{Guid.NewGuid():N}@company.com",
       PersonalInfo = new PersonalInfoDto
@@ -252,7 +252,7 @@ public class CreateEmployeeHandlerTests : IntegrationTestBase
 
     var command = new CreateEmployeeCommand
     {
-      EmployeeCode = $"E-{Guid.NewGuid():N}".Substring(0, 10),
+      EmployeeCode = $"E-{Guid.NewGuid():N}".Substring(0, 10).ToUpper(),
       FullName = "Unauthorized User",
       Email = $"test-{Guid.NewGuid():N}@company.com",
       PersonalInfo = new PersonalInfoDto
@@ -292,7 +292,7 @@ public class CreateEmployeeHandlerTests : IntegrationTestBase
 
     var command = new
     {
-      EmployeeCode = $"E-{Guid.NewGuid():N}".Substring(0, 10),
+      EmployeeCode = $"E-{Guid.NewGuid():N}".Substring(0, 10).ToUpper(),
       FullName = "", // Empty name
       Email = $"test-{Guid.NewGuid():N}@company.com",
       PersonalInfo = new { DateOfBirth = DateTime.UtcNow.AddYears(-25), IdentityCard = "123456789", PhoneNumber = "0901234567", Gender = "Male" },
