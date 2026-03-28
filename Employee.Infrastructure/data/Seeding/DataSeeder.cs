@@ -1,4 +1,4 @@
-﻿using Employee.Domain.Interfaces.Repositories;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Domain.Common.Models;
 using Employee.Domain.Entities.HumanResource;
 using Employee.Domain.Entities.Leave;
@@ -45,6 +45,44 @@ namespace Employee.Infrastructure.data.Seeding
       var interviewRepo = serviceProvider.GetRequiredService<IInterviewRepository>();
 
       var defaultPassword = config["Seeding:DefaultPassword"] ?? "User@12345";
+
+      // -- TESTING (WebApplicationFactory + Testcontainers): fixture drops collections before each test;
+      // running the full Development seeder on every host startup causes CI timeouts and flaky runs.
+      if (env.IsEnvironment("Testing"))
+      {
+        Console.WriteLine("[SEEDER] TESTING: minimal seed (roles, admin, system settings only).");
+
+        string[] testingRoles = { "Admin", "HR", "Manager", "Employee" };
+        foreach (var role in testingRoles)
+        {
+          if (!await roleManager.RoleExistsAsync(role))
+            await roleManager.CreateAsync(new ApplicationRole(role));
+        }
+
+        var testAdminEmail = "admin@hrm.com";
+        var testAdminUser = await userManager.FindByEmailAsync(testAdminEmail);
+        if (testAdminUser == null)
+        {
+          testAdminUser = new ApplicationUser
+          {
+            UserName = "admin",
+            Email = testAdminEmail,
+            FullName = "Super Administrator",
+            EmailConfirmed = true
+          };
+          var createResult = await userManager.CreateAsync(testAdminUser, defaultPassword);
+          if (createResult.Succeeded)
+          {
+            await userManager.AddToRoleAsync(testAdminUser, "Admin");
+            await userManager.AddToRoleAsync(testAdminUser, "HR");
+            Console.WriteLine("[SEEDER] [OK] Created Admin User (Testing).");
+          }
+        }
+
+        await EnsureSystemSettingsAsync(settingRepo);
+        Console.WriteLine("[SEEDER] TESTING minimal seed completed.");
+        return;
+      }
 
       // -- PRODUCTION: Only ensure roles & admin exist, never wipe data --
       if (env.IsProduction())
