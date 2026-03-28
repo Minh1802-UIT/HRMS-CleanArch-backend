@@ -75,9 +75,12 @@ public class BaseRepositoryTests : IntegrationTestBase
   [Fact]
   public async Task GetByIdAsync_NonExistentId_ShouldReturnNull()
   {
+    // Id is stored as ObjectId in MongoDB — the driver rejects non-hex strings.
+    var missingId = ObjectId.GenerateNewId().ToString();
+
     // Act
     var result = await Employees
-        .Find(x => x.Id == "non-existent-id")
+        .Find(x => x.Id == missingId)
         .FirstOrDefaultAsync();
 
     // Assert
@@ -120,11 +123,11 @@ public class BaseRepositoryTests : IntegrationTestBase
         .FirstOrDefaultAsync();
     Assert.NotNull(inDb);
 
-    // Assert — but filtered out by standard "active only" query
-    var softDeleteFilter = Builders<EmployeeEntity>.Filter.Eq(x => x.IsDeleted, false);
-    var foundViaActiveFilter = await Employees
-        .Find(softDeleteFilter)
-        .FirstOrDefaultAsync();
+    // Assert — this employee is excluded when active-only filter is applied (same row as BaseRepository)
+    var activeOnly = Builders<EmployeeEntity>.Filter.And(
+        Builders<EmployeeEntity>.Filter.Eq(x => x.Id, emp.Id),
+        Builders<EmployeeEntity>.Filter.Eq(x => x.IsDeleted, false));
+    var foundViaActiveFilter = await Employees.Find(activeOnly).FirstOrDefaultAsync();
     Assert.Null(foundViaActiveFilter);
   }
 
@@ -140,9 +143,13 @@ public class BaseRepositoryTests : IntegrationTestBase
         x => x.Id == deleted.Id,
         Builders<EmployeeEntity>.Update.Set(x => x.IsDeleted, true));
 
-    // Act — query with active-only filter (same as BaseRepository.GetAllAsync)
+    // Act — scope to this test's rows only (DB also contains startup-seeded employees)
+    var ourCodes = new[] { active1.EmployeeCode, active2.EmployeeCode, deleted.EmployeeCode };
     var activeFilter = Builders<EmployeeEntity>.Filter.Eq(x => x.IsDeleted, false);
-    var activeEmployees = await Employees.Find(activeFilter).ToListAsync();
+    var scoped = Builders<EmployeeEntity>.Filter.In(x => x.EmployeeCode, ourCodes);
+    var activeEmployees = await Employees
+        .Find(Builders<EmployeeEntity>.Filter.And(activeFilter, scoped))
+        .ToListAsync();
 
     // Assert
     Assert.Equal(2, activeEmployees.Count);
@@ -227,8 +234,10 @@ public class BaseRepositoryTests : IntegrationTestBase
         SeedEmployeeAsync($"E-PAGE-{i:D3}", $"Employee {i}"));
     await Task.WhenAll(tasks);
 
-    // Act — page 1, page size 10
-    var filter = Builders<EmployeeEntity>.Filter.Eq(x => x.IsDeleted, false);
+    // Act — page 1, page size 10 (only rows created in this test; seeder fills employees too)
+    var filter = Builders<EmployeeEntity>.Filter.And(
+        Builders<EmployeeEntity>.Filter.Eq(x => x.IsDeleted, false),
+        Builders<EmployeeEntity>.Filter.Regex(x => x.EmployeeCode, new BsonRegularExpression("^E-PAGE-")));
     var total = await Employees.CountDocumentsAsync(filter);
     var page1 = await Employees.Find(filter)
         .SortBy(x => x.EmployeeCode)
@@ -259,10 +268,14 @@ public class BaseRepositoryTests : IntegrationTestBase
   }
 
   [Fact]
-  public async Task GetPaged_EmptyDatabase_ShouldReturnEmptyPage()
+  public async Task GetPaged_NoMatches_ShouldReturnEmptyPage()
   {
+    // Seeded data fills the database — assert empty page for an impossible filter instead.
+    var filter = Builders<EmployeeEntity>.Filter.And(
+        Builders<EmployeeEntity>.Filter.Eq(x => x.IsDeleted, false),
+        Builders<EmployeeEntity>.Filter.Eq(x => x.EmployeeCode, "__INTEGRATION_TEST_NO_SUCH_CODE__"));
+
     // Act
-    var filter = Builders<EmployeeEntity>.Filter.Eq(x => x.IsDeleted, false);
     var result = await Employees.Find(filter)
         .Skip(0)
         .Limit(20)
@@ -279,8 +292,10 @@ public class BaseRepositoryTests : IntegrationTestBase
     for (int i = 1; i <= 5; i++)
       await SeedEmployeeAsync($"E-SORT-{i:D2}", $"Sort Employee {i}");
 
-    // Act
-    var filter = Builders<EmployeeEntity>.Filter.Eq(x => x.IsDeleted, false);
+    // Act — limit to this test's codes (ignore seeded employees)
+    var filter = Builders<EmployeeEntity>.Filter.And(
+        Builders<EmployeeEntity>.Filter.Eq(x => x.IsDeleted, false),
+        Builders<EmployeeEntity>.Filter.Regex(x => x.EmployeeCode, new BsonRegularExpression("^E-SORT-")));
     var ascending = await Employees.Find(filter)
         .SortBy(x => x.EmployeeCode)
         .ToListAsync();
