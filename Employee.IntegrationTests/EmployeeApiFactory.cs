@@ -36,6 +36,7 @@ public class EmployeeApiFactory : WebApplicationFactory<Program>
 
   public EmployeeApiFactory(IntegrationTestFixture fixture)
   {
+    Environment.SetEnvironmentVariable("ASPNETCORE_ENVIRONMENT", "Testing");
     _fixture = fixture;
   }
 
