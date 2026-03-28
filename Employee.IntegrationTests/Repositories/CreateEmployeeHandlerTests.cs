@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Net.Http.Headers;
 using System.Text.Json;
 using Microsoft.Extensions.DependencyInjection;
+using Employee.Application.Common.Wrappers;
 using Employee.Application.Features.HumanResource.Dtos;
 using Employee.Application.Features.HumanResource.Commands.CreateEmployee;
 using Employee.Domain.Entities.HumanResource;
@@ -101,7 +102,10 @@ public class CreateEmployeeHandlerTests : IntegrationTestBase
     // Assert — HTTP layer
     Assert.Equal(HttpStatusCode.Created, response.StatusCode);
 
-    var dto = await response.Content.ReadFromJsonAsync<EmployeeDto>();
+    var apiResponse = await response.Content.ReadFromJsonAsync<ApiResponse<EmployeeDto>>();
+    Assert.NotNull(apiResponse);
+    Assert.True(apiResponse.Succeeded);
+    var dto = apiResponse.Data;
     Assert.NotNull(dto);
     Assert.Equal(command.FullName, dto.FullName);
     Assert.Equal(command.Email, dto.Email);
