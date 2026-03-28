@@ -128,7 +128,7 @@ public class ReviewLeaveRequestHandlerTests : IntegrationTestBase
         .FirstOrDefaultAsync();
     Assert.NotNull(updated);
     Assert.Equal(LeaveStatus.Approved, updated.Status);
-    Assert.Equal("manager-001", updated.ApprovedBy);
+    Assert.Equal("manager-emp-001", updated.ApprovedBy);
     Assert.Equal("Approved. Enjoy your vacation!", updated.ManagerComment);
     Assert.Equal(2, updated.Version); // version bumped by 1
   }
@@ -165,7 +165,7 @@ public class ReviewLeaveRequestHandlerTests : IntegrationTestBase
     var updated = await LeaveRequests.Find(x => x.Id == requestId).FirstOrDefaultAsync();
     Assert.NotNull(updated);
     Assert.Equal(LeaveStatus.Rejected, updated.Status);
-    Assert.Equal("manager-001", updated.ApprovedBy);
+    Assert.Equal("manager-emp-001", updated.ApprovedBy);
   }
 
   // ─────────────────────────────────────────────────────────────────
