@@ -12,6 +12,8 @@ public class EmployeeListSummary
     public string Id { get; set; } = string.Empty;
     public string EmployeeCode { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
+    public string Email { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
     public string DepartmentId { get; set; } = string.Empty;
     public string PositionId { get; set; } = string.Empty;

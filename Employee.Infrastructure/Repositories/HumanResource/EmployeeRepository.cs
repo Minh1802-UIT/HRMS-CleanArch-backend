@@ -56,6 +56,8 @@ namespace Employee.Infrastructure.Repositories.HumanResource
               .Include(x => x.Id)
               .Include(x => x.EmployeeCode)
               .Include(x => x.FullName)
+              .Include(x => x.Email)
+              .Include("PersonalInfo.PhoneNumber")
               .Include(x => x.AvatarUrl)
               .Include("JobDetails.DepartmentId")
               .Include("JobDetails.PositionId")
@@ -92,6 +94,7 @@ namespace Employee.Infrastructure.Repositories.HumanResource
             var summaries = entities.Select(e =>
             {
                 var jobDetails = e.TryGetElement("JobDetails", out var jdElem) ? jdElem.Value.AsBsonDocument : null;
+                var personalInfo = e.TryGetElement("PersonalInfo", out var piElem) ? piElem.Value.AsBsonDocument : null;
                 var statusStr = jobDetails != null && jobDetails.TryGetElement("Status", out var stElem)
             ? stElem.Value.ToString() ?? string.Empty : string.Empty;
                 return new EmployeeListSummary
@@ -99,6 +102,8 @@ namespace Employee.Infrastructure.Repositories.HumanResource
                     Id = e.GetValue("_id", BsonNull.Value).ToString()!,
                     EmployeeCode = e.GetValue("EmployeeCode", new BsonString(string.Empty)).AsString,
                     FullName = e.GetValue("FullName", new BsonString(string.Empty)).AsString,
+                    Email = e.TryGetElement("Email", out var mElem) && mElem.Value != BsonNull.Value ? mElem.Value.AsString : string.Empty,
+                    PhoneNumber = personalInfo != null && personalInfo.TryGetElement("PhoneNumber", out var phElem) && phElem.Value != BsonNull.Value ? phElem.Value.AsString : string.Empty,
                     AvatarUrl = e.TryGetElement("AvatarUrl", out var avElem) && avElem.Value != BsonNull.Value
                              ? avElem.Value.AsString : null,
                     DepartmentId = jobDetails != null && jobDetails.TryGetElement("DepartmentId", out var dElem)

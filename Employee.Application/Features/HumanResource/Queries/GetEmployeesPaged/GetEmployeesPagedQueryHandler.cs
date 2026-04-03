@@ -41,6 +41,8 @@ namespace Employee.Application.Features.HumanResource.Queries.GetEmployeesPaged
         Id             = s.Id,
         EmployeeCode   = s.EmployeeCode,
         FullName       = s.FullName,
+        Email          = s.Email,
+        PhoneNumber    = s.PhoneNumber,
         DepartmentName = depts.GetValueOrDefault(s.DepartmentId)     ?? "N/A",
         PositionName   = positions.GetValueOrDefault(s.PositionId)   ?? "N/A",
         Status         = s.Status,
