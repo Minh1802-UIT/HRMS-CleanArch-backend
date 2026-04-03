@@ -57,7 +57,7 @@ namespace Employee.Infrastructure.Repositories.HumanResource
               .Include(x => x.EmployeeCode)
               .Include(x => x.FullName)
               .Include(x => x.Email)
-              .Include("PersonalInfo.PhoneNumber")
+              .Include("PersonalInfo.Phone")
               .Include(x => x.AvatarUrl)
               .Include("JobDetails.DepartmentId")
               .Include("JobDetails.PositionId")
@@ -103,7 +103,7 @@ namespace Employee.Infrastructure.Repositories.HumanResource
                     EmployeeCode = e.GetValue("EmployeeCode", new BsonString(string.Empty)).AsString,
                     FullName = e.GetValue("FullName", new BsonString(string.Empty)).AsString,
                     Email = e.TryGetElement("Email", out var mElem) && mElem.Value != BsonNull.Value ? mElem.Value.AsString : string.Empty,
-                    PhoneNumber = personalInfo != null && personalInfo.TryGetElement("PhoneNumber", out var phElem) && phElem.Value != BsonNull.Value ? phElem.Value.AsString : string.Empty,
+                    PhoneNumber = personalInfo != null && personalInfo.TryGetElement("Phone", out var phElem) && phElem.Value != BsonNull.Value ? phElem.Value.AsString : string.Empty,
                     AvatarUrl = e.TryGetElement("AvatarUrl", out var avElem) && avElem.Value != BsonNull.Value
                              ? avElem.Value.AsString : null,
                     DepartmentId = jobDetails != null && jobDetails.TryGetElement("DepartmentId", out var dElem)
