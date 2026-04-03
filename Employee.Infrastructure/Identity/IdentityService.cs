@@ -116,7 +116,16 @@ namespace Employee.Infrastructure.Identity
 
         public async Task<Result> SyncUserFromEmployeeAsync(string employeeId, string fullName, string email)
         {
-            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.EmployeeId == employeeId);
+            // First try to find by Username (which usually equals EmployeeId in this system for employees)
+            var user = await _userManager.FindByNameAsync(employeeId);
+            
+            if (user == null)
+            {
+                // Fallback: search by EmployeeId property, fetching to memory to avoid async LINQ translation issues with MongoDB
+                var users = _userManager.Users.Where(u => u.EmployeeId == employeeId).ToList();
+                user = users.FirstOrDefault();
+            }
+
             if (user == null) return Result.Success(); // No linked user to update
 
             var needsUpdate = false;
@@ -129,8 +138,7 @@ namespace Employee.Infrastructure.Identity
 
             if (user.Email != email)
             {
-                user.Email = email;
-                // If using UserName == Email in another context, update it too. But here UserName = EmployeeId, so leave UserName as is.
+                await _userManager.SetEmailAsync(user, email);
                 needsUpdate = true;
             }
 
