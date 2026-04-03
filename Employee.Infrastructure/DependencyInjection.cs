@@ -33,6 +33,7 @@ namespace Employee.Infrastructure
             // 1. DATABASE CONFIGURATION
             // ==========================================
             MongoClassMapConfig.Configure();
+            MongoMappingConfig.RegisterMappings();
 
             var connectionString = configuration.GetValue<string>("EmployeeDatabaseSettings:ConnectionString");
             var databaseName = configuration.GetValue<string>("EmployeeDatabaseSettings:DatabaseName");
@@ -158,6 +159,8 @@ namespace Employee.Infrastructure
             services.AddHostedService<ContractExpirationBackgroundService>();
             // Nightly hard-delete of soft-deleted records older than 90 days
             services.AddHostedService<SoftDeleteCleanupBackgroundService>();
+            // Periodic overdue status sweep for performance goals
+            services.AddHostedService<PerformanceGoalOverdueBackgroundService>();
             // Sweeps unprocessed RawAttendanceLogs every 5 minutes (configurable).
             // CheckInHandler no longer processes inline — this job owns all bucket updates.
             services.AddHostedService<AttendanceProcessingBackgroundJob>();

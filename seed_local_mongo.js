@@ -1,8 +1,8 @@
-const { MongoClient, ObjectId } = require('C:\\temp\\mongo_check\\node_modules\\mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 
 async function main() {
     // Connect to the local MongoDB where the backend points to
-    const uri = "mongodb://localhost:27017";
+    const uri = process.env.MONGO_URI || process.env.MONGODB_URI || "mongodb://localhost:27017";
     const client = new MongoClient(uri);
 
     try {

@@ -1,7 +1,11 @@
-const { MongoClient } = require('C:\\temp\\mongo_check\\node_modules\\mongodb');
+const { MongoClient } = require('mongodb');
+
+const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
+if (!uri) {
+    throw new Error('MONGO_URI is required. Set it before running this script.');
+}
 
 async function main() {
-    const uri = "mongodb+srv://nguyenvanminh180220_db_user:Pass-180220@cluster0.kfpckor.mongodb.net/HRMS";
     const client = new MongoClient(uri);
 
     try {

@@ -6,7 +6,13 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        var connectionString = "mongodb+srv://nguyenvanminh180220_db_user:Pass-180220@cluster0.kfpckor.mongodb.net/";
+        var connectionString = Environment.GetEnvironmentVariable("MONGO_URI")
+            ?? Environment.GetEnvironmentVariable("MONGODB_URI");
+        if (string.IsNullOrWhiteSpace(connectionString))
+        {
+            Console.Error.WriteLine("MONGO_URI is required. Set it before running this tool.");
+            return;
+        }
         var client = new MongoClient(connectionString);
         var db = client.GetDatabase("HRMS");
         var collection = db.GetCollection<BsonDocument>("contracts");

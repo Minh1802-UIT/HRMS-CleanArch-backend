@@ -211,6 +211,9 @@ cd Employee.API
 dotnet user-secrets set "JwtSettings:Key" "your-min-32-char-secret-key-here!!"
 dotnet user-secrets set "EmailSettings:Password" "your-smtp-app-password"
 dotnet user-secrets set "Seeding:DefaultPassword" "Admin@123456"
+dotnet user-secrets set "EmployeeDatabaseSettings:ConnectionString" "mongodb://localhost:27017"
+dotnet user-secrets set "SupabaseStorage:ProjectUrl" "https://your-project.supabase.co"
+dotnet user-secrets set "SupabaseStorage:ServiceKey" "your-supabase-service-role-key"
 ```
 
 ### 4. Start infrastructure services
@@ -253,6 +256,19 @@ Copy to `.env` — this file is **gitignored** and must never be committed.
 | `CORS_ALLOWED_ORIGINS` | ✅ | Frontend origin (e.g. `https://hrms.example.com`) |
 | `SEEDING_DEFAULT_PASSWORD` | ✅ | Default password for seeded accounts |
 | `DOCKER_USERNAME` | Docker only | Docker Hub username for prod image pull |
+
+**Local scripts / tooling**
+
+Some maintenance scripts (Python) and ad-hoc Node tools read `MONGO_URI` (or `MONGODB_URI`).
+Set it before running any script outside Docker:
+
+```bash
+# PowerShell
+$env:MONGO_URI="mongodb://localhost:27017"
+
+# Bash
+export MONGO_URI="mongodb://localhost:27017"
+```
 
 **appsettings.json keys** (directly in config for non-secret values):
 
@@ -409,8 +425,13 @@ pip install pymongo
 | `scripts/seed_payroll_cycles.py` | Seeds payroll cycles for the year |
 
 ```bash
-# Run with connection string
-python scripts/seed_public_holidays_2026.py --uri "mongodb://localhost:27017" --db "EmployeeCleanDB"
+# PowerShell
+$env:MONGO_URI="mongodb://localhost:27017"
+python scripts/seed_public_holidays_2026.py
+
+# Bash
+export MONGO_URI="mongodb://localhost:27017"
+python scripts/seed_public_holidays_2026.py
 ```
 
 ---

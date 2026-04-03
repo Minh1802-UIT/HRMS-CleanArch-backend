@@ -1,5 +1,4 @@
 using Employee.Domain.Interfaces.Repositories;
-using Employee.Domain.Enums;
 using Employee.Application.Features.Performance.Dtos;
 using Employee.Application.Features.Performance.Mappers;
 using MediatR;
@@ -24,14 +23,10 @@ namespace Employee.Application.Features.Performance.Queries.GetAllGoals
       var all = await _repo.GetAllAsync(cancellationToken);
       var goalList = all.ToList();
 
-      // Auto-mark overdue
+      // Auto-mark overdue for response only; persistence handled by background job.
       foreach (var goal in goalList)
       {
         goal.MarkAsOverdueIfPastDue();
-        if (goal.Status == PerformanceGoalStatus.Overdue)
-        {
-          await _repo.UpdateAsync(goal.Id, goal, cancellationToken);
-        }
       }
 
       return goalList.Select(g => g.ToDto()).ToList();

@@ -2,6 +2,7 @@ using Employee.Application.Common.Dtos;
 using Employee.Application.Common.Interfaces;
 using Employee.Application.Features.Recruitment.Dtos;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace Employee.Application.Features.Recruitment.Commands.Candidate.ParseCv
 {
@@ -11,11 +12,16 @@ namespace Employee.Application.Features.Recruitment.Commands.Candidate.ParseCv
     {
         private readonly IPdfExtractorService _pdfExtractor;
         private readonly IAiService _aiService;
+        private readonly ILogger<ParseCvCommandHandler> _logger;
 
-        public ParseCvCommandHandler(IPdfExtractorService pdfExtractor, IAiService aiService)
+        public ParseCvCommandHandler(
+            IPdfExtractorService pdfExtractor,
+            IAiService aiService,
+            ILogger<ParseCvCommandHandler> logger)
         {
             _pdfExtractor = pdfExtractor;
             _aiService = aiService;
+            _logger = logger;
         }
 
         public async Task<Result<ParsedCvDto>> Handle(ParseCvCommand request, CancellationToken cancellationToken)
@@ -38,7 +44,8 @@ namespace Employee.Application.Features.Recruitment.Commands.Candidate.ParseCv
             }
             catch (Exception ex)
             {
-                return Result<ParsedCvDto>.Failure($"An error occurred while parsing CV: {ex.Message}");
+                _logger.LogError(ex, "An error occurred while parsing CV.");
+                return Result<ParsedCvDto>.Failure("An error occurred while parsing CV. Please try again.");
             }
         }
     }

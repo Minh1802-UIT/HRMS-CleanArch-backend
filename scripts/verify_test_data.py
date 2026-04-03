@@ -1,7 +1,10 @@
 import json
+import os
 from pymongo import MongoClient
 
-MONGO_URI = "mongodb+srv://nguyenvanminh180220_db_user:Pass-180220@cluster0.kfpckor.mongodb.net/"
+MONGO_URI = os.getenv("MONGO_URI")
+if not MONGO_URI:
+    raise SystemExit("MONGO_URI is required. Set it before running this script.")
 DB_NAME   = "EmployeeCleanDB"
 
 client = MongoClient(MONGO_URI)

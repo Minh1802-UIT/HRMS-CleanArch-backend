@@ -12,12 +12,15 @@ VD:
   03/2026 → 26/02/2026 – 25/03/2026  (19 ngày công — không có ngày lễ)
 """
 
+import os
 from pymongo import MongoClient
 from datetime import datetime, timedelta, timezone
 from bson import ObjectId
 
 # ── Config ─────────────────────────────────────────────────────────────────
-MONGO_URI = "mongodb+srv://nguyenvanminh180220_db_user:Pass-180220@cluster0.kfpckor.mongodb.net/"
+MONGO_URI = os.getenv("MONGO_URI")
+if not MONGO_URI:
+    raise SystemExit("MONGO_URI is required. Set it before running this script.")
 DB_NAME   = "EmployeeCleanDB"
 
 client = MongoClient(MONGO_URI)

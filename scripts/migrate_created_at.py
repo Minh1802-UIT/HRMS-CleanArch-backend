@@ -16,12 +16,15 @@ CreatedAt đúng (ví dụ payroll_cycles, public_holidays, raw_attendance_logs 
 sẽ không bị động tới.
 """
 
+import os
 from pymongo import MongoClient, UpdateOne
 from datetime import datetime, timezone
 from bson import ObjectId
 
 # ── Config ────────────────────────────────────────────────────────────────────
-MONGO_URI = "mongodb+srv://nguyenvanminh180220_db_user:Pass-180220@cluster0.kfpckor.mongodb.net/"
+MONGO_URI = os.getenv("MONGO_URI")
+if not MONGO_URI:
+    raise SystemExit("MONGO_URI is required. Set it before running this script.")
 DB_NAME   = "EmployeeCleanDB"
 
 # Collections cần migrate (tất cả collection có entity kế thừa BaseEntity mà

@@ -1,5 +1,6 @@
-using Employee.Domain.Interfaces.Repositories;
 using Employee.Domain.Entities.Performance;
+using Employee.Domain.Enums;
+using Employee.Domain.Interfaces.Repositories;
 using Employee.Infrastructure.Persistence;
 using Employee.Infrastructure.Repositories.Common;
 using MongoDB.Driver;
@@ -57,6 +58,14 @@ namespace Employee.Infrastructure.Repositories.Performance
           Builders<PIP>.Filter.Eq(x => x.Status, Domain.Enums.PIPStatus.InProgress),
           Builders<PIP>.Filter.Lt(x => x.EndDate, now));
       return await _collection.Find(filter).ToListAsync(cancellationToken);
+    }
+
+    public async Task<long> CountByStatusAsync(PIPStatus status, CancellationToken cancellationToken = default)
+    {
+      var filter = Builders<PIP>.Filter.And(
+          SoftDeleteFilter.GetActiveOnlyFilter<PIP>(),
+          Builders<PIP>.Filter.Eq(x => x.Status, status));
+      return await _collection.CountDocumentsAsync(filter, cancellationToken: cancellationToken);
     }
   }
 }

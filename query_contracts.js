@@ -1,7 +1,11 @@
-const { MongoClient } = require('C:\\temp\\mongo_check\\node_modules\\mongodb');
+const { MongoClient } = require('mongodb');
+
+const uri = process.env.MONGO_URI || process.env.MONGODB_URI;
+if (!uri) {
+    throw new Error('MONGO_URI is required. Set it before running this script.');
+}
 
 async function main() {
-    const uri = "mongodb://nguyenvanminh180220_db_user:Pass-180220@ac-nfe7wrl-shard-00-00.kfpckor.mongodb.net:27017,ac-nfe7wrl-shard-00-01.kfpckor.mongodb.net:27017,ac-nfe7wrl-shard-00-02.kfpckor.mongodb.net:27017/?ssl=true&authSource=admin&retryWrites=true&w=majority";
     const client = new MongoClient(uri);
 
     try {
