@@ -114,6 +114,35 @@ namespace Employee.Infrastructure.Identity
             return errors.Any() ? Result.Failure(errors) : Result.Success();
         }
 
+        public async Task<Result> SyncUserFromEmployeeAsync(string employeeId, string fullName, string email)
+        {
+            var user = await _userManager.Users.FirstOrDefaultAsync(u => u.EmployeeId == employeeId);
+            if (user == null) return Result.Success(); // No linked user to update
+
+            var needsUpdate = false;
+
+            if (user.FullName != fullName)
+            {
+                user.FullName = fullName;
+                needsUpdate = true;
+            }
+
+            if (user.Email != email)
+            {
+                user.Email = email;
+                // If using UserName == Email in another context, update it too. But here UserName = EmployeeId, so leave UserName as is.
+                needsUpdate = true;
+            }
+
+            if (needsUpdate)
+            {
+                var result = await _userManager.UpdateAsync(user);
+                return result.ToApplicationResult();
+            }
+
+            return Result.Success();
+        }
+
         public async Task<List<UserDto>> GetUsersAsync()
         {
             // Refactor: use IQueryable and ToListAsync to avoid synchronous load

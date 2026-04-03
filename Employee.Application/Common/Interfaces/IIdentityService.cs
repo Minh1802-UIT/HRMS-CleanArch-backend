@@ -11,6 +11,7 @@ namespace Employee.Application.Common.Interfaces
     Task<(Result Result, string UserId)> CreateUserAsync(string userName, string email, string password, string fullName, string? employeeId);
     Task<Result> DeleteUserAsync(string userId);
     Task<Result> DeleteByEmployeeIdAsync(string employeeId);
+    Task<Result> SyncUserFromEmployeeAsync(string employeeId, string fullName, string email);
 
     // Auth specific
     Task<List<UserDto>> GetUsersAsync();
