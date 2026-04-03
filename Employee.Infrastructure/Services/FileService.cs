@@ -11,13 +11,14 @@ namespace Employee.Infrastructure.Services
         private readonly SupabaseStorageOptions _options;
         private readonly Supabase.Client _supabaseClient;
         private const long MaxFileSizeBytes = 5 * 1024 * 1024; // 5MB limit
-        private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".pdf", ".docx" };
+        private static readonly string[] AllowedExtensions = { ".jpg", ".jpeg", ".png", ".webp", ".pdf", ".docx" };
 
         private static readonly Dictionary<string, byte[][]> MagicBytes = new()
         {
             { ".jpg",  [ [0xFF, 0xD8, 0xFF] ] },
             { ".jpeg", [ [0xFF, 0xD8, 0xFF] ] },
             { ".png",  [ [0x89, 0x50, 0x4E, 0x47] ] },
+            { ".webp", [ [0x52, 0x49, 0x46, 0x46] ] }, // RIFF
             { ".pdf",  [ [0x25, 0x50, 0x44, 0x46] ] },
             { ".docx", [ [0x50, 0x4B, 0x03, 0x04], [0x50, 0x4B, 0x05, 0x06] ] },
         };

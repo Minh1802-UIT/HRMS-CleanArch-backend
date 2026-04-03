@@ -9,36 +9,39 @@ namespace Employee.API.Endpoints.Common
   {
     public static async Task<IResult> UploadFile(
         HttpContext context,
-        IFileService fileService,
-        [FromForm] string folderName = "general")
+        IFileService fileService)
     {
-      var form = await context.Request.ReadFormAsync();
-      var file = form.Files.GetFile("file");
-
-      if (file == null || file.Length == 0)
-        return ResultUtils.Fail("FILE_NOT_UPLOADED", "No file uploaded.", 400);
-
-      // 1. Validate File Ext
-      var ext = Path.GetExtension(file.FileName).ToLower();
-      var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".pdf", ".doc", ".docx" };
-      if (!allowedExtensions.Contains(ext))
-        return ResultUtils.Fail("FILE_TYPE_NOT_ALLOWED", $"File type '{ext}' is not allowed.", 400);
-
-      // 2. Max Size (5MB)
-      if (file.Length > 5 * 1024 * 1024)
-        return ResultUtils.Fail("FILE_SIZE_EXCEEDED", "File size exceeds the 5 MB limit.", 400);
-
-      // 3. Map IFormFile → FileUploadRequest
-      var uploadRequest = new FileUploadRequest
-      {
-        Content = file.OpenReadStream(),
-        FileName = file.FileName,
-        ContentType = file.ContentType,
-        Length = file.Length
-      };
-
       try
       {
+        if (!context.Request.HasFormContentType)
+            return ResultUtils.Fail("INVALID_REQUEST", "Request must be multipart/form-data.", 400);
+
+        var form = await context.Request.ReadFormAsync();
+        var file = form.Files.GetFile("file");
+        var folderName = form.TryGetValue("folderName", out var fold) ? fold.ToString() : "general";
+
+        if (file == null || file.Length == 0)
+          return ResultUtils.Fail("FILE_NOT_UPLOADED", "No file uploaded.", 400);
+
+        // 1. Validate File Ext
+        var ext = Path.GetExtension(file.FileName).ToLower();
+        var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".pdf", ".doc", ".docx" };
+        if (!allowedExtensions.Contains(ext))
+          return ResultUtils.Fail("FILE_TYPE_NOT_ALLOWED", $"File type '{ext}' is not allowed.", 400);
+
+        // 2. Max Size (5MB)
+        if (file.Length > 5 * 1024 * 1024)
+          return ResultUtils.Fail("FILE_SIZE_EXCEEDED", "File size exceeds the 5 MB limit.", 400);
+
+        // 3. Map IFormFile → FileUploadRequest
+        var uploadRequest = new FileUploadRequest
+        {
+          Content = file.OpenReadStream(),
+          FileName = file.FileName,
+          ContentType = file.ContentType,
+          Length = file.Length
+        };
+
         var path = await fileService.UploadFileAsync(uploadRequest, folderName);
         return ResultUtils.Success(path, "File uploaded successfully.");
       }
@@ -49,7 +52,7 @@ namespace Employee.API.Endpoints.Common
       catch (Exception ex)
       {
         return ResultUtils.Fail("FILE_UPLOAD_ERROR",
-            $"Upload failed: {ex.Message}", 500);
+            $"Upload failed: {ex.Message} \n {ex.StackTrace}", 500);
       }
     }
   }
