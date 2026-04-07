@@ -21,10 +21,16 @@ public class SimulationBackgroundService : BackgroundService
     private readonly ILogger<SimulationBackgroundService> _logger;
 
     /// <summary>
-    /// When to run the daily simulation. Default: 01:05 UTC = 08:05 ICT.
+    /// When to run the morning simulation. Default: 01:05 UTC = 08:05 ICT.
     /// Format: "HH:mm" UTC.
     /// </summary>
-    private readonly TimeSpan _dailySimulationTime;
+    private readonly TimeSpan _morningSimulationTime;
+
+    /// <summary>
+    /// When to run the evening simulation (CheckOut phase). Default: 11:05 UTC = 18:05 ICT.
+    /// Format: "HH:mm" UTC.
+    /// </summary>
+    private readonly TimeSpan _eveningSimulationTime;
 
     /// <summary>
     /// How often to check if it's time for the daily run. Default: every 5 minutes.
@@ -39,14 +45,16 @@ public class SimulationBackgroundService : BackgroundService
         _scopeFactory = scopeFactory;
         _logger = logger;
 
-        var timeStr = configuration["BackgroundJobs:DailySimulationTimeUtc"] ?? "01:05";
-        _dailySimulationTime = TimeSpan.Parse(timeStr);
+        var morningStr = configuration["BackgroundJobs:MorningSimulationTimeUtc"] ?? "01:05";
+        var eveningStr = configuration["BackgroundJobs:EveningSimulationTimeUtc"] ?? "11:05";
+        _morningSimulationTime = TimeSpan.Parse(morningStr);
+        _eveningSimulationTime = TimeSpan.Parse(eveningStr);
 
         _logger.LogInformation(
-            "SimulationBackgroundService started. Daily simulation scheduled at {Time} UTC ({IctTime} ICT). " +
+            "SimulationBackgroundService started. Morning scheduled at {MorningTime} UTC. Evening scheduled at {EveningTime} UTC. " +
             "Check interval: {Interval} min.",
-            _dailySimulationTime,
-            _dailySimulationTime + TimeSpan.FromHours(7),
+            _morningSimulationTime,
+            _eveningSimulationTime,
             _checkInterval.TotalMinutes);
     }
 
@@ -59,33 +67,61 @@ public class SimulationBackgroundService : BackgroundService
             if (stoppingToken.IsCancellationRequested) break;
 
             var nowUtc = DateTime.UtcNow;
-            var shouldRun = nowUtc.TimeOfDay >= _dailySimulationTime
-                        && nowUtc.TimeOfDay < _dailySimulationTime + _checkInterval;
+            var runMorning = nowUtc.TimeOfDay >= _morningSimulationTime
+                        && nowUtc.TimeOfDay < _morningSimulationTime + _checkInterval;
 
-            if (shouldRun)
+            if (runMorning)
             {
-                await RunSimulationAsync(stoppingToken);
+                await RunMorningSimulationAsync(stoppingToken);
+            }
+
+            var runEvening = nowUtc.TimeOfDay >= _eveningSimulationTime
+                        && nowUtc.TimeOfDay < _eveningSimulationTime + _checkInterval;
+
+            if (runEvening)
+            {
+                await RunEveningSimulationAsync(stoppingToken);
             }
         }
     }
 
-    private async Task RunSimulationAsync(CancellationToken stoppingToken)
+    private async Task RunMorningSimulationAsync(CancellationToken stoppingToken)
     {
         try
         {
             using var scope = _scopeFactory.CreateScope();
             var service = scope.ServiceProvider.GetRequiredService<ISimulationService>();
 
-            _logger.LogInformation("[Simulation] Starting daily simulation run...");
-            var result = await service.RunDailySimulationAsync(stoppingToken);
+            _logger.LogInformation("[Simulation] Starting morning simulation run...");
+            var result = await service.RunMorningSimulationAsync(stoppingToken);
 
             _logger.LogInformation(
-                "[Simulation] Completed: {Success} ok, {Failed} failed, {Skipped} skipped, {DurationMs}ms",
+                "[Simulation] Morning completed: {Success} ok, {Failed} failed, {Skipped} skipped, {DurationMs}ms",
                 result.SuccessCount, result.FailureCount, result.SkippedCount, result.DurationMs);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "[Simulation] Daily simulation run failed.");
+            _logger.LogError(ex, "[Simulation] Morning simulation run failed.");
+        }
+    }
+
+    private async Task RunEveningSimulationAsync(CancellationToken stoppingToken)
+    {
+        try
+        {
+            using var scope = _scopeFactory.CreateScope();
+            var service = scope.ServiceProvider.GetRequiredService<ISimulationService>();
+
+            _logger.LogInformation("[Simulation] Starting evening simulation run...");
+            var result = await service.RunEveningSimulationAsync(stoppingToken);
+
+            _logger.LogInformation(
+                "[Simulation] Evening completed: {Success} ok, {Failed} failed, {Skipped} skipped, {DurationMs}ms",
+                result.SuccessCount, result.FailureCount, result.SkippedCount, result.DurationMs);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "[Simulation] Evening simulation run failed.");
         }
     }
 }

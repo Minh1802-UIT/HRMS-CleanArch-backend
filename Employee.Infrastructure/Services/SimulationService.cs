@@ -18,9 +18,11 @@ namespace Employee.Infrastructure.Services;
 /// </summary>
 public interface ISimulationService
 {
-    Task<DailySimulationResult> RunDailySimulationAsync(CancellationToken ct = default);
+    Task<DailySimulationResult> RunMorningSimulationAsync(CancellationToken ct = default);
+    Task<DailySimulationResult> RunEveningSimulationAsync(CancellationToken ct = default);
     Task<BotProvisioningResult> ProvisionBotsAsync(CancellationToken ct = default);
-    Task<BotSimulationResult> SimulateBotAsync(string botId, DateTime simulationDate, CancellationToken ct = default);
+    Task<BotSimulationResult> SimulateMorningBotAsync(string botId, DateTime simulationDate, CancellationToken ct = default);
+    Task<BotSimulationResult> SimulateEveningBotAsync(string botId, DateTime simulationDate, CancellationToken ct = default);
     Task<SimulationDashboardStats> GetDashboardStatsAsync(CancellationToken ct = default);
 }
 
@@ -54,7 +56,20 @@ public class SimulationService : ISimulationService
         _scopeFactory = scopeFactory;
     }
 
-    public async Task<DailySimulationResult> RunDailySimulationAsync(CancellationToken ct = default)
+    public async Task<DailySimulationResult> RunMorningSimulationAsync(CancellationToken ct = default)
+    {
+        return await RunSimulationPhaseAsync("Morning", botId => SimulateMorningBotAsync(botId, DateTime.UtcNow.Add(VnOffset).Date, ct), ct);
+    }
+
+    public async Task<DailySimulationResult> RunEveningSimulationAsync(CancellationToken ct = default)
+    {
+        return await RunSimulationPhaseAsync("Evening", botId => SimulateEveningBotAsync(botId, DateTime.UtcNow.Add(VnOffset).Date, ct), ct);
+    }
+
+    private async Task<DailySimulationResult> RunSimulationPhaseAsync(
+        string phaseName, 
+        Func<string, Task<BotSimulationResult>> simulateBotAction, 
+        CancellationToken ct)
     {
         var sw = Stopwatch.StartNew();
         var todayVn = DateTime.UtcNow.Add(VnOffset).Date;
@@ -62,7 +77,7 @@ public class SimulationService : ISimulationService
 
         if (bots.Count == 0)
         {
-            _logger.LogInformation("No active simulation bots found. Skipping daily run.");
+            _logger.LogInformation("No active simulation bots found. Skipping {Phase} run.", phaseName);
             return new DailySimulationResult
             {
                 RunAt = DateTime.UtcNow,
@@ -75,15 +90,15 @@ public class SimulationService : ISimulationService
         }
 
         _logger.LogInformation(
-            "Daily simulation starting: {Count} active bots for {Date:yyyy-MM-dd}",
-            bots.Count, todayVn);
+            "{Phase} simulation starting: {Count} active bots for {Date:yyyy-MM-dd}",
+            phaseName, bots.Count, todayVn);
 
         int successCount = 0, failureCount = 0, skippedCount = 0;
         var results = new List<BotSimulationResult>();
 
         foreach (var bot in bots)
         {
-            var result = await SimulateBotAsync(bot.Id, todayVn, ct);
+            var result = await simulateBotAction(bot.Id);
 
             switch (result.OverallResult)
             {
@@ -96,8 +111,8 @@ public class SimulationService : ISimulationService
 
         sw.Stop();
         _logger.LogInformation(
-            "Daily simulation completed in {ElapsedMs}ms: {Success} ok, {Failed} failed, {Skipped} skipped",
-            sw.ElapsedMilliseconds, successCount, failureCount, skippedCount);
+            "{Phase} simulation completed in {ElapsedMs}ms: {Success} ok, {Failed} failed, {Skipped} skipped",
+            phaseName, sw.ElapsedMilliseconds, successCount, failureCount, skippedCount);
 
         return new DailySimulationResult
         {
@@ -112,7 +127,7 @@ public class SimulationService : ISimulationService
         };
     }
 
-    public async Task<BotSimulationResult> SimulateBotAsync(
+    public async Task<BotSimulationResult> SimulateMorningBotAsync(
         string botId, DateTime simulationDate, CancellationToken ct = default)
     {
         var bot = await _botRepo.GetByIdAsync(botId, ct);
@@ -140,12 +155,6 @@ public class SimulationService : ISimulationService
             var checkInResult = await SimulateCheckInAsync(bot, todayUtc, ct);
             actions.Add(checkInResult);
 
-            if (checkInResult.ActionResult == DomainSimulationActionResult.Success)
-            {
-                var checkOutResult = await SimulateCheckOutAsync(bot, todayUtc, ct);
-                actions.Add(checkOutResult);
-            }
-
             var leaveResult = await SimulateLeaveRequestAsync(bot, todayVn, ct);
             if (leaveResult != null) actions.Add(leaveResult);
 
@@ -164,6 +173,59 @@ public class SimulationService : ISimulationService
         {
             sw.Stop();
             _logger.LogError(ex, "Simulation failed for bot {Name} ({Id})", bot.EmployeeName, botId);
+            bot.MarkSimulationFailure();
+            await _botRepo.UpdateAsync(bot.Id, bot, ct);
+            return new BotSimulationResult
+            {
+                BotId = botId, EmployeeId = bot.EmployeeId, EmployeeName = bot.EmployeeName,
+                SimulationDate = simulationDate, Actions = actions,
+                OverallResult = SimulationOverallResult.Failed, ErrorMessage = ex.Message, DurationMs = sw.ElapsedMilliseconds
+            };
+        }
+    }
+
+    public async Task<BotSimulationResult> SimulateEveningBotAsync(
+        string botId, DateTime simulationDate, CancellationToken ct = default)
+    {
+        var bot = await _botRepo.GetByIdAsync(botId, ct);
+        if (bot == null)
+            return new BotSimulationResult { BotId = botId, SimulationDate = simulationDate, OverallResult = SimulationOverallResult.Failed, ErrorMessage = "Bot not found" };
+
+        var todayVn = simulationDate.Date;
+        var todayUtc = todayVn.Subtract(VnOffset);
+
+        if (!bot.IsWorkDay(todayUtc))
+        {
+            return new BotSimulationResult
+            {
+                BotId = botId, EmployeeId = bot.EmployeeId, EmployeeName = bot.EmployeeName,
+                SimulationDate = simulationDate, OverallResult = SimulationOverallResult.Skipped, SkippedReason = "Non-working day"
+            };
+        }
+
+        var sw = Stopwatch.StartNew();
+        var actions = new List<SimulationActionResult>();
+
+        try
+        {
+            var checkOutResult = await SimulateCheckOutAsync(bot, todayUtc, ct);
+            actions.Add(checkOutResult);
+
+            sw.Stop();
+            bot.MarkSimulationRun(DateTime.UtcNow);
+            await _botRepo.UpdateAsync(bot.Id, bot, ct);
+
+            return new BotSimulationResult
+            {
+                BotId = botId, EmployeeId = bot.EmployeeId, EmployeeName = bot.EmployeeName,
+                SimulationDate = simulationDate, Actions = actions,
+                OverallResult = SimulationOverallResult.Success, DurationMs = sw.ElapsedMilliseconds
+            };
+        }
+        catch (Exception ex)
+        {
+            sw.Stop();
+            _logger.LogError(ex, "Evening simulation failed for bot {Name} ({Id})", bot.EmployeeName, botId);
             bot.MarkSimulationFailure();
             await _botRepo.UpdateAsync(bot.Id, bot, ct);
             return new BotSimulationResult

@@ -15,16 +15,18 @@ namespace Employee.Infrastructure.BackgroundServices;
 /// </summary>
 public static class SimulationBackgroundJobs
 {
-    /// <summary>
-    /// Job ID used for the daily simulation recurring job.
-    /// </summary>
-    public const string DailySimulationJobId = "simulation.daily";
+    public const string MorningSimulationJobId = "simulation.morning";
+    public const string EveningSimulationJobId = "simulation.evening";
 
     /// <summary>
     /// Cron: every day at 01:05 UTC = 08:05 ICT.
-    /// We use UTC because Hangfire stores CRON in UTC by default.
     /// </summary>
-    public const string DailyCron = "5 1 * * *";
+    public const string MorningCron = "5 1 * * *";
+
+    /// <summary>
+    /// Cron: every day at 11:05 UTC = 18:05 ICT.
+    /// </summary>
+    public const string EveningCron = "5 11 * * *";
 
     /// <summary>
     /// Cron: first day of every month at 00:30 UTC = 07:30 ICT.
@@ -59,18 +61,31 @@ public class SimulationBootstrapService : IHostedService
             var recurringJobManager = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
             var service = scope.ServiceProvider.GetRequiredService<ISimulationService>();
 
-            // ── Daily Simulation (08:05 ICT) ─────────────────────────────────
+            // ── Morning Simulation (08:05 ICT) ─────────────────────────────────
             recurringJobManager.AddOrUpdate<ISimulationService>(
-                SimulationBackgroundJobs.DailySimulationJobId,
-                s => s.RunDailySimulationAsync(default),
-                SimulationBackgroundJobs.DailyCron,
+                SimulationBackgroundJobs.MorningSimulationJobId,
+                s => s.RunMorningSimulationAsync(default),
+                SimulationBackgroundJobs.MorningCron,
                 new RecurringJobOptions
                 {
                     TimeZone = TimeZoneInfo.Utc,
                     MisfireHandling = MisfireHandlingMode.Relaxed
                 });
 
-            Console.WriteLine($"[SimulationEngine] Registered daily simulation job '{SimulationBackgroundJobs.DailySimulationJobId}' with cron '{SimulationBackgroundJobs.DailyCron}' (08:05 ICT)");
+            Console.WriteLine($"[SimulationEngine] Registered morning simulation job '{SimulationBackgroundJobs.MorningSimulationJobId}' with cron '{SimulationBackgroundJobs.MorningCron}' (08:05 ICT)");
+
+            // ── Evening Simulation (18:05 ICT) ─────────────────────────────────
+            recurringJobManager.AddOrUpdate<ISimulationService>(
+                SimulationBackgroundJobs.EveningSimulationJobId,
+                s => s.RunEveningSimulationAsync(default),
+                SimulationBackgroundJobs.EveningCron,
+                new RecurringJobOptions
+                {
+                    TimeZone = TimeZoneInfo.Utc,
+                    MisfireHandling = MisfireHandlingMode.Relaxed
+                });
+
+            Console.WriteLine($"[SimulationEngine] Registered evening simulation job '{SimulationBackgroundJobs.EveningSimulationJobId}' with cron '{SimulationBackgroundJobs.EveningCron}' (18:05 ICT)");
 
             // ── Monthly Bot Provisioning ────────────────────────────────────
             recurringJobManager.AddOrUpdate<ISimulationService>(

@@ -250,13 +250,14 @@ public static class SimulationHandlers
 
     /// <summary>
     /// POST /api/simulation/run
-    /// Manually triggers the daily simulation for all active bots.
+    /// Manually triggers both morning and evening simulations for all active bots.
     /// </summary>
     public static async Task<IResult> RunDailySimulation(ISimulationService service)
     {
-        var result = await service.RunDailySimulationAsync();
-        return ResultUtils.Success(result,
-            $"Simulation run completed: {result.SuccessCount} ok, {result.FailureCount} failed, {result.SkippedCount} skipped in {result.DurationMs}ms.");
+        var morningResult = await service.RunMorningSimulationAsync();
+        var eveningResult = await service.RunEveningSimulationAsync();
+        return ResultUtils.Success(new { morningResult, eveningResult },
+            $"Simulation run completed. Morning ok: {morningResult.SuccessCount}. Evening ok: {eveningResult.SuccessCount}.");
     }
 
     /// <summary>
@@ -271,8 +272,9 @@ public static class SimulationHandlers
             ? DateTime.UtcNow.AddHours(7).Date
             : DateTime.ParseExact(date, "yyyy-MM-dd", null);
 
-        var result = await service.SimulateBotAsync(botId, simDate);
-        return ResultUtils.Success(result, $"Simulation for bot completed. Overall: {result.OverallResult}");
+        var morning = await service.SimulateMorningBotAsync(botId, simDate);
+        var evening = await service.SimulateEveningBotAsync(botId, simDate);
+        return ResultUtils.Success(new { morning, evening }, $"Simulation for bot completed.");
     }
 
     /// <summary>

@@ -117,11 +117,13 @@ namespace Employee.API.Endpoints.Dev
     public static async Task<IResult> RunSimulation(
         [FromServices] ISimulationService simulationService)
     {
-      var result = await simulationService.RunDailySimulationAsync();
+      var morningResult = await simulationService.RunMorningSimulationAsync();
+      var eveningResult = await simulationService.RunEveningSimulationAsync();
       return Results.Ok(new
       {
-        message = $"Simulation completed: {result.SuccessCount} ok, {result.FailureCount} failed, {result.SkippedCount} skipped in {result.DurationMs}ms",
-        result
+        message = $"Morning OK: {morningResult.SuccessCount}, Evening OK: {eveningResult.SuccessCount}",
+        morningResult,
+        eveningResult
       });
     }
 
