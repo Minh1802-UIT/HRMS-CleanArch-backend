@@ -1,4 +1,4 @@
-﻿using Employee.Application.Features.Attendance.Dtos;
+using Employee.Application.Features.Attendance.Dtos;
 using Employee.Domain.Entities.Attendance;
 using Employee.Domain.Entities.ValueObjects;
 using Employee.Domain.Enums;
@@ -38,6 +38,10 @@ namespace Employee.Application.Features.Attendance.Mappers
         TotalPresent = entity.TotalPresent,
         TotalLate = entity.TotalLate,
         TotalWorkingHours = Math.Round(totalHours, 2),
+        TotalOvertime = Math.Round(entity.TotalOvertime, 2),
+        AvailableCompensatoryHours = Math.Round(entity.AvailableCompensatoryHours, 2),
+        UsedCompensatoryHours = Math.Round(entity.UsedCompensatoryHours, 2),
+        PendingCompensatoryHours = Math.Round(entity.PendingCompensatoryHours, 2),
 
         // Map danh sách ngày công
         Logs = entity.DailyLogs.Select(log => log.ToDto()).OrderBy(x => x.Date).ToList()

@@ -1,4 +1,4 @@
-﻿using Employee.Domain.Enums;
+using Employee.Domain.Enums;
 using System;
 
 namespace Employee.Domain.Entities.ValueObjects
@@ -142,6 +142,13 @@ namespace Employee.Domain.Entities.ValueObjects
       IsLate = false;
       IsEarlyLeave = false;
       IsMissingPunch = false;
+    }
+
+    public void AddCompensatedHours(double hours)
+    {
+      if (hours <= 0) return;
+      WorkingHours += hours;
+      Note = string.IsNullOrEmpty(Note) ? $"[Đã dùng bù {hours}h]" : $"{Note} · [Đã dùng bù {hours}h]";
     }
   }
 }

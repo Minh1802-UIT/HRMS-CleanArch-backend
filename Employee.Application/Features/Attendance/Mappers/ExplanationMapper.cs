@@ -17,7 +17,9 @@ namespace Employee.Application.Features.Attendance.Mappers
           ReviewedBy = e.ReviewedBy,
           ReviewNote = e.ReviewNote,
           ReviewedAt = e.ReviewedAt,
-          CreatedAt = e.CreatedAt
+          CreatedAt = e.CreatedAt,
+          Type = e.Type.ToString(),
+          RequestedCompHours = e.RequestedCompHours
         };
   }
 }

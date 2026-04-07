@@ -25,18 +25,33 @@ namespace Employee.Domain.Entities.Attendance
     public string? ReviewNote { get; private set; }
     public DateTime? ReviewedAt { get; private set; }
 
+    public ExplanationType Type { get; private set; } = ExplanationType.MissingPunch;
+    public double RequestedCompHours { get; private set; } = 0;
+
     // Private ctor for MongoDB deserialization
     private AttendanceExplanation() { }
 
-    public AttendanceExplanation(string employeeId, DateTime workDate, string reason)
+    public AttendanceExplanation(string employeeId, DateTime workDate, string reason, ExplanationType type = ExplanationType.MissingPunch, double requestedCompHours = 0)
     {
       if (string.IsNullOrWhiteSpace(employeeId)) throw new ArgumentException("EmployeeId is required.");
       if (string.IsNullOrWhiteSpace(reason)) throw new ArgumentException("Reason is required.");
       if (reason.Length > 500) throw new ArgumentException("Reason must not exceed 500 characters.");
 
+      if (type == ExplanationType.CompensatoryTime)
+      {
+          if (requestedCompHours <= 0 || requestedCompHours > 2)
+              throw new ArgumentException("Requested compensatory hours must be between > 0 and <= 2.");
+      }
+      else
+      {
+          requestedCompHours = 0;
+      }
+
       EmployeeId = employeeId;
       WorkDate = workDate.Date;   // normalise to date-only
       Reason = reason;
+      Type = type;
+      RequestedCompHours = requestedCompHours;
       Status = ExplanationStatus.Pending;
       CreatedAt = DateTime.UtcNow;
     }

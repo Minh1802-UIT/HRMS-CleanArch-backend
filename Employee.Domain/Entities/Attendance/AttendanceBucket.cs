@@ -1,4 +1,4 @@
-﻿using Employee.Domain.Entities.Common;
+using Employee.Domain.Entities.Common;
 using Employee.Domain.Entities.ValueObjects;
 using Employee.Domain.Enums;
 using System.Collections.Generic;
@@ -24,6 +24,11 @@ namespace Employee.Domain.Entities.Attendance
     public int TotalPresent { get; set; }
     public int TotalLate { get; set; }
     public double TotalOvertime { get; set; }
+
+    // Compensatory Time Balance tracking (Scoped to this month only)
+    public double UsedCompensatoryHours { get; set; }
+    public double PendingCompensatoryHours { get; set; }
+    public double AvailableCompensatoryHours => TotalOvertime > 0 ? (TotalOvertime - UsedCompensatoryHours - PendingCompensatoryHours) : 0;
 
     // Parameterless constructor for MongoDB deserialization
     public AttendanceBucket() { DailyLogs = new List<DailyLog>(); }
@@ -59,6 +64,33 @@ namespace Employee.Domain.Entities.Attendance
       // TotalLate uses the new boolean flag (independent of base status)
       TotalLate = logs.Count(x => x.IsLate);
       TotalOvertime = logs.Sum(x => x.OvertimeHours);
+    }
+
+    public void ReserveCompensatoryHours(double hours)
+    {
+        if (hours <= 0) throw new ArgumentException("Hours must be greater than 0");
+        if (AvailableCompensatoryHours < hours) 
+            throw new InvalidOperationException($"Not enough available compensatory hours. Available: {AvailableCompensatoryHours}, Requested: {hours}");
+        
+        PendingCompensatoryHours += hours;
+    }
+
+    public void ConfirmCompensatoryHours(double hours)
+    {
+        if (hours <= 0) throw new ArgumentException("Hours must be greater than 0");
+        
+        PendingCompensatoryHours -= hours;
+        if (PendingCompensatoryHours < 0) PendingCompensatoryHours = 0; // Safeguard
+
+        UsedCompensatoryHours += hours;
+    }
+
+    public void CancelCompensatoryHours(double hours)
+    {
+        if (hours <= 0) throw new ArgumentException("Hours must be greater than 0");
+        
+        PendingCompensatoryHours -= hours;
+        if (PendingCompensatoryHours < 0) PendingCompensatoryHours = 0; // Safeguard
     }
   }
 }

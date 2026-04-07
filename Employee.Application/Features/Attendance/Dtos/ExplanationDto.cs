@@ -7,6 +7,8 @@ namespace Employee.Application.Features.Attendance.Dtos
   {
     public DateTime WorkDate { get; set; }
     public string Reason { get; set; } = string.Empty;
+    public int Type { get; set; } = 0; // 0 = MissingPunch, 1 = CompensatoryTime
+    public double RequestedCompHours { get; set; } = 0;
   }
 
   /// <summary>Manager / HR duyệt hoặc từ chối giải trình.</summary>
@@ -31,5 +33,7 @@ namespace Employee.Application.Features.Attendance.Dtos
     public string? ReviewNote { get; set; }
     public DateTime? ReviewedAt { get; set; }
     public DateTime CreatedAt { get; set; }
+    public string Type { get; set; } = "MissingPunch";
+    public double RequestedCompHours { get; set; }
   }
 }

@@ -1,4 +1,4 @@
-﻿
+
 namespace Employee.Application.Features.Attendance.Dtos
 {
   // ==========================================
@@ -33,6 +33,10 @@ namespace Employee.Application.Features.Attendance.Dtos
     public int TotalPresent { get; set; }
     public int TotalLate { get; set; }
     public double TotalWorkingHours { get; set; } // Accumulated working hours
+    public double TotalOvertime { get; set; }
+    public double AvailableCompensatoryHours { get; set; }
+    public double UsedCompensatoryHours { get; set; }
+    public double PendingCompensatoryHours { get; set; }
 
     // Daily log details
     public List<DailyLogDto> Logs { get; set; } = new();
