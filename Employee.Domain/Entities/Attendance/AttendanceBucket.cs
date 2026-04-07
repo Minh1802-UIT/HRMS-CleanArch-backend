@@ -23,7 +23,14 @@ namespace Employee.Domain.Entities.Attendance
     // Summary totals
     public int TotalPresent { get; set; }
     public int TotalLate { get; set; }
-    public double TotalOvertime { get; set; }
+    
+    // Dynamic property to infer 'Giờ Dư' from WorkingHours if OvertimeHours wasn't formally set
+    private double _totalOvertime;
+    public double TotalOvertime 
+    { 
+        get => DailyLogs?.Sum(x => x.OvertimeHours > 0 ? x.OvertimeHours : Math.Max(0, x.WorkingHours - 8.0)) ?? 0;
+        set => _totalOvertime = value; 
+    }
 
     // Compensatory Time Balance tracking (Scoped to this month only)
     public double UsedCompensatoryHours { get; set; }
@@ -63,7 +70,8 @@ namespace Employee.Domain.Entities.Attendance
       TotalPresent = logs.Count(x => x.IsPresent);
       // TotalLate uses the new boolean flag (independent of base status)
       TotalLate = logs.Count(x => x.IsLate);
-      TotalOvertime = logs.Sum(x => x.OvertimeHours);
+      // TotalOvertime is dynamically computed, but we can assign to trigger serialization
+      TotalOvertime = logs.Sum(x => x.OvertimeHours > 0 ? x.OvertimeHours : Math.Max(0, x.WorkingHours - 8.0));
     }
 
     public void ReserveCompensatoryHours(double hours)

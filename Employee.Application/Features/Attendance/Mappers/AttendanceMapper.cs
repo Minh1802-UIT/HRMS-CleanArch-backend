@@ -66,7 +66,7 @@ namespace Employee.Application.Features.Attendance.Mappers
         IsEarlyLeave = log.IsEarlyLeave,
         IsMissingPunch = log.IsMissingPunch,
         IsMissingCheckIn = log.IsMissingCheckIn,
-        OvertimeHours = Math.Round(log.OvertimeHours, 2),
+        OvertimeHours = log.OvertimeHours > 0 ? Math.Round(log.OvertimeHours, 2) : Math.Round(Math.Max(0, log.WorkingHours - 8.0), 2),
         IsWeekend      = log.IsWeekend,
         IsHoliday      = log.IsHoliday
       };
