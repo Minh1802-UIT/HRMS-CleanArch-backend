@@ -22,15 +22,21 @@ namespace Employee.Application.Features.Attendance.Commands.Explanation
     private readonly IAttendanceExplanationRepository _repo;
     private readonly IAttendanceRepository _attendanceRepo;
     private readonly ICurrentUser _currentUser;
+    private readonly IShiftRepository _shiftRepo;
+    private readonly IEmployeeRepository _employeeRepo;
 
     public SubmitExplanationHandler(
         IAttendanceExplanationRepository repo,
         IAttendanceRepository attendanceRepo,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IShiftRepository shiftRepo,
+        IEmployeeRepository employeeRepo)
     {
       _repo = repo;
       _attendanceRepo = attendanceRepo;
       _currentUser = currentUser;
+      _shiftRepo = shiftRepo;
+      _employeeRepo = employeeRepo;
     }
 
     public async Task<AttendanceExplanationDto> Handle(SubmitExplanationCommand request, CancellationToken cancellationToken)
@@ -60,10 +66,26 @@ namespace Employee.Application.Features.Attendance.Commands.Explanation
 
       if (type == ExplanationType.CompensatoryTime)
       {
-         if (bucket!.AvailableCompensatoryHours < request.Dto.RequestedCompHours)
-             throw new ValidationException($"Không đủ giờ dư. Số giờ khả dụng là: {bucket.AvailableCompensatoryHours}h");
-             
-         bucket.ReserveCompensatoryHours(request.Dto.RequestedCompHours);
+         // Calculate the actual deficit: how many hours short of standard this day is
+         var shift = await GetEffectiveShiftForSubmitAsync(request.EmployeeId, request.Dto.WorkDate);
+         double standardHours = shift?.StandardWorkingHours ?? 8.0;
+         double deficit = Math.Max(0, standardHours - dailyLog.WorkingHours);
+
+         if (deficit <= 0)
+             throw new ValidationException($"Ngày này đã đủ {standardHours}h công — không cần bù giờ.");
+
+         // Auto-cap requested hours to the deficit
+         double cappedHours = Math.Min(request.Dto.RequestedCompHours, deficit);
+         if (cappedHours <= 0)
+             throw new ValidationException("Số giờ bù phải lớn hơn 0.");
+
+         if (bucket!.AvailableCompensatoryHours < cappedHours)
+             throw new ValidationException($"Không đủ giờ dư. Số giờ khả dụng: {bucket.AvailableCompensatoryHours:F1}h, cần bù: {cappedHours:F1}h");
+
+         // Override the requested hours with the capped value
+         request.Dto.RequestedCompHours = cappedHours;
+
+         bucket.ReserveCompensatoryHours(cappedHours);
          await _attendanceRepo.UpdateAsync(bucket.Id, bucket, cancellationToken);
       }
       else
@@ -79,10 +101,24 @@ namespace Employee.Application.Features.Attendance.Commands.Explanation
       if (existing != null && existing.Status == Domain.Enums.ExplanationStatus.Pending)
         throw new ConflictException("Bạn đã có đơn giải trình đang chờ duyệt cho ngày này.");
 
-      var explanation = new AttendanceExplanation(request.EmployeeId, request.Dto.WorkDate, request.Dto.Reason, type, request.Dto.RequestedCompHours);
+      var explanation = new AttendanceExplanation(
+          request.EmployeeId, request.Dto.WorkDate, request.Dto.Reason,
+          type, request.Dto.RequestedCompHours);
       await _repo.CreateAsync(explanation);
 
       return explanation.ToDto(employeeName: null);
+    }
+
+    private async Task<Domain.Entities.Attendance.Shift?> GetEffectiveShiftForSubmitAsync(string employeeId, DateTime date)
+    {
+      var rosterShift = await _shiftRepo.GetShiftByDateAsync(employeeId, date);
+      if (rosterShift != null) return rosterShift;
+
+      var employee = await _employeeRepo.GetByIdAsync(employeeId);
+      if (!string.IsNullOrEmpty(employee?.JobDetails.ShiftId))
+        return await _shiftRepo.GetByIdAsync(employee.JobDetails.ShiftId);
+
+      return null;
     }
   }
 
@@ -160,8 +196,23 @@ namespace Employee.Application.Features.Attendance.Commands.Explanation
 
       if (explanation.Type == ExplanationType.CompensatoryTime)
       {
-          bucket.ConfirmCompensatoryHours(explanation.RequestedCompHours);
-          dailyLog.AddCompensatedHours(explanation.RequestedCompHours);
+          // Resolve shift to get standard hours for capping
+          var shift = await GetEffectiveShiftAsync(explanation.EmployeeId, explanation.WorkDate);
+          double standardHours = shift?.StandardWorkingHours ?? 8.0;
+
+          // AddCompensatedHours caps at standardHours and returns actual consumed
+          double actualUsed = dailyLog.AddCompensatedHours(explanation.RequestedCompHours, standardHours);
+
+          // Confirm only the actually used hours
+          bucket.ConfirmCompensatoryHours(actualUsed);
+
+          // Return any excess that wasn't needed back to the pool
+          double excess = explanation.RequestedCompHours - actualUsed;
+          if (excess > 0)
+          {
+              bucket.CancelCompensatoryHours(excess);
+          }
+
           bucket.AddOrUpdateDailyLog(dailyLog);
           bucket.RecalculateTotals();
           await _attendanceRepo.UpdateAsync(bucket.Id, bucket, cancellationToken);

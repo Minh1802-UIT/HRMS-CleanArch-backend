@@ -144,11 +144,27 @@ namespace Employee.Domain.Entities.ValueObjects
       IsMissingPunch = false;
     }
 
-    public void AddCompensatedHours(double hours)
+    /// <summary>
+    /// Adds compensated hours to this day, capped so WorkingHours never exceeds
+    /// the shift's standard working hours (default 8.0). Returns the actual hours
+    /// consumed so the caller can track precise compensatory usage.
+    /// </summary>
+    public double AddCompensatedHours(double hours, double standardHours = 8.0)
     {
-      if (hours <= 0) return;
-      WorkingHours += hours;
-      Note = string.IsNullOrEmpty(Note) ? $"[Đã dùng bù {hours}h]" : $"{Note} · [Đã dùng bù {hours}h]";
+      if (hours <= 0) return 0;
+
+      // Cap: only compensate up to standardHours, never beyond
+      double deficit = Math.Max(0, standardHours - WorkingHours);
+      double actualUsed = Math.Min(hours, deficit);
+
+      if (actualUsed <= 0) return 0;
+
+      WorkingHours += actualUsed;
+      Note = string.IsNullOrEmpty(Note)
+          ? $"[Đã dùng bù {actualUsed:F1}h]"
+          : $"{Note} · [Đã dùng bù {actualUsed:F1}h]";
+
+      return actualUsed;
     }
   }
 }
