@@ -174,7 +174,10 @@ namespace Employee.API.Endpoints.Attendance
           CheckIn = log?.CheckIn,
           CheckOut = log?.CheckOut,
           WorkingHours = log?.WorkingHours ?? 0,
-          Status = log?.Status.ToString() ?? "Absent"
+          Status = log?.Status.ToString() ?? "Absent",
+          TrustScore = log?.TrustScore ?? -1,
+          TrustLevel = log?.TrustLevel ?? string.Empty,
+          VerificationWarnings = log?.VerificationWarnings ?? new List<string>()
         };
       }).ToList();
 
