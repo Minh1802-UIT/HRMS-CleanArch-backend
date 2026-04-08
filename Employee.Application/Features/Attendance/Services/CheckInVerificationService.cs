@@ -90,7 +90,7 @@ namespace Employee.Application.Features.Attendance.Services
                     // IMPORTANT FIX: Let's verify against the office they ACTUALLY selected (if it's physical) 
                     // instead of penalizing them against the nearest one which might have a smaller radius.
                     var targetOffice = (selectedOffice != null && !selectedOffice.IsRemote) ? selectedOffice : nearest;
-                    var distance = targetOffice != null ? CalculateHaversineDistance(latitude.Value, longitude.Value, targetOffice.Latitude, targetOffice.Longitude) : distanceToNearest;
+                    var distance = targetOffice != null ? HaversineMeters(latitude.Value, longitude.Value, targetOffice.Latitude, targetOffice.Longitude) : distanceToNearest;
 
                     verification.DistanceToOfficeMeters = distance;
                     verification.NearestOfficeId = targetOffice?.Id;
