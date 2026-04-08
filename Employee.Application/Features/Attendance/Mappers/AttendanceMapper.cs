@@ -21,7 +21,8 @@ namespace Employee.Application.Features.Attendance.Mappers
         dto.DeviceId,
         dto.PhotoBase64,
         dto.Latitude,
-        dto.Longitude
+        dto.Longitude,
+        dto.CheckInPointId
       );
     }
 
@@ -68,7 +69,10 @@ namespace Employee.Application.Features.Attendance.Mappers
         IsMissingCheckIn = log.IsMissingCheckIn,
         OvertimeHours = log.OvertimeHours > 0 ? Math.Round(log.OvertimeHours, 2) : Math.Round(Math.Max(0, log.WorkingHours - 8.0), 2),
         IsWeekend      = log.IsWeekend,
-        IsHoliday      = log.IsHoliday
+        IsHoliday      = log.IsHoliday,
+        TrustScore     = log.TrustScore,
+        TrustLevel     = log.TrustLevel,
+        VerificationWarnings = log.VerificationWarnings ?? new()
       };
     }
   }

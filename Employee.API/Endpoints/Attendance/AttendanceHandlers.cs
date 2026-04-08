@@ -1,4 +1,4 @@
-﻿using System.Linq;
+using System.Linq;
 using Employee.API.Common;
 using Employee.Application.Features.Attendance.Dtos;
 using Employee.Application.Common.Interfaces; // ICurrentUser
@@ -37,7 +37,8 @@ namespace Employee.API.Endpoints.Attendance
         [FromBody] CheckInRequestDto dto,
         ISender sender,
         ICurrentUser currentUser,
-        IIdentityService identityService)
+        IIdentityService identityService,
+        HttpContext httpContext)
     {
       dto.Type = "CheckIn"; // Force type
 
@@ -59,7 +60,9 @@ namespace Employee.API.Endpoints.Attendance
       var command = new CheckInCommand
       {
         Dto = dto,
-        EmployeeId = targetEmployeeId
+        EmployeeId = targetEmployeeId,
+        UserAgent = httpContext.Request.Headers["User-Agent"].ToString(),
+        IpAddress = httpContext.Connection.RemoteIpAddress?.ToString()
       };
 
       await sender.Send(command);
@@ -70,7 +73,8 @@ namespace Employee.API.Endpoints.Attendance
         [FromBody] CheckInRequestDto dto,
         ISender sender,
         ICurrentUser currentUser,
-        IIdentityService identityService)
+        IIdentityService identityService,
+        HttpContext httpContext)
     {
       dto.Type = "CheckOut"; // Force type
 
@@ -92,7 +96,9 @@ namespace Employee.API.Endpoints.Attendance
       var command = new CheckInCommand
       {
         Dto = dto,
-        EmployeeId = targetEmployeeId
+        EmployeeId = targetEmployeeId,
+        UserAgent = httpContext.Request.Headers["User-Agent"].ToString(),
+        IpAddress = httpContext.Connection.RemoteIpAddress?.ToString()
       };
 
       await sender.Send(command);

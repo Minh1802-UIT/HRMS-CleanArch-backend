@@ -19,6 +19,9 @@ namespace Employee.Application.Features.Attendance.Dtos
     // Ảnh selfie dạng base64 (chụp từ webcam lúc check-in)
     // Format: "data:image/jpeg;base64,/9j/4AAQ..."
     public string? PhotoBase64 { get; set; }
+
+    // Office/check-in point ID (from OfficeLocation collection)
+    public string? CheckInPointId { get; set; }
   }
 
   // ==========================================
@@ -69,6 +72,11 @@ namespace Employee.Application.Features.Attendance.Dtos
     public double OvertimeHours { get; set; }
     public bool IsWeekend { get; set; }
     public bool IsHoliday { get; set; }
+
+    // Trust Score verification data (from check-in verification)
+    public int TrustScore { get; set; } = -1;        // 0-100, -1 = N/A
+    public string TrustLevel { get; set; } = string.Empty;  // "High" | "Medium" | "Low"
+    public List<string> VerificationWarnings { get; set; } = new();
   }
   public class AttendanceRangeDto
   {

@@ -124,6 +124,11 @@ namespace Employee.Infrastructure
             services.AddScoped<IAttendanceRepository, Employee.Infrastructure.Repositories.Attendance.AttendanceRepository>();
             services.AddScoped<IAttendanceExplanationRepository, Employee.Infrastructure.Repositories.Attendance.AttendanceExplanationRepository>();
             services.AddScoped<IOvertimeScheduleRepository, Employee.Infrastructure.Repositories.Attendance.OvertimeScheduleRepository>();
+            services.AddScoped<IOfficeLocationRepository, OfficeLocationRepository>();
+            services.AddScoped<IWfhApprovalRepository, WfhApprovalRepository>();
+
+            // Attendance verification (Trust Score)
+            services.AddScoped<Employee.Application.Features.Attendance.Services.CheckInVerificationService>();
 
             // ==========================================
             // 6. LEAVE MANAGEMENT REPOSITORIES

@@ -2,6 +2,7 @@ using Employee.Domain.Interfaces.Repositories;
 using Employee.Application.Common.Exceptions;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Application.Features.Attendance.Mappers;
+using Employee.Application.Features.Attendance.Services;
 using MediatR;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -9,32 +10,34 @@ using Microsoft.Extensions.Logging;
 namespace Employee.Application.Features.Attendance.Commands.CheckIn
 {
   /// <summary>
-  /// Saves the raw punch log then immediately triggers processing so the
-  /// attendance bucket is updated in real-time. The background job continues to
-  /// sweep any logs that slipped through (e.g. service restart mid-request).
+  /// Saves the raw punch log, computes Trust Score via CheckInVerificationService,
+  /// then immediately triggers processing so the attendance bucket reflects the punch.
   /// </summary>
   public class CheckInHandler : IRequestHandler<CheckInCommand>
   {
     private readonly IRawAttendanceLogRepository _rawRepo;
     private readonly IAttendanceProcessingService _processingService;
+    private readonly CheckInVerificationService _verificationService;
     private readonly ILogger<CheckInHandler> _logger;
     private readonly IHostEnvironment _hostEnvironment;
 
     public CheckInHandler(
         IRawAttendanceLogRepository rawRepo,
         IAttendanceProcessingService processingService,
+        CheckInVerificationService verificationService,
         ILogger<CheckInHandler> logger,
         IHostEnvironment hostEnvironment)
     {
-      _rawRepo           = rawRepo;
-      _processingService = processingService;
-      _logger            = logger;
-      _hostEnvironment   = hostEnvironment;
+      _rawRepo              = rawRepo;
+      _processingService    = processingService;
+      _verificationService  = verificationService;
+      _logger               = logger;
+      _hostEnvironment      = hostEnvironment;
     }
 
     public async Task Handle(CheckInCommand request, CancellationToken cancellationToken)
     {
-      // 1. SPAM PROTECTION: block actions faster than 60 seconds apart (off in "Testing" — see unit tests)
+      // 1. SPAM PROTECTION: block actions faster than 60 seconds apart (off in "Testing")
       if (!_hostEnvironment.IsEnvironment("Testing"))
       {
         var latestLog = await _rawRepo.GetLatestLogAsync(request.EmployeeId, cancellationToken);
@@ -52,20 +55,40 @@ namespace Employee.Application.Features.Attendance.Commands.CheckIn
       // 2. Map DTO → entity (timestamp captured as UTC here)
       var rawLog = request.Dto.ToRawEntity(request.EmployeeId);
 
-      // 3. Persist the raw punch
+      // 3. Run Trust Score verification (server-side validation)
+      try
+      {
+        var verification = await _verificationService.VerifyAsync(
+            employeeId:     request.EmployeeId,
+            latitude:       request.Dto.Latitude,
+            longitude:      request.Dto.Longitude,
+            photoBase64:    request.Dto.PhotoBase64,
+            checkInPointId: request.Dto.CheckInPointId,
+            userAgent:      request.UserAgent,
+            ipAddress:      request.IpAddress,
+            timestamp:      rawLog.Timestamp,
+            ct:             cancellationToken);
+
+        rawLog.Verification = verification;
+      }
+      catch (Exception ex)
+      {
+        // Never block check-in because of verification errors
+        _logger.LogWarning(ex,
+            "CheckInHandler: verification failed for EmployeeId={Id}. Proceeding without score.",
+            request.EmployeeId);
+      }
+
+      // 4. Persist the raw punch
       await _rawRepo.CreateAsync(rawLog);
 
-      // 4. Process immediately so the attendance bucket reflects the punch in real-time.
-      //    The atomic lock inside ProcessRawLogsAsync prevents double-processing with
-      //    the background job sweep.
+      // 5. Process immediately so the attendance bucket reflects the punch in real-time.
       try
       {
         await _processingService.ProcessRawLogsAsync();
       }
       catch (Exception ex)
       {
-        // Never fail the check-in request because of processing errors.
-        // The background job will retry on its next sweep.
         _logger.LogWarning(ex,
             "CheckInHandler: inline processing failed for EmployeeId={Id}. " +
             "Background job will retry. Error: {Error}",

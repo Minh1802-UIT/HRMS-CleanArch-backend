@@ -7,5 +7,9 @@ namespace Employee.Application.Features.Attendance.Commands.CheckIn
     {
         public CheckInRequestDto Dto { get; set; } = new();
         public string EmployeeId { get; set; } = string.Empty; // Token
+
+        // Populated by the API layer from HttpContext
+        public string? UserAgent { get; set; }
+        public string? IpAddress { get; set; }
     }
 }

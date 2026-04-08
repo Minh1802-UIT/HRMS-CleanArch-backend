@@ -51,6 +51,11 @@ namespace Employee.Domain.Entities.ValueObjects
     public bool IsHoliday { get; set; }
     public bool IsWeekend { get; set; }
 
+    // Trust Score from check-in verification (0-100, or -1 if not applicable)
+    public int TrustScore { get; set; } = -1;
+    public string TrustLevel { get; set; } = string.Empty; // "High" | "Medium" | "Low"
+    public List<string> VerificationWarnings { get; set; } = new();
+
     // Only ONE public constructor: parameterless.
     // MongoDB Driver 3.x selects the constructor with the MOST parameters when
     // multiple public ctors exist. With only ONE ctor, there is no ambiguity —

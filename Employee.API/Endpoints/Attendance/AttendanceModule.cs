@@ -1,4 +1,4 @@
-﻿using Carter;
+using Carter;
 using Employee.API.Common;
 using Employee.Application.Features.Attendance.Dtos;
 
@@ -68,6 +68,25 @@ namespace Employee.API.Endpoints.Attendance
                group.MapDelete("/overtime-schedule/{id}", AttendanceHandlers.DeleteOvertimeSchedule)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
                group.MapGet("/overtime-schedule", AttendanceHandlers.GetOvertimeSchedulesByMonth)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
+
+               // 10. OFFICE LOCATIONS — check-in point management
+               group.MapGet("/offices", OfficeLocationHandlers.GetActiveOffices);
+               group.MapPost("/offices", OfficeLocationHandlers.CreateOffice)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
+               group.MapPut("/offices/{id}", OfficeLocationHandlers.UpdateOffice)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
+               group.MapDelete("/offices/{id}", OfficeLocationHandlers.DeleteOffice)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
+
+               // 11. WFH APPROVALS — admin pre-approve remote work
+               group.MapPost("/wfh-approvals", WfhHandlers.CreateWfhApproval)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
+               group.MapGet("/wfh-approvals", WfhHandlers.GetAllWfhApprovals)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
+               group.MapGet("/wfh-approvals/employee/{employeeId}", WfhHandlers.GetByEmployee)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
+               group.MapDelete("/wfh-approvals/{id}", WfhHandlers.RevokeWfhApproval)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
           }
      }

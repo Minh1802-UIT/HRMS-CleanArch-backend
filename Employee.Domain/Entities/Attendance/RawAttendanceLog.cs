@@ -26,6 +26,12 @@ namespace Employee.Domain.Entities.Attendance
     public double? Latitude { get; internal set; }
     public double? Longitude { get; internal set; }
 
+    // Office/check-in point selected by user
+    public string? CheckInPointId { get; internal set; }
+
+    // Trust Score & verification evidence (populated by CheckInVerificationService)
+    public CheckInVerification? Verification { get; set; }
+
     // Hidden constructor for MongoDB
     private RawAttendanceLog() { }
 
@@ -36,7 +42,8 @@ namespace Employee.Domain.Entities.Attendance
       string deviceId = "",
       string? photoBase64 = null,
       double? latitude = null,
-      double? longitude = null)
+      double? longitude = null,
+      string? checkInPointId = null)
     {
       if (string.IsNullOrWhiteSpace(employeeId)) throw new ArgumentException("EmployeeId is required.");
 
@@ -47,6 +54,7 @@ namespace Employee.Domain.Entities.Attendance
       PhotoBase64 = photoBase64;
       Latitude = latitude;
       Longitude = longitude;
+      CheckInPointId = checkInPointId;
       CreatedAt = DateTime.UtcNow;
     }
 

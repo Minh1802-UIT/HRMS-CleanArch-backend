@@ -2,6 +2,7 @@ using Employee.Application.Common.Exceptions;
 using Employee.Application.Common.Interfaces.Organization.IService;
 using Employee.Application.Features.Attendance.Commands.CheckIn;
 using Employee.Application.Features.Attendance.Dtos;
+using Employee.Application.Features.Attendance.Services;
 using Employee.Domain.Entities.Attendance;
 using Employee.Domain.Enums;
 using Employee.Domain.Interfaces.Repositories;
@@ -21,9 +22,17 @@ public class CheckInHandlerTests
 
   public CheckInHandlerTests()
   {
+    // Create a real CheckInVerificationService with mocked dependencies
+    var verificationService = new CheckInVerificationService(
+        Mock.Of<IOfficeLocationRepository>(),
+        Mock.Of<IWfhApprovalRepository>(),
+        _rawRepo.Object,
+        Mock.Of<ILogger<CheckInVerificationService>>());
+
     _handler = new CheckInHandler(
         _rawRepo.Object,
         _processing.Object,
+        verificationService,
         Mock.Of<ILogger<CheckInHandler>>(),
         _env.Object);
   }
