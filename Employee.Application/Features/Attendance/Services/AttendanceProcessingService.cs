@@ -261,6 +261,17 @@ namespace Employee.Application.Features.Attendance.Services
 
         dailyLog.UpdateCheckTimes(checkIn, checkOut, shift?.Code ?? "Unknown");
 
+        // --- STEP C2: Update Trust Score ---
+        var logWithVerification = newLogs.FirstOrDefault(x => x.Timestamp == checkIn && x.Verification != null) 
+                               ?? newLogs.FirstOrDefault(x => x.Verification != null);
+        
+        if (logWithVerification?.Verification != null && dailyLog.TrustScore == -1)
+        {
+            dailyLog.TrustScore = logWithVerification.Verification.TrustScore;
+            dailyLog.TrustLevel = logWithVerification.Verification.TrustLevel;
+            dailyLog.VerificationWarnings = logWithVerification.Verification.Warnings;
+        }
+
         // --- STEP D: Calculate ---
         _calculator.CalculateDailyStatus(dailyLog, shift);
 
