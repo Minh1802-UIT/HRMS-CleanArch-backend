@@ -270,8 +270,9 @@ namespace Employee.Application.Features.Attendance.Services
             if (checkInLog == null)
             {
                 // Fetch from DB just in case it was already processed before the TrustScore mapping fix
-                var queryStartUtc = TimeZoneInfo.ConvertTimeToUtc(checkIn.Value, _timeZone).AddMinutes(-5);
-                var queryEndUtc = TimeZoneInfo.ConvertTimeToUtc(checkIn.Value, _timeZone).AddMinutes(5);
+                // Note: checkIn.Value is already UTC from the DB
+                var queryStartUtc = checkIn.Value.AddMinutes(-5);
+                var queryEndUtc = checkIn.Value.AddMinutes(5);
                 var pastLogs = await _rawRepo.GetByDateRangeAsync(employeeId, queryStartUtc, queryEndUtc);
                 checkInLog = pastLogs.FirstOrDefault(x => x.Timestamp == checkIn.Value && x.Verification != null);
             }
