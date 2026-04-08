@@ -85,13 +85,18 @@ namespace Employee.Application.Features.Attendance.Services
                 {
                     // Physical offices — find nearest and check geofence
                     var physicalOffices = offices.Where(o => !o.IsRemote).ToList();
-                    var (nearest, distance) = FindNearestOffice(latitude.Value, longitude.Value, physicalOffices);
+                    var (nearest, distanceToNearest) = FindNearestOffice(latitude.Value, longitude.Value, physicalOffices);
+
+                    // IMPORTANT FIX: Let's verify against the office they ACTUALLY selected (if it's physical) 
+                    // instead of penalizing them against the nearest one which might have a smaller radius.
+                    var targetOffice = (selectedOffice != null && !selectedOffice.IsRemote) ? selectedOffice : nearest;
+                    var distance = targetOffice != null ? CalculateHaversineDistance(latitude.Value, longitude.Value, targetOffice.Latitude, targetOffice.Longitude) : distanceToNearest;
 
                     verification.DistanceToOfficeMeters = distance;
-                    verification.NearestOfficeId = nearest?.Id;
-                    verification.NearestOfficeName = nearest?.Name;
+                    verification.NearestOfficeId = targetOffice?.Id;
+                    verification.NearestOfficeName = targetOffice?.Name;
 
-                    if (nearest != null && distance <= nearest.RadiusMeters)
+                    if (targetOffice != null && distance <= targetOffice.RadiusMeters)
                     {
                         verification.GpsWithinGeofence = true;
                         score += 40;
@@ -102,7 +107,7 @@ namespace Employee.Application.Features.Attendance.Services
                         warnings.Add("GPS_OUTSIDE_GEOFENCE");
                         _logger.LogWarning(
                             "[Verification] Employee {EmpId} GPS outside geofence. Distance: {Dist:F0}m to {Office}",
-                            employeeId, distance, nearest?.Name ?? "unknown");
+                            employeeId, distance, targetOffice?.Name ?? "unknown");
                     }
 
                     // GPS mismatch: user selected office A but is closest to office B
