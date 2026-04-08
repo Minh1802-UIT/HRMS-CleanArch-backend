@@ -10,39 +10,42 @@ namespace Employee.Application.Features.Attendance.Services
     public class FaceVerificationService
     {
         /// <summary>
-        /// Computes cosine similarity between two face embeddings.
-        /// Returns a value between -1 and 1 (higher = more similar).
-        /// Typical threshold for same-person: >= 0.6
+        /// Computes Euclidean distance between two face embeddings.
+        /// This is the standard metric used by face-api.js.
+        /// Lower is better. A typical threshold is 0.5 to 0.6.
         /// </summary>
-        public double ComputeSimilarity(float[] embedding1, float[] embedding2)
+        public double ComputeEuclideanDistance(float[] embedding1, float[] embedding2)
         {
             if (embedding1.Length != embedding2.Length)
                 throw new ArgumentException("Embeddings must have the same dimension.");
 
-            double dotProduct = 0, norm1 = 0, norm2 = 0;
+            double sum = 0;
             for (int i = 0; i < embedding1.Length; i++)
             {
-                dotProduct += embedding1[i] * embedding2[i];
-                norm1 += embedding1[i] * embedding1[i];
-                norm2 += embedding2[i] * embedding2[i];
+                var diff = embedding1[i] - embedding2[i];
+                sum += diff * diff;
             }
 
-            var denominator = Math.Sqrt(norm1) * Math.Sqrt(norm2);
-            if (denominator == 0) return 0;
-
-            return dotProduct / denominator;
+            return Math.Sqrt(sum);
         }
 
         /// <summary>
         /// Verifies if a check-in embedding matches the registered embedding.
+        /// Uses 0.55 as the strict threshold for Euclidean distance.
         /// </summary>
-        public FaceMatchResult Verify(float[] checkInEmbedding, float[] registeredEmbedding, double threshold = 0.6)
+        public FaceMatchResult Verify(float[] checkInEmbedding, float[] registeredEmbedding, double threshold = 0.55)
         {
-            var similarity = ComputeSimilarity(checkInEmbedding, registeredEmbedding);
+            var distance = ComputeEuclideanDistance(checkInEmbedding, registeredEmbedding);
+            
+            // Map Euclidean distance (0.0 to ~1.2) to an intuitive Similarity percentage (0 to 1) 
+            // e.g. distance 0 => 1.0 (100%), distance 0.55 => ~0.60 (60%).
+            // We use a formula so users see a reasonable Drop-off.
+            var similarity = Math.Max(0, 1.0 - distance);
+
             return new FaceMatchResult
             {
                 Similarity = Math.Round(similarity, 4),
-                IsMatch = similarity >= threshold,
+                IsMatch = distance <= threshold,
                 Threshold = threshold
             };
         }
