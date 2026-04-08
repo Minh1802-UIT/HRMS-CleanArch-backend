@@ -88,6 +88,24 @@ namespace Employee.API.Endpoints.Attendance
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
                group.MapDelete("/wfh-approvals/{id}", WfhHandlers.RevokeWfhApproval)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR", "Manager"));
+
+               // 12. FACE REGISTRATION — employee self-register, HR approve
+               group.MapPost("/face/register", FaceRegistrationHandlers.RegisterFace)
+                    .RequireAuthorization();
+               group.MapGet("/face/my-status", FaceRegistrationHandlers.GetMyFaceStatus)
+                    .RequireAuthorization();
+               group.MapPost("/face/verify", FaceRegistrationHandlers.VerifyFace)
+                    .RequireAuthorization();
+               group.MapGet("/face/pending", FaceRegistrationHandlers.GetPendingRegistrations)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
+               group.MapGet("/face/all", FaceRegistrationHandlers.GetAllRegistrations)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
+               group.MapPost("/face/{id}/approve", FaceRegistrationHandlers.ApproveRegistration)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
+               group.MapPost("/face/{id}/reject", FaceRegistrationHandlers.RejectRegistration)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
+               group.MapDelete("/face/{id}", FaceRegistrationHandlers.DeleteRegistration)
+                    .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
           }
      }
 }
