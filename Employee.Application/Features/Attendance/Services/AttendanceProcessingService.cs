@@ -262,32 +262,21 @@ namespace Employee.Application.Features.Attendance.Services
         dailyLog.UpdateCheckTimes(checkIn, checkOut, shift?.Code ?? "Unknown");
 
         // --- STEP C2: Update Trust Score ---
-        // If TrustScore is -1, try to find the verification from the Check-In punch.
-        // It might be in newLogs, or it might be in the database (already processed).
-        if (dailyLog.TrustScore == -1 && checkIn.HasValue)
+        // We evaluate new logs and update if their core is better than the current dailyLog.TrustScore
+        if (checkIn.HasValue)
         {
-            var checkInLog = newLogs.FirstOrDefault(x => x.Timestamp == checkIn.Value && x.Verification != null);
-            if (checkInLog == null)
-            {
-                // Fetch from DB just in case it was already processed before the TrustScore mapping fix
-                // Note: checkIn.Value is already UTC from the DB
-                var queryStartUtc = checkIn.Value.AddMinutes(-5);
-                var queryEndUtc = checkIn.Value.AddMinutes(5);
-                var pastLogs = await _rawRepo.GetByDateRangeAsync(employeeId, queryStartUtc, queryEndUtc);
-                checkInLog = pastLogs.FirstOrDefault(x => x.Timestamp == checkIn.Value && x.Verification != null);
-            }
+            var bestNewLog = newLogs.Where(x => x.Verification != null)
+                                    .OrderByDescending(x => x.Verification.TrustScore)
+                                    .FirstOrDefault();
 
-            // Always take the best score if multiple verifications exist today
-            var bestLog = newLogs.Where(x => x.Verification != null)
-                                 .Concat(checkInLog != null ? new[] { checkInLog } : Array.Empty<Employee.Domain.Entities.Attendance.RawAttendanceLog>())
-                                 .OrderByDescending(x => x.Verification?.TrustScore ?? -1)
-                                 .FirstOrDefault();
+            var currentScore = dailyLog.TrustScore;
+            var bestNewScore = bestNewLog?.Verification?.TrustScore ?? -1;
 
-            if (bestLog?.Verification != null)
+            if (bestNewScore > currentScore)
             {
-                dailyLog.TrustScore = bestLog.Verification.TrustScore;
-                dailyLog.TrustLevel = bestLog.Verification.TrustLevel;
-                dailyLog.VerificationWarnings = bestLog.Verification.Warnings;
+                dailyLog.TrustScore = bestNewLog!.Verification.TrustScore;
+                dailyLog.TrustLevel = bestNewLog.Verification.TrustLevel;
+                dailyLog.VerificationWarnings = bestNewLog.Verification.Warnings;
             }
         }
 

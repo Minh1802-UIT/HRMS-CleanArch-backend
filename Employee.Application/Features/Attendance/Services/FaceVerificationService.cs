@@ -37,10 +37,20 @@ namespace Employee.Application.Features.Attendance.Services
         {
             var distance = ComputeEuclideanDistance(checkInEmbedding, registeredEmbedding);
             
-            // Map Euclidean distance (0.0 to ~1.2) to an intuitive Similarity percentage (0 to 1) 
-            // e.g. distance 0 => 1.0 (100%), distance 0.55 => ~0.60 (60%).
-            // We use a formula so users see a reasonable Drop-off.
-            var similarity = Math.Max(0, 1.0 - distance);
+            // Map Euclidean distance to an intuitive Similarity percentage (0 to 1) 
+            // - We want exact match (0.0) -> 1.0 (100%)
+            // - Threshold (0.55) -> 0.80 (80%)
+            // - Max expected distance (1.2) -> 0.0 (0%)
+            double similarity;
+            if (distance <= threshold)
+            {
+                similarity = 1.0 - (distance / threshold) * 0.20; 
+            }
+            else
+            {
+                // Gradually drop from 80% to 0% as distance grows from 0.55 to 1.2
+                similarity = Math.Max(0.0, 0.80 - ((distance - threshold) / (1.2 - threshold)) * 0.80);
+            }
 
             return new FaceMatchResult
             {

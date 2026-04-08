@@ -99,7 +99,7 @@ namespace Employee.Application.Features.Attendance.Services
                     if (targetOffice != null && distance <= targetOffice.RadiusMeters)
                     {
                         verification.GpsWithinGeofence = true;
-                        score += 40;
+                        score += 60;
                     }
                     else
                     {
@@ -127,7 +127,7 @@ namespace Employee.Application.Features.Attendance.Services
             if (!string.IsNullOrEmpty(photoBase64))
             {
                 verification.PhotoProvided = true;
-                score += 30;
+                score += 40;
             }
             else
             {
@@ -141,7 +141,7 @@ namespace Employee.Application.Features.Attendance.Services
                 if (wfhApproval != null)
                 {
                     verification.WfhApproved = true;
-                    score += 20;
+                    score += 50;
                 }
                 else
                 {
