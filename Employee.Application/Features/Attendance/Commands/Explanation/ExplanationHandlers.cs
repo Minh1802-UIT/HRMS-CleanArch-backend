@@ -66,6 +66,17 @@ namespace Employee.Application.Features.Attendance.Commands.Explanation
 
       if (type == ExplanationType.CompensatoryTime)
       {
+         // Enforce maximum 5 compensatory time requests per month
+         var allForUser = await _repo.GetByEmployeeIdAsync(request.EmployeeId, cancellationToken);
+         var monthCompensatoryCount = allForUser.Count(e => 
+             e.Type == ExplanationType.CompensatoryTime && 
+             e.WorkDate.Month == request.Dto.WorkDate.Month && 
+             e.WorkDate.Year == request.Dto.WorkDate.Year &&
+             e.Status != ExplanationStatus.Rejected);
+             
+         if (monthCompensatoryCount >= 5)
+             throw new ValidationException($"Bạn đã đăng ký {monthCompensatoryCount}/5 đơn bù giờ trong tháng {request.Dto.WorkDate.Month}/{request.Dto.WorkDate.Year}. Không thể đăng ký thêm.");
+
          // Calculate the actual deficit: how many hours short of standard this day is
          var shift = await GetEffectiveShiftForSubmitAsync(request.EmployeeId, request.Dto.WorkDate);
          double standardHours = shift?.StandardWorkingHours ?? 8.0;
