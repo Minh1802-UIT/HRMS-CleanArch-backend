@@ -262,21 +262,37 @@ namespace Employee.Application.Features.Attendance.Services
         dailyLog.UpdateCheckTimes(checkIn, checkOut, shift?.Code ?? "Unknown");
 
         // --- STEP C2: Update Trust Score ---
-        // We evaluate new logs and update if their core is better than the current dailyLog.TrustScore
-        if (checkIn.HasValue)
+        // BUG-FIX: Enforce pessimistic evaluation (MIN score) for the day.
+        // If an employee has 100 on Check-In but 40 on Check-Out, the day's total score is 40.
+        // We also attach the punch context [CheckIn]/[CheckOut] to the warnings.
+        var logsWithVerification = newLogs.Where(x => x.Verification != null).ToList();
+        if (logsWithVerification.Any())
         {
-            var bestNewLog = newLogs.Where(x => x.Verification != null)
-                                    .OrderByDescending(x => x.Verification.TrustScore)
-                                    .FirstOrDefault();
+            // Reset trust score if this is the very first evaluation
+            if (dailyLog.TrustScore == -1)
+                dailyLog.TrustScore = 100;
 
-            var currentScore = dailyLog.TrustScore;
-            var bestNewScore = bestNewLog?.Verification?.TrustScore ?? -1;
-
-            if (bestNewScore > currentScore)
+            foreach (var log in logsWithVerification)
             {
-                dailyLog.TrustScore = bestNewLog!.Verification.TrustScore;
-                dailyLog.TrustLevel = bestNewLog.Verification.TrustLevel;
-                dailyLog.VerificationWarnings = bestNewLog.Verification.Warnings;
+                int score = log.Verification.TrustScore;
+                string level = log.Verification.TrustLevel;
+                string prefix = log.Type == RawLogType.CheckIn ? "[CheckIn]" : "[CheckOut]";
+                
+                var formattedWarnings = log.Verification.Warnings.Select(w => $"{prefix} {w}").ToList();
+
+                // Incorporate warnings cumulatively
+                if (formattedWarnings.Any())
+                {
+                    dailyLog.VerificationWarnings.AddRange(formattedWarnings);
+                    dailyLog.VerificationWarnings = dailyLog.VerificationWarnings.Distinct().ToList();
+                }
+
+                // Pessimistic strategy: Day's score is the MIN of all punches
+                if (score < dailyLog.TrustScore)
+                {
+                    dailyLog.TrustScore = score;
+                    dailyLog.TrustLevel = level;
+                }
             }
         }
 

@@ -99,12 +99,17 @@ namespace Employee.Application.Features.Attendance.Commands.Explanation
          bucket.ReserveCompensatoryHours(cappedHours);
          await _attendanceRepo.UpdateAsync(bucket.Id, bucket, cancellationToken);
       }
+      else if (type == ExplanationType.Exception)
+      {
+          if (dailyLog.TrustScore >= 80 || dailyLog.TrustScore < 0)
+              throw new ConflictException("Ngày này có Trust Score tốt (>= 80) hoặc không áp dụng, không cần giải trình ngoại lệ.");
+      }
       else
       {
           // Accept explanation for missing punch
           bool isMissingCheckout = dailyLog.CheckIn.HasValue && !dailyLog.CheckOut.HasValue;
           if (!dailyLog.IsMissingPunch && !dailyLog.IsMissingCheckIn && !isMissingCheckout)
-            throw new ConflictException("Ngày này không có trường hợp cần giải trình.");
+            throw new ConflictException("Ngày này không có trường hợp thiếu chấm công cần giải trình.");
       }
 
       // Prevent duplicate pending submission
@@ -226,6 +231,16 @@ namespace Employee.Application.Features.Attendance.Commands.Explanation
 
           bucket.AddOrUpdateDailyLog(dailyLog);
           bucket.RecalculateTotals();
+          await _attendanceRepo.UpdateAsync(bucket.Id, bucket, cancellationToken);
+      }
+      else if (explanation.Type == ExplanationType.Exception)
+      {
+          // Reset trust score to "clean" state after HR approval
+          dailyLog.TrustScore = 100;
+          dailyLog.TrustLevel = "High";
+          dailyLog.VerificationWarnings = new List<string>();
+
+          bucket.AddOrUpdateDailyLog(dailyLog);
           await _attendanceRepo.UpdateAsync(bucket.Id, bucket, cancellationToken);
       }
       else

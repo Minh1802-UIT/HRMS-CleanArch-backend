@@ -104,6 +104,8 @@ namespace Employee.API.Endpoints.Attendance
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
                group.MapPost("/face/{id}/reject", FaceRegistrationHandlers.RejectRegistration)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
+               group.MapDelete("/face/my-registration", FaceRegistrationHandlers.DeleteMyRegistration)
+                    .RequireAuthorization();
                group.MapDelete("/face/{id}", FaceRegistrationHandlers.DeleteRegistration)
                     .RequireAuthorization(p => p.RequireRole("Admin", "HR"));
           }

@@ -65,6 +65,26 @@ namespace Employee.API.Endpoints.Attendance
             });
         }
 
+        // ── Employee: Delete own registration (revoke) ──────────────────
+        // DELETE /api/attendance/face/my-registration
+        public static async Task<IResult> DeleteMyRegistration(
+            IFaceEmbeddingRepository repo,
+            ClaimsPrincipal user)
+        {
+            var employeeId = user.FindFirstValue("EmployeeId");
+            if (string.IsNullOrEmpty(employeeId))
+                return ResultUtils.Fail("FACE_FAILED","Cannot determine employee identity.");
+
+            var face = await repo.GetLatestByEmployeeAsync(employeeId);
+            if (face == null)
+                return ResultUtils.Success<object>(null, "No registered face found.");
+
+            // To allow history tracking, we could 'Void' it, but currently the app allows Hard Delete
+            // since IFaceEmbeddingRepository.DeleteAsync deletes by Id.
+            await repo.DeleteAsync(face.Id);
+            return ResultUtils.Success<object>(null, "Face registration revoked. You may register again.");
+        }
+
         // ── HR/Admin: Get all pending registrations ─────────────────────
         // GET /api/attendance/face/pending
         public static async Task<IResult> GetPendingRegistrations(
