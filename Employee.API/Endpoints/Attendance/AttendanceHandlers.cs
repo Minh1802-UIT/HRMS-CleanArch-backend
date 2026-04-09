@@ -408,6 +408,8 @@ namespace Employee.API.Endpoints.Attendance
         WorkDate = e.WorkDate,
         Reason = e.Reason,
         Status = e.Status.ToString(),
+        Type = e.Type.ToString(),
+        RequestedCompHours = e.RequestedCompHours,
         CreatedAt = e.CreatedAt
       });
       return ResultUtils.Success(result);
