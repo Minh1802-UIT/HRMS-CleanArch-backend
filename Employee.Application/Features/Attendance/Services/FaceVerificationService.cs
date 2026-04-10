@@ -31,26 +31,18 @@ namespace Employee.Application.Features.Attendance.Services
 
         /// <summary>
         /// Verifies if a check-in embedding matches the registered embedding.
-        /// Uses 0.45 as the strict threshold for Euclidean distance to prevent spoofing with different faces.
+        /// Uses 0.52 as the strict threshold for Euclidean distance to balance False Accept/False Reject.
         /// </summary>
-        public FaceMatchResult Verify(float[] checkInEmbedding, float[] registeredEmbedding, double threshold = 0.45)
+        public FaceMatchResult Verify(float[] checkInEmbedding, float[] registeredEmbedding, double threshold = 0.52)
         {
             var distance = ComputeEuclideanDistance(checkInEmbedding, registeredEmbedding);
             
-            // Map Euclidean distance to an intuitive Similarity percentage (0 to 1) 
-            // - We want exact match (0.0) -> 1.0 (100%)
-            // - Threshold (0.45) -> 0.80 (80%)
-            // - Max expected distance (1.2) -> 0.0 (0%)
-            double similarity;
-            if (distance <= threshold)
-            {
-                similarity = 1.0 - (distance / threshold) * 0.20; 
-            }
-            else
-            {
-                // Gradually drop from 80% to 0% as distance grows from 0.45 to 1.2
-                similarity = Math.Max(0.0, 0.80 - ((distance - threshold) / (1.2 - threshold)) * 0.80);
-            }
+            // Map Euclidean distance to Cosine Similarity percentage (assuming normalized vectors)
+            // Distance^2 = 2 - 2 * Cosine(theta)  => Cosine Similarity = 1 - (Distance^2 / 2)
+            double similarity = 1.0 - ((distance * distance) / 2.0);
+            
+            // Floor negative similarities to 0
+            similarity = Math.Max(0.0, similarity);
 
             return new FaceMatchResult
             {
