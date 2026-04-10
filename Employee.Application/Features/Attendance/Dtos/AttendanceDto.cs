@@ -20,6 +20,9 @@ namespace Employee.Application.Features.Attendance.Dtos
     // Format: "data:image/jpeg;base64,/9j/4AAQ..."
     public string? PhotoBase64 { get; set; }
 
+    // Face representation array extracted by client for cross-validation on the backend
+    public float[]? FaceEmbedding { get; set; }
+
     // Office/check-in point ID (from OfficeLocation collection)
     public string? CheckInPointId { get; set; }
   }

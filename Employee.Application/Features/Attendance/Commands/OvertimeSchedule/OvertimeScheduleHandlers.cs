@@ -138,12 +138,8 @@ namespace Employee.Application.Features.Attendance.Commands.OvertimeSchedule
 
       // Enrich with employee names (batch load unique IDs)
       var employeeIds = entries.Select(e => e.EmployeeId).Distinct().ToList();
-      var nameMap = new Dictionary<string, string?>();
-      foreach (var eId in employeeIds)
-      {
-        var emp = await _employeeRepo.GetByIdAsync(eId);
-        nameMap[eId] = emp?.FullName;
-      }
+      var nameMapData = await _employeeRepo.GetNamesByIdsAsync(employeeIds);
+      var nameMap = nameMapData.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Name);
 
       return entries.Select(e => e.ToDto(nameMap.GetValueOrDefault(e.EmployeeId))).ToList();
     }

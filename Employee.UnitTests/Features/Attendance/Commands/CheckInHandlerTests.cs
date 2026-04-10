@@ -27,6 +27,8 @@ public class CheckInHandlerTests
         Mock.Of<IOfficeLocationRepository>(),
         Mock.Of<IWfhApprovalRepository>(),
         _rawRepo.Object,
+        Mock.Of<IFaceEmbeddingRepository>(),
+        new FaceVerificationService(),
         Mock.Of<ILogger<CheckInVerificationService>>());
 
     _handler = new CheckInHandler(

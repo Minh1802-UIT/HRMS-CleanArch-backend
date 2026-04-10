@@ -32,17 +32,23 @@ namespace Employee.Application.Features.Attendance.Services
         private readonly IOfficeLocationRepository _officeRepo;
         private readonly IWfhApprovalRepository _wfhRepo;
         private readonly IRawAttendanceLogRepository _rawLogRepo;
+        private readonly IFaceEmbeddingRepository _faceRepo;
+        private readonly FaceVerificationService _faceVerificationService;
         private readonly ILogger<CheckInVerificationService> _logger;
 
         public CheckInVerificationService(
             IOfficeLocationRepository officeRepo,
             IWfhApprovalRepository wfhRepo,
             IRawAttendanceLogRepository rawLogRepo,
+            IFaceEmbeddingRepository faceRepo,
+            FaceVerificationService faceVerificationService,
             ILogger<CheckInVerificationService> logger)
         {
             _officeRepo = officeRepo;
             _wfhRepo = wfhRepo;
             _rawLogRepo = rawLogRepo;
+            _faceRepo = faceRepo;
+            _faceVerificationService = faceVerificationService;
             _logger = logger;
         }
 
@@ -55,6 +61,7 @@ namespace Employee.Application.Features.Attendance.Services
             string? userAgent,
             string? ipAddress,
             DateTime timestamp,
+            float[]? faceEmbedding = null,
             CancellationToken ct = default)
         {
             var verification = new CheckInVerification
@@ -127,7 +134,43 @@ namespace Employee.Application.Features.Attendance.Services
             if (!string.IsNullOrEmpty(photoBase64))
             {
                 verification.PhotoProvided = true;
-                score += 40;
+
+                if (faceEmbedding != null && faceEmbedding.Length > 0)
+                {
+                    // Full security mode: Match face against DB
+                    var registeredFace = await _faceRepo.GetApprovedByEmployeeAsync(employeeId, ct);
+                    if (registeredFace != null && registeredFace.Embedding != null)
+                    {
+                        var matchResult = _faceVerificationService.Verify(faceEmbedding, registeredFace.Embedding);
+                        if (matchResult.IsMatch)
+                        {
+                            score += 40;
+                            _logger.LogInformation(
+                                "[Verification] Employee {EmpId} face MATCHED. Similarity: {Sim}", 
+                                employeeId, matchResult.Similarity);
+                        }
+                        else
+                        {
+                            warnings.Add("FACE_MISMATCH");
+                            _logger.LogWarning(
+                                "[Verification] Employee {EmpId} FACE_MISMATCH! Similarity: {Sim} (Threshold: {Thr})",
+                                employeeId, matchResult.Similarity, matchResult.Threshold);
+                        }
+                    }
+                    else
+                    {
+                        warnings.Add("FACE_NOT_REGISTERED");
+                        // Decide whether to grant grace points (+40) if HR hasn't caught up, or require registration.
+                        // For tight security, do not grant points if not registered.
+                    }
+                }
+                else
+                {
+                    // Fallback to legacy behavior if client app is not updated yet (or lacks face-api.js)
+                    // In a strictly enforced system, this should also add a warning.
+                    _logger.LogWarning("[Verification] Employee {EmpId} provided photo but no FaceEmbedding array. Client might be outdated. Granting 0 points.", employeeId);
+                    warnings.Add("MISSING_FACE_EMBEDDING_PAYLOAD");
+                }
             }
             else
             {

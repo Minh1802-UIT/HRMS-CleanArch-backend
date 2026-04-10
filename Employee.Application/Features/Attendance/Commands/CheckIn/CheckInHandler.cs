@@ -67,6 +67,7 @@ namespace Employee.Application.Features.Attendance.Commands.CheckIn
             userAgent:      request.UserAgent,
             ipAddress:      request.IpAddress,
             timestamp:      rawLog.Timestamp,
+            faceEmbedding:  request.Dto.FaceEmbedding,
             ct:             cancellationToken);
 
         rawLog.Verification = verification;
